@@ -74,15 +74,20 @@ export async function verifyPhoto(target: VerificationTarget, jpeg: Uint8Array):
     ],
   });
 
-  if (response.stop_reason === "refusal") return result("uncertain", null, null);
+  // Only the stop reason and served model are logged, never the model's text.
+  const unclear = (why: string) => {
+    console.warn(`verify: ${why} (stop_reason ${response.stop_reason}, model ${response.model})`);
+    return result("uncertain", null, null);
+  };
+  if (response.stop_reason === "refusal") return unclear("refusal");
   const text = response.content.find((b) => b.type === "text");
-  if (!text || text.type !== "text") return result("uncertain", null, null);
+  if (!text || text.type !== "text") return unclear("no text in reply");
 
   let parsed: ModelVerdict;
   try {
     parsed = ModelVerdict.parse(JSON.parse(text.text));
   } catch {
-    return result("uncertain", null, null);
+    return unclear("reply did not match the verdict schema");
   }
   return normalize(parsed);
 }
