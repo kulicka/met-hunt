@@ -1,0 +1,1292 @@
+The Met: Hidden Treasures
+
+Full Technical & Product Specification
+
+Version: 1.0 Purpose: Implementation handoff for Claude / coding agent
+
+------------------------------------------------------------------------
+
+1. Product Overview
+
+Build a polished, mobile-first web app for a children’s scavenger hunt
+inside The Metropolitan Museum of Art in New York City.
+
+Working title:
+
+THE MET: HIDDEN TREASURES
+
+Target users: - Children approximately 8–10 years old - Primarily played
+on a parent’s smartphone - English-speaking - Played physically inside
+The Met while walking from gallery to gallery
+
+Core concept:
+
+The child visits a sequence of museum galleries. In each gallery, the
+app presents a short rhyming riddle describing a small, easily
+overlooked detail hidden inside one artwork.
+
+The riddle must NOT initially reveal: - artist - artwork title - image
+of the artwork - exact location of the object
+
+The child searches the physical gallery, finds the artwork/detail,
+photographs it with the mobile device, and uploads/submits the photo to
+the app. AI vision verifies whether the intended artwork/detail has been
+found.
+
+After a successful discovery, the app reveals the artwork, celebrates
+the find, adds the treasure to the child’s collection, and uses a
+simplified museum map to direct the player to the next gallery.
+
+The experience should feel like a physical museum treasure hunt, not an
+educational quiz.
+
+Primary game loop:
+
+CLUE → LOOK UP → SEARCH → FIND → SNAP → VERIFY → CELEBRATE → MAP → WALK
+→ NEXT CLUE
+
+The website must never become more interesting than the museum. The
+phone should prompt the child to look at real art, then get out of the
+way.
+
+------------------------------------------------------------------------
+
+2. Core Product Principles
+
+1.  Physical discovery comes first.
+2.  Minimize screen time while the child is searching.
+3.  Do not show the target artwork before the child finds it.
+4.  Photo verification is the primary answer mechanism.
+5.  AI failure must never trap the child.
+6.  No account is required.
+7.  Do not request GPS/location permission.
+8.  Do not permanently store children’s submitted photographs by
+    default.
+9.  The museum map is a navigation aid, not indoor GPS.
+10. Core riddles, progress, and map should remain usable when
+    connectivity is weak.
+11. Keep educational information short and optional.
+12. Design for children without making the visual design childish.
+
+------------------------------------------------------------------------
+
+3. Start Screen
+
+Display:
+
+THE MET: HIDDEN TREASURES
+
+Subtitle:
+
+10 galleries. 10 mysteries. Can you find them all?
+
+Intro copy:
+
+“Somewhere inside each gallery, a tiny detail is hiding in plain sight.
+Read the clue. Look carefully. Find the treasure.”
+
+Primary CTA:
+
+START THE HUNT
+
+Secondary action:
+
+How to Play
+
+Do not display target paintings, artists, or answers on this screen.
+
+------------------------------------------------------------------------
+
+4. How to Play
+
+Keep instructions short.
+
+1.  Go to the gallery shown on your screen.
+2.  Read the riddle.
+3.  Search the artworks in that gallery.
+4.  Find the hidden detail.
+5.  Photograph what you found.
+6.  Let the app check your discovery.
+7.  Collect your treasure and move to the next gallery.
+
+Include:
+
+“Don’t Google it — the fun is finding it yourself. 🔎”
+
+Museum Detective Rules:
+
+🔍 Look closely 🤫 Use museum voices 🖼️ Don’t touch the art 🚶 Walk,
+don’t run 📷 Photograph the artwork — not other visitors ⚡ Do not use
+flash
+
+CTA:
+
+LET’S GO
+
+------------------------------------------------------------------------
+
+5. Game Route
+
+There are 10 quests.
+
+Each quest corresponds to one gallery, one artwork, and one hidden
+detail.
+
+Current route:
+
+1.  Gallery 810
+2.  Gallery 815
+3.  Gallery 816
+4.  Gallery 817
+5.  Gallery 818
+6.  Gallery 819
+7.  Gallery 821
+8.  Gallery 822
+9.  Gallery 824
+10. Gallery 825
+
+Gallery 820 and Gallery 823 are intentionally skipped.
+
+The app should not assume that gallery assignments or artwork locations
+are permanent. Structure content so gallery/artwork metadata can be
+updated without rewriting UI code.
+
+------------------------------------------------------------------------
+
+6. Quest Screen
+
+At the top:
+
+QUEST X OF 10
+
+GALLERY XXX
+
+Show a subtle 10-position progress indicator.
+
+Example:
+
+● ● ● ○ ○ ○ ○ ○ ○ ○
+
+Completed/current/upcoming states must not rely on color alone.
+
+Every unsolved quest initially displays only: - quest number - gallery
+number - two-line riddle - Hint button - Take a Photo button - Show on
+Treasure Map link - discreet fallback option to continue without photo
+
+Example:
+
+GALLERY 810
+
+Mystery #1
+
+“I help you see, but I’m not a pair, Just one small circle hiding
+there.”
+
+💡 HINT
+
+📷 I FOUND IT — TAKE A PHOTO
+
+🗺 SHOW ON TREASURE MAP
+
+Small fallback: Continue without a photo
+
+Do not show: - artist - artwork title - hidden-object answer - artwork
+image
+
+until the discovery is verified or deliberately revealed through
+fallback/parent mode.
+
+------------------------------------------------------------------------
+
+7. Hint System
+
+Each quest has two progressive hints.
+
+First tap: Show Hint 1.
+
+Second tap: Show Hint 2.
+
+Hints narrow the search but should not simply give away the answer.
+
+Track hint usage in local progress data.
+
+------------------------------------------------------------------------
+
+8. Photo Capture
+
+Photo verification is the primary answer mechanism.
+
+On supported mobile browsers, allow the child to open the rear camera
+using a standard image file input, for example:
+
+Also permit choosing an existing image from the photo library where
+supported.
+
+Do not request camera access on page load.
+
+Only invoke the camera/photo picker after the user explicitly taps the
+photo button.
+
+After capture, display a preview:
+
+IS THIS YOUR TREASURE?
+
+[photo preview]
+
+USE THIS PHOTO RETAKE
+
+If practical, allow crop/zoom before submission because the hidden
+detail may occupy a small portion of the painting.
+
+Do not instruct the child to physically approach the artwork more
+closely.
+
+Prefer language such as:
+
+“Zoom with your camera if the treasure is tiny.”
+
+Do not encourage flash.
+
+If camera access fails or permission is denied, offer:
+
+CHOOSE A PHOTO CONTINUE WITHOUT PHOTO
+
+The entire game must remain usable without camera permission.
+
+------------------------------------------------------------------------
+
+9. Photo Processing
+
+Before upload, where practical: - resize very large photographs
+client-side - compress the image to a reasonable upload size - normalize
+orientation - remove EXIF metadata, including location metadata
+
+Do not store image blobs in localStorage.
+
+Do not permanently retain uploaded images by default.
+
+------------------------------------------------------------------------
+
+10. AI Photo Verification
+
+Use a multimodal vision model/API to verify discoveries.
+
+The goal is not merely to identify the painting.
+
+The verifier should determine:
+
+1.  Is the submitted photograph plausibly of the intended artwork?
+2.  Is the target hidden object/detail visible?
+3.  Is there sufficient confidence to accept the discovery?
+
+Accept either: - a photograph of the whole artwork where the detail is
+reasonably visible, or - a close-up of the hidden detail where enough
+context exists to associate it with the intended artwork.
+
+Do not require perfect framing.
+
+The verifier must be quest-specific.
+
+Do NOT use a generic prompt such as: “Does this photo contain the
+answer?”
+
+Each quest has its own expected artwork, hidden detail, and visual
+verification description.
+
+------------------------------------------------------------------------
+
+11. Verification Response Schema
+
+Server should normalize the vision model response into structured data
+such as:
+
+type VerificationResult = { status: | “verified” | “likely” |
+“not_found” | “uncertain” | “invalid_image”;
+
+artworkMatch: boolean | null; detailMatch: boolean | null; confidence:
+number; feedback: string; };
+
+Do not expose numerical confidence scores to children.
+
+Validate model output server-side before returning it to the client.
+
+------------------------------------------------------------------------
+
+12. Verification UX
+
+Verified
+
+Display:
+
+✨ TREASURE FOUND!
+
+“That’s the one!”
+
+Reveal: - hidden object - artist - artwork title - artwork image if
+legally permitted - one short interesting fact
+
+CTA:
+
+ADD TO MY COLLECTION
+
+Then transition to the next-stop/map experience.
+
+Correct Artwork, Detail Not Visible
+
+Display:
+
+SO CLOSE! 👀
+
+“You may have the right painting. Can you get a clearer shot of the
+hidden treasure?”
+
+CTA:
+
+📷 TRY AGAIN
+
+Do not reveal the hidden object.
+
+Wrong Artwork
+
+Display:
+
+KEEP HUNTING 🔎
+
+“This doesn’t look like our mystery painting yet.”
+
+CTA:
+
+BACK TO THE GALLERY
+
+Do not reveal the target artwork.
+
+AI Unsure
+
+Display:
+
+“Hmm… I can’t quite see it.”
+
+“Try another photo — zooming in a little may help.”
+
+Actions:
+
+📷 TRY AGAIN I’M SURE I FOUND IT
+
+After repeated uncertain attempts, offer:
+
+ASK A GROWN-UP
+
+A parent can confirm:
+
+✓ YES, THEY FOUND IT
+
+AI uncertainty must never block progression.
+
+------------------------------------------------------------------------
+
+13. Manual/Fallback Verification
+
+Photo verification is preferred, but the game must have graceful
+fallback modes for: - poor museum connectivity - camera permission
+denied - unsupported browser - AI uncertainty - child/parent preference
+
+Fallback options may include: - grown-up confirmation - optional
+multiple-choice verification - reveal-answer flow after explicit
+confirmation
+
+Multiple choice is NOT the primary game mechanic.
+
+If used, it is a fallback only.
+
+------------------------------------------------------------------------
+
+14. Photo Privacy and Child Safety
+
+This is a children’s product. Use data minimization by default.
+
+Submitted photographs should be used only for immediate answer
+verification.
+
+Default lifecycle:
+
+1.  captured/selected locally
+2.  resized/compressed locally where practical
+3.  EXIF removed where practical
+4.  sent securely to verification endpoint
+5.  analyzed
+6.  discarded after verification
+
+Do not: - permanently store submitted photos by default - build a
+server-side child photo gallery - identify people in photographs -
+perform facial recognition - collect child names - collect child email
+addresses - collect GPS coordinates - use submitted photos for
+advertising - use submitted photos for model training
+
+If a photograph includes a person, the verification system should ignore
+personal identity and focus only on the artwork/detail.
+
+Include a concise parent-facing privacy explanation.
+
+------------------------------------------------------------------------
+
+15. Museum Map
+
+The app must include a visual map focused on the portion of The Met
+containing the scavenger-hunt galleries.
+
+Use The Metropolitan Museum of Art’s current Floor 2 map as the
+authoritative spatial reference for gallery relationships.
+
+The relevant section is the 19th- and Early 20th-Century European
+Paintings and Sculpture area.
+
+Hunt galleries:
+
+810 → 815 → 816 → 817 → 818 → 819 → 821 → 822 → 824 → 825
+
+Nearby galleries may be shown for orientation but should be visually
+subdued.
+
+Do not invent gallery relationships.
+
+Verify the current official museum map before finalizing the schematic.
+
+------------------------------------------------------------------------
+
+16. Map Asset and Copyright Approach
+
+Do NOT simply screenshot, trace mechanically, or reproduce The Met’s
+published visitor map unless explicit permission/license allows that
+use.
+
+Preferred approach:
+
+1.  Consult the current official Met Floor 2 map as a spatial/navigation
+    reference.
+2.  Create an original simplified SVG schematic of only the relevant
+    gallery area.
+3.  Preserve useful approximate room relationships and actual
+    traversable connections.
+4.  Remove unnecessary architectural detail.
+5.  Emphasize the 10 game galleries.
+6.  Show surrounding galleries only as needed for orientation.
+
+The result should feel like a playful treasure map based on the gallery
+layout, not an architectural reproduction.
+
+Include a discreet external action:
+
+OPEN THE MET’S OFFICIAL MAP ↗
+
+Use the current official Met URL, not a hard-coded obsolete PDF if a
+maintained interactive map is available.
+
+------------------------------------------------------------------------
+
+17. Treasure Map Screen
+
+Header:
+
+TREASURE MAP
+
+Subtitle:
+
+10 mysteries hidden in The Met
+
+Show:
+
+Next mystery: Gallery XXX
+
+Overlay markers for:
+
+1 — 810 2 — 815 3 — 816 4 — 817 5 — 818 6 — 819 7 — 821 8 — 822 9 — 824
+10 — 825
+
+State legend:
+
+✓ Found ● Current destination ○ Still to discover
+
+Important: “Current” or “You’re here” means the gallery the game is
+directing the player toward. It does NOT mean the app knows the child’s
+physical location.
+
+Do not request GPS.
+
+------------------------------------------------------------------------
+
+18. Map Interaction
+
+Map should support: - pinch-to-zoom on mobile - pan - tap gallery
+marker - current-gallery highlight - completed-gallery state -
+upcoming-gallery state
+
+When an upcoming marker is tapped:
+
+Mystery #7 Gallery 821
+
+GO TO THIS MYSTERY
+
+Do not reveal the target artwork or hidden object.
+
+When a completed marker is tapped:
+
+Mystery #1 — Solved ✓ You found: A monocle
+
+Completed discoveries may link to the child’s treasure collection.
+
+------------------------------------------------------------------------
+
+19. Route Visualization
+
+Draw a subtle dotted treasure route between game stops.
+
+Route:
+
+810 → 815 → 816 → 817 → 818 → 819 → 821 → 822 → 824 → 825
+
+Do not draw route lines through walls.
+
+If moving between two game galleries requires passing through a non-game
+gallery, represent the route accordingly.
+
+Use actual gallery connections from the current official map.
+
+The map is not turn-by-turn indoor navigation.
+
+------------------------------------------------------------------------
+
+20. Quest-to-Map Integration
+
+Every quest screen should show:
+
+📍 Gallery XXX 🗺 SHOW ON TREASURE MAP
+
+Opening the map from a quest should center/highlight that gallery.
+
+After a successful discovery:
+
+TREASURE FOUND! 🎉
+
+Then:
+
+YOUR NEXT MYSTERY
+
+Gallery XXX
+
+🗺 SHOW ME THE WAY
+
+Open the map with: - previous gallery marked complete - next destination
+highlighted/pulsing - relevant route segment emphasized
+
+Then show:
+
+I’M THERE — SHOW MY CLUE
+
+The app must not claim the child has physically arrived. The player
+confirms arrival manually.
+
+------------------------------------------------------------------------
+
+21. The Ten Canonical Quests
+
+Treat the following gallery assignments, artworks, hidden details, and
+riddles as canonical content. Do not rewrite the approved riddles.
+
+Quest 1 — Gallery 810
+
+Artist: Édouard Manet
+
+Artwork: Young Lady in 1866
+
+Hidden object: Monocle
+
+Riddle: “I help you see, but I’m not a pair, Just one small circle
+hiding there.”
+
+Hint 1: Look closely at the portraits.
+
+Hint 2: Look near someone’s face.
+
+Verification target: Verify that the submitted museum photograph
+plausibly shows Manet’s “Young Lady in 1866” and that the monocle/single
+circular eyeglass detail is visible or sufficiently represented.
+
+------------------------------------------------------------------------
+
+Quest 2 — Gallery 815
+
+Artist: Edgar Degas
+
+Artwork: The Collector of Prints
+
+Hidden object: Small Chinese horse sculpture
+
+Riddle: “I have four legs but never race, For centuries I’ve stayed in
+place.”
+
+Hint 1: This animal isn’t alive.
+
+Hint 2: Look among the objects surrounding a person.
+
+Verification target: Verify that the submitted photograph plausibly
+shows Degas’s “The Collector of Prints” and that the small horse
+sculpture is visible.
+
+------------------------------------------------------------------------
+
+Quest 3 — Gallery 816
+
+Artist: Edgar Degas
+
+Artwork: Dancer with a Fan
+
+Hidden object: Folding fan
+
+Riddle: “I fold up small and spread out wide, To stir the air or help me
+hide.”
+
+Hint 1: Look for something that can open and close.
+
+Hint 2: A person is holding it.
+
+Verification target: Verify that the submitted photograph plausibly
+shows Degas’s “Dancer with a Fan” and that the folding fan is visible.
+
+------------------------------------------------------------------------
+
+Quest 4 — Gallery 817
+
+Artist: Henri de Toulouse-Lautrec
+
+Artwork: Madame Thadée Natanson at the Theater
+
+Hidden object: Tiny plaster elephant
+
+Riddle: “I’m big in life, but tiny here, My trunk is long, my feet stay
+near.”
+
+Hint 1: You’re looking for an animal — but not a real one.
+
+Hint 2: It’s much smaller than you’d expect.
+
+Verification target: Verify that the submitted photograph plausibly
+shows Toulouse-Lautrec’s “Madame Thadée Natanson at the Theater” and
+that the small elephant figure is visible.
+
+------------------------------------------------------------------------
+
+Quest 5 — Gallery 818
+
+Artist: Claude Monet
+
+Artwork: View of Vétheuil
+
+Hidden object: Church tower
+
+Riddle: “I have no voice, yet bells may ring, Above the roofs, I stand
+like a king.”
+
+Hint 1: Look into the distance.
+
+Hint 2: Look above the rooftops.
+
+Verification target: Verify that the submitted photograph plausibly
+shows Monet’s “View of Vétheuil” and that the distant church tower above
+the rooftops is visible.
+
+------------------------------------------------------------------------
+
+Quest 6 — Gallery 819
+
+Artist: Claude Monet
+
+Artwork: The Manneporte (Étretat)
+
+Hidden object: Two tiny people/figures
+
+Riddle: “We’re smaller than the rocks nearby, Two tiny travelers beneath
+the sky.”
+
+Hint 1: The landscape is much bigger than what you’re searching for.
+
+Hint 2: Look near the enormous rock formation.
+
+Verification target: Verify that the submitted photograph plausibly
+shows Monet’s “The Manneporte (Étretat)” and that the two tiny human
+figures near/beneath the monumental rock formation can reasonably be
+identified.
+
+------------------------------------------------------------------------
+
+Quest 7 — Gallery 821
+
+Artist: Pierre-Auguste Renoir
+
+Artwork: The Daughters of Catulle Mendès
+
+Hidden object: Flower in a girl’s hair
+
+Riddle: “I bloom without a garden bed, And rest upon a little head.”
+
+Hint 1: Look at the people, not the garden.
+
+Hint 2: Look closely at their hair.
+
+Verification target: Verify that the submitted photograph plausibly
+shows Renoir’s “The Daughters of Catulle Mendès” and that the flower
+worn in a girl’s hair is visible.
+
+------------------------------------------------------------------------
+
+Quest 8 — Gallery 822
+
+Artist: Paul Gauguin
+
+Artwork: Still Life with Teapot and Fruit
+
+Hidden object: Small human figure/person in the upper-right background
+
+Riddle: “I’m not a peach, I’m not a pear, But look behind — you’ll find
+me there.”
+
+Hint 1: Don’t let all the fruit distract you.
+
+Hint 2: Look toward the upper-right background.
+
+Verification target: Verify that the submitted photograph plausibly
+shows Gauguin’s “Still Life with Teapot and Fruit” and that the small
+human figure in the upper-right/background area is visible.
+
+------------------------------------------------------------------------
+
+Quest 9 — Gallery 824
+
+Artist: Pierre-Auguste Renoir
+
+Artwork: Still Life with Flowers and Prickly Pears
+
+Hidden object: Elephant-head handles on the flower vase
+
+Riddle: “Two little trunks, but nowhere to roam, We hold the flowers in
+their home.”
+
+Hint 1: The elephants are much smaller than real ones.
+
+Hint 2: Look at what is holding the flowers.
+
+Verification target: Verify that the submitted photograph plausibly
+shows Renoir’s “Still Life with Flowers and Prickly Pears” and that at
+least one elephant-head/elephant-trunk vase handle is reasonably
+visible.
+
+------------------------------------------------------------------------
+
+Quest 10 — Gallery 825
+
+Artist: Vincent van Gogh
+
+Artwork: Oleanders
+
+Hidden object: Book beside the flowers
+
+Riddle: “I have no voice, yet stories I tell, Beside the flowers, I
+quietly dwell.”
+
+Hint 1: Don’t look only at the flowers.
+
+Hint 2: Look beside them for something you could read.
+
+Verification target: Verify that the submitted photograph plausibly
+shows Van Gogh’s “Oleanders” and that the book beside the flowers is
+visible.
+
+------------------------------------------------------------------------
+
+22. Success Reveal Content
+
+After verification, reveal: - hidden treasure name - artist - artwork
+title - artwork image if permitted - optional year - one short
+child-friendly fact - official Met artwork link where available
+
+Keep facts to one or two sentences.
+
+Do not turn the success screen into a long lesson.
+
+------------------------------------------------------------------------
+
+23. Treasure Collection
+
+After each successful discovery, add a treasure card to the child’s
+collection.
+
+Collection screen should gradually fill as the hunt progresses.
+
+Before a quest is solved, its card should remain hidden/locked.
+
+After solving, card may show: - quest number - gallery number - hidden
+object - artwork title - artist - artwork image if permitted - short
+fact
+
+Do not expose unsolved answers.
+
+------------------------------------------------------------------------
+
+24. Final Screen
+
+After all 10 quests are completed:
+
+MISSION COMPLETE! 🏆
+
+“You found all 10 Hidden Treasures at The Met.”
+
+10 / 10 MYSTERIES SOLVED
+
+Award title:
+
+OFFICIAL MET DETECTIVE
+
+CTA:
+
+SEE MY TREASURES
+
+This opens the complete treasure collection.
+
+Secondary:
+
+PLAY AGAIN
+
+Resetting progress requires confirmation.
+
+------------------------------------------------------------------------
+
+25. Parent Mode
+
+Add a discreet:
+
+FOR GROWN-UPS
+
+Parent mode contains: - complete answer key - gallery numbers - artwork
+titles - artists - hidden objects - official Met links - game reset -
+privacy explanation - manual verification option where appropriate -
+link to official Met map
+
+Prevent casual accidental child entry using a simple press-and-hold
+interaction, for example:
+
+“Hold for 3 seconds to open.”
+
+No account or password is required for MVP.
+
+------------------------------------------------------------------------
+
+26. Visual Design
+
+The experience should feel: - sophisticated - playful -
+museum-inspired - adventurous - elegant - appropriate for 8–10-year-olds
+without looking preschool-oriented
+
+Avoid: - generic SaaS styling - loud primary-color children’s-app
+design - cartoon museum clichés - clutter - excessive animation - tiny
+text
+
+Suggested visual language: - warm ivory/paper background - charcoal
+text - deep burgundy - muted museum gold - dark forest green accent -
+subtle paper/archive/map texture - museum-label-inspired cards -
+restrained treasure/detective motifs
+
+Riddle cards can resemble elegant museum clue cards.
+
+------------------------------------------------------------------------
+
+27. Typography
+
+Suggested pairing:
+
+Headlines/riddles: Cormorant Garamond, Libre Baskerville, or similar
+elegant serif
+
+Interface: Inter, DM Sans, or similar clean sans-serif
+
+Minimum body text: 16px
+
+Riddle: approximately 24–30px on mobile
+
+Gallery number should be immediately visible and easy to scan while
+walking.
+
+------------------------------------------------------------------------
+
+28. Mobile-First Requirements
+
+Primary viewport: 375–430px width
+
+Requirements: - excellent iPhone Safari support - excellent Android
+Chrome support - one-handed operation - large tap targets - minimal
+typing - no horizontal page scrolling - readable in varying museum
+lighting - fast screen transitions - persistent progress - no required
+audio - no required GPS - no required account - camera optional but
+strongly encouraged
+
+Test the entire hunt at 375px viewport width.
+
+------------------------------------------------------------------------
+
+29. Accessibility
+
+Follow WCAG AA where practical.
+
+Requirements: - adequate contrast - semantic HTML - keyboard
+accessibility - visible focus states - ARIA labels where appropriate -
+reduced-motion support - scalable text - do not communicate state
+through color alone - provide text alternatives for icons - map status
+should also be available in textual form
+
+------------------------------------------------------------------------
+
+30. Recommended Architecture
+
+Preferred stack: - Next.js - React - TypeScript - Tailwind CSS - Framer
+Motion for restrained animations - Lucide icons
+
+A server-side component is required for AI photo verification.
+
+Use: - Next.js route handler/server action, or equivalent secure backend
+endpoint - multimodal vision API/model
+
+Never expose AI API keys in browser JavaScript.
+
+The rest of the app should remain lightweight and largely
+static/data-driven.
+
+------------------------------------------------------------------------
+
+31. Suggested Routes
+
+/ Landing page
+
+/play Resume/current quest
+
+/quest/[id] Individual quest
+
+/map Treasure map
+
+/verify/[id] Optional dedicated capture/verification flow
+
+/collection Discovered treasures
+
+/parents Parent mode
+
+No authentication required for MVP.
+
+------------------------------------------------------------------------
+
+32. Quest Data Architecture
+
+Do NOT hard-code quest-specific content into UI components.
+
+Use a structured data file such as:
+
+data/quests.ts
+
+Example:
+
+interface Quest { id: number; gallery: string;
+
+artist: string; artwork: string; year?: string;
+
+hiddenObject: string;
+
+riddle: [string, string]; hints: [string, string];
+
+verificationDescription: string;
+
+imageUrl?: string; metObjectUrl?: string; metObjectId?: number;
+openAccess?: boolean;
+
+fact?: string;
+
+map?: { x: number; y: number; }; }
+
+Map x/y values represent coordinates in the original schematic/SVG
+coordinate system, NOT GPS coordinates.
+
+Separate public pre-solve content from sensitive answer/verification
+data where useful so the browser does not unnecessarily receive every
+answer before it is needed.
+
+------------------------------------------------------------------------
+
+33. Verification Backend
+
+Suggested endpoint:
+
+POST /api/verify
+
+Input: - questId - uploaded image
+
+The server retrieves the expected quest target internally.
+
+Do not trust an expected answer supplied by the client.
+
+Server-side verification target:
+
+interface VerificationTarget { questId: number; artist: string; artwork:
+string; hiddenObject: string; verificationDescription: string;
+referenceImages?: string[]; }
+
+The model should return structured JSON.
+
+Server must: - validate file type - enforce reasonable file-size
+limits - normalize/process images safely - reject malformed requests -
+validate model response schema - avoid logging raw image payloads where
+possible - discard uploaded image after processing by default -
+rate-limit endpoint sufficiently to prevent abuse/cost runaway
+
+------------------------------------------------------------------------
+
+34. Progress Persistence
+
+Use localStorage for MVP progress.
+
+Example:
+
+interface GameProgress { gameStarted: boolean; currentQuest: number;
+completedQuests: number[]; hintsUsed: Record<number, number>; attempts:
+Record<number, number>; verificationMethod: Record< number, “ai-photo” |
+“grown-up” | “manual” >; }
+
+Do not store submitted photo blobs in localStorage.
+
+On refresh/reopen, resume the hunt.
+
+Provide a Start Over action in parent/settings UI.
+
+Require confirmation before deleting progress.
+
+------------------------------------------------------------------------
+
+35. Offline / Weak Signal Behavior
+
+Museum connectivity may be unreliable.
+
+After initial load, these should remain usable: - quest riddles -
+hints - map - progress - navigation - completed treasure metadata
+already available locally
+
+AI photo verification requires connectivity unless a future local model
+is implemented.
+
+If verification cannot reach the server:
+
+NO SIGNAL? NO PROBLEM.
+
+“A grown-up can check your discovery.”
+
+Offer:
+
+TRY AGAIN GROWN-UP CHECK ✓
+
+Consider PWA support and caching of: - application shell - quest data
+appropriate for client exposure - map SVG/assets - icons/fonts where
+permitted - legally usable reveal images
+
+Do not make a network request necessary merely to move between quest
+screens.
+
+------------------------------------------------------------------------
+
+36. Artwork Images and Rights
+
+Do not scrape artwork images from Google or unrelated sites.
+
+Prefer: - official Met collection assets - The Met Open Access assets
+where available - other imagery only when usage rights clearly permit it
+
+Do not show target artwork imagery before discovery.
+
+Artwork images may appear: - after successful verification - in
+completed treasure cards - in final collection - in parent mode where
+appropriate
+
+Store: - source URL - Met object URL - object ID where available - Open
+Access/rights status - attribution metadata
+
+If an image cannot legally be reproduced, show metadata and official
+artwork link instead.
+
+------------------------------------------------------------------------
+
+37. Official Met Links
+
+For each quest, store the current official Met collection page when
+available.
+
+Also include a maintained official museum map/visitor-map link for
+parents.
+
+Do not depend on external Met pages for core gameplay.
+
+External links should open in a new tab/window so game state is
+preserved.
+
+------------------------------------------------------------------------
+
+38. Animation
+
+Animations should be restrained.
+
+Appropriate: - subtle current-gallery pulse - checkmark transition -
+small sparkle/confetti effect after a verified treasure - card unlock
+animation - gentle route highlight
+
+Avoid: - continuous distracting motion - loud arcade effects - long
+blocking animations - excessive confetti
+
+Respect prefers-reduced-motion.
+
+------------------------------------------------------------------------
+
+39. Security and Cost Controls
+
+Because the app accepts image uploads and invokes a paid AI endpoint:
+
+Implement: - image MIME/type validation - upload size limits -
+server-side rate limiting - basic abuse protection - structured-output
+validation - request timeout handling - graceful AI failure states - no
+API secrets in client bundle
+
+Do not allow arbitrary user prompts to be forwarded to the vision model.
+
+The verification prompt should be generated server-side from known quest
+data.
+
+------------------------------------------------------------------------
+
+40. Privacy Copy
+
+Include concise parent-facing language explaining:
+
+-   Photos are used to check whether the child found the scavenger-hunt
+    detail.
+-   Photos are not intended to be permanently stored.
+-   The game does not require the child’s name, email, or GPS location.
+-   The game does not perform facial recognition.
+-   Players should avoid photographing other museum visitors.
+-   AI verification can be wrong; grown-up verification is always
+    available.
+
+Final production privacy language should reflect the actual deployed
+infrastructure and data practices, not merely this design intention.
+
+------------------------------------------------------------------------
+
+41. Future Quest Packs
+
+Design the application so the current hunt is one “quest pack,” not the
+only possible game.
+
+Future packs might cover: - Egyptian Art - Arms and Armor - American
+Wing - Greek and Roman Art - other museum routes
+
+Architecture should allow a future structure such as:
+
+interface QuestPack { id: string; title: string; museum: string; floor?:
+string; description: string; questIds: number[]; mapAsset: string; }
+
+Do not build future packs now, but avoid architecture that makes them
+difficult.
+
+------------------------------------------------------------------------
+
+42. MVP Acceptance Criteria
+
+The MVP is complete when:
+
+1.  All 10 canonical quests are implemented.
+2.  Every quest displays the correct gallery and exact approved riddle.
+3.  Approved riddles are not rewritten.
+4.  Artwork identity remains hidden during the hunt.
+5.  Each quest supports two progressive hints.
+6.  A child can invoke the mobile camera/photo picker.
+7.  A captured image can be previewed and retaken.
+8.  A submitted photo can be checked through a secure AI vision
+    endpoint.
+9.  Verification distinguishes verified, wrong/not found, and uncertain
+    states.
+10. The system can recognize a likely correct painting where the detail
+    needs a clearer image.
+11. AI uncertainty never blocks progression.
+12. Parent/manual verification is available.
+13. Camera permission is requested only after explicit user action.
+14. The game works without camera permission.
+15. Photos are not permanently stored by default.
+16. EXIF metadata is removed where practical before transmission.
+17. The app does not request GPS/location permission.
+18. A simplified interactive map shows the relevant museum area.
+19. All 10 game galleries are marked.
+20. Completed/current/upcoming states are visually and textually
+    distinct.
+21. Map supports mobile pan/zoom.
+22. Current destination can be opened from each quest.
+23. After solving a quest, the map directs the player toward the next
+    destination.
+24. Route lines follow actual traversable gallery relationships rather
+    than crossing walls.
+25. Progress persists across refresh/reopen.
+26. Core gameplay/map remain usable under weak connectivity.
+27. AI connectivity failure has a grown-up fallback.
+28. Final completion screen appears after all 10 quests.
+29. Completed discoveries appear in a treasure collection.
+30. Parent mode contains the full answer key and reset controls.
+31. The interface works cleanly at 375px width.
+32. iPhone Safari and Android Chrome are tested.
+33. Accessibility basics and reduced motion are implemented.
+34. No copyrighted artwork image is reproduced unless usage rights
+    permit it.
+35. No child account, name, email, GPS, or facial recognition is
+    required.
+
+------------------------------------------------------------------------
+
+43. Implementation Priority
+
+Build in this order:
+
+1.  Data architecture for quest packs and quests
+2.  Mobile visual system
+3.  Core quest flow
+4.  Local progress persistence
+5.  Camera/photo capture
+6.  Secure AI verification endpoint
+7.  Verification UX/fallback states
+8.  Simplified interactive gallery map
+9.  Quest-to-map navigation
+10. Treasure collection
+11. Parent mode
+12. Offline/PWA behavior
+13. Artwork images/attribution
+14. Accessibility pass
+15. Security/rate-limit pass
+16. Full mobile QA and polish
+
+------------------------------------------------------------------------
+
+44. Final Product Test
+
+Before considering the project complete, run the full experience from
+beginning to end on a mobile-sized viewport:
+
+Start screen → instructions → Gallery 810 clue → hint → photo capture →
+successful verification → treasure reveal → map → next gallery → repeat
+through Gallery 825 → final 10/10 completion → treasure collection
+
+Also test: - incorrect photo - unclear photo - correct painting but
+hidden detail not visible - camera denied - image upload instead of
+camera - AI timeout - offline/weak connection - grown-up verification -
+refresh mid-game - reset game - reduced-motion mode - map zoom/pan -
+parent mode
+
+The final experience should consistently reinforce one principle:
+
+THE CHILD SHOULD SPEND MORE TIME LOOKING AT ART THAN LOOKING AT THE
+PHONE.
