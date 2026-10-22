@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { Lock } from "lucide-react";
+import { statusFor, useArtworkStatus, withMetData } from "@/lib/artwork-status";
 import { isGalleryClosed, useClosures } from "@/lib/closures";
 import type { QuestReveal } from "@/data/types";
 import { loadReveals, openUnsolved, pack, questById, questNumber } from "@/lib/content";
@@ -15,6 +16,7 @@ export function CollectionScreen() {
   const progress = useProgress();
   const closures = useClosures();
   const reduce = useReducedMotion();
+  const artworks = useArtworkStatus();
   const [reveals, setReveals] = useState<QuestReveal[] | null>(null);
   useEffect(() => {
     if (progress.completedQuests.length) loadReveals().then(setReveals, () => {});
@@ -32,7 +34,8 @@ export function CollectionScreen() {
         {pack.questIds.map((id, i) => {
           const quest = questById(id)!;
           const solved = progress.completedQuests.includes(id);
-          const reveal = reveals?.find((r) => r.id === id);
+          const found = reveals?.find((r) => r.id === id);
+          const reveal = found && withMetData(found, statusFor(artworks, id));
           if (!solved) {
             return (
               <li key={id}>
