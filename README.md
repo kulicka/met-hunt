@@ -30,6 +30,18 @@ separate. Routes only use doorways marked `verified: true`; unknown doorways are
 shown with a "?" and never routed through. When no verified route exists, the
 map tells the player to use The Met's official map or ask a guard.
 
+### Artwork check
+
+Each time a server starts, `src/instrumentation.ts` looks up every quest artwork
+in The Met's open [Collection API](https://metmuseum.github.io/) in the
+background, and checks it again every 6 hours while the server runs. It flags
+artworks that are not on view, or that The Met lists in a different gallery. The
+results are in `GET /api/artworks` and in the grown-ups screen, and appear in the
+server logs as `[artworks] ...` lines. The check also fills in the Met link and,
+for public-domain works only, the image on reveal screens. The API has no gallery
+closures, so those stay in `data/closures.json`. Set `ARTWORK_CHECK=off` to turn
+the check off, or `MET_API_BASE` to point it at a mock.
+
 ## Privacy
 
 No accounts, names, emails, GPS, or facial recognition. Photos are resized and
