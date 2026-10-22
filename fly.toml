@@ -10,6 +10,9 @@ primary_region = 'ord'
 
 [env]
   PORT = '8080'
+  # The Fly runtime can set HOSTNAME to the machine id, overriding the Dockerfile's
+  # value; Next's standalone server then listens only on that name and the proxy can't reach it.
+  HOSTNAME = '0.0.0.0'
 
 [http_service]
   internal_port = 8080
