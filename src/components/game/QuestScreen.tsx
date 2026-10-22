@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Camera, ImageUp, Lightbulb, Map as MapIcon } from "lucide-react";
-import { isGalleryClosed } from "@/data/gallery-status";
+import { isGalleryClosed, useClosures } from "@/lib/closures";
 import { loadReveals, nextUnsolved, pack, questById, questNumber } from "@/lib/content";
 import { preparePhoto } from "@/lib/photo";
 import { completeQuest, updateProgress, useProgress, type VerificationMethod } from "@/lib/progress";
@@ -26,6 +26,7 @@ type Phase =
 export function QuestScreen({ id }: { id: number }) {
   const quest = questById(id);
   const progress = useProgress();
+  const closures = useClosures();
   const [phase, setPhase] = useState<Phase>({ kind: "clue" });
   const photo = useRef<{ blob: Blob; url: string } | null>(null);
   const camera = useRef<HTMLInputElement>(null);
@@ -43,7 +44,7 @@ export function QuestScreen({ id }: { id: number }) {
   const hintsUsed = progress.hintsUsed[id] ?? 0;
   const attempts = progress.attempts[id] ?? 0;
   const solved = progress.completedQuests.includes(id);
-  const closed = isGalleryClosed(quest.gallery);
+  const closed = isGalleryClosed(quest.gallery, closures);
 
   function discardPhoto() {
     if (photo.current) URL.revokeObjectURL(photo.current.url);
@@ -74,7 +75,7 @@ export function QuestScreen({ id }: { id: number }) {
 
   function finish(method: VerificationMethod) {
     discardPhoto();
-    completeQuest(id, method, nextUnsolved(id, [...progress.completedQuests, id]));
+    completeQuest(id, method, nextUnsolved(id, [...progress.completedQuests, id], closures));
     navigate({ name: "found", id }, { replace: true });
   }
 
@@ -259,10 +260,10 @@ export function QuestScreen({ id }: { id: number }) {
 
       {closed && !solved && (
         <Card className="border-burgundy/40">
-          <p className="font-semibold">This gallery is closed today.</p>
-          <p className="mt-1 text-ink-soft">You can skip this mystery and come back another visit.</p>
-          {nextUnsolved(id, progress.completedQuests) ? (
-            <Button className="mt-3" onClick={() => navigate({ name: "quest", id: nextUnsolved(id, progress.completedQuests)! })}>
+          <p className="font-semibold">This gallery is temporarily closed.</p>
+          <p className="mt-1 text-ink-soft">Please don’t go in. You can skip this mystery without losing anything and try it another visit.</p>
+          {nextUnsolved(id, progress.completedQuests, closures) ? (
+            <Button className="mt-3" onClick={() => navigate({ name: "quest", id: nextUnsolved(id, progress.completedQuests, closures)! })}>
               SKIP TO THE NEXT MYSTERY
             </Button>
           ) : (

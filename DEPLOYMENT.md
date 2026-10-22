@@ -100,5 +100,6 @@ pm2 restart met-hunt
 
 ## Before a museum visit
 
-Check The Met's [gallery closures page](https://www.metmuseum.org/visit/gallery-closures)
-and update `src/data/gallery-status.ts`, then redeploy.
+Check The Met’s [gallery closures page](https://www.metmuseum.org/de/plan-your-visit/gallery-closures)
+and update `data/closures.json` on the server. It is read on every request, so
+no rebuild or restart is needed. Phones pick it up the next time they have signal.

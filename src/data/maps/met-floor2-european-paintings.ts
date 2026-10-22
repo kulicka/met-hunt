@@ -1,84 +1,89 @@
-// Original schematic of the Floor 2 European Paintings wing. Only gallery
-// adjacency is modelled. Positions and doorways follow Alex's layout sketch of
-// 2026-10-22 (Central Park side at top, Fifth Avenue side at bottom); check them
-// against the current official Met map before launch.
+// Original schematic of the Floor 2 European Paintings wing (spec v2, section C).
+// Quest order lives in the quest pack; this file only describes physical space.
 //
-// col/row are cells on a coarse grid, not GPS or real-world coordinates.
+// RULES (spec v2):
+// - Only add a connection after checking it on The Met's current Floor 2 map or on site.
+// - A shared wall, consecutive numbers, or quest order never imply a doorway.
+// - Unknown connectivity is stored with verified: false and is never routed through.
+// - 817 and 818 are NOT directly connected (enforced by a test).
 
-export interface MapRoom {
-  gallery: string;
-  col: number;
-  row: number;
-  /** Display label when one cell stands for more than one gallery. */
-  label?: string;
+export interface GalleryNode {
+  id: string;
+  label: string;
+  /** Schematic grid column/row, not GPS or real-world coordinates. */
+  x: number;
+  y: number;
+  isQuestGallery: boolean;
+  floor: number;
 }
 
-export const rooms: MapRoom[] = [
-  { gallery: "820", col: 1, row: 0 },
-  { gallery: "823", col: 2, row: 0 },
-  { gallery: "826", col: 3, row: 0 },
-  { gallery: "830", col: 4, row: 0 },
-  { gallery: "819", col: 1, row: 1 },
-  { gallery: "822", col: 2, row: 1 },
-  { gallery: "825", col: 3, row: 1 },
-  { gallery: "828", col: 4, row: 1, label: "828/829" },
-  { gallery: "818", col: 1, row: 2 },
-  { gallery: "821", col: 2, row: 2 },
-  { gallery: "824", col: 3, row: 2 },
-  { gallery: "827", col: 4, row: 2 },
-  { gallery: "809", col: 0, row: 3 },
-  { gallery: "810", col: 1, row: 3 },
-  { gallery: "811", col: 2, row: 3 },
-  { gallery: "812", col: 3, row: 3 },
-  { gallery: "813", col: 0, row: 4 },
-  { gallery: "814", col: 1, row: 4 },
-  { gallery: "815", col: 2, row: 4 },
-  { gallery: "816", col: 3, row: 4 },
-  { gallery: "817", col: 4, row: 4 },
+export interface GalleryConnection {
+  id: string;
+  from: string;
+  to: string;
+  bidirectional: boolean;
+  type: "doorway" | "passage" | "corridor" | "stairs" | "elevator";
+  stepFree?: boolean;
+  verified: boolean;
+  source?: string;
+  verifiedAt?: string;
+}
+
+export interface RouteValidation {
+  fromQuestGallery: string;
+  toQuestGallery: string;
+  path: string[];
+  verifiedOn?: string;
+  verifiedBy: "official-map" | "onsite";
+  notes?: string;
+}
+
+const QUEST_GALLERIES = new Set(["810", "815", "816", "817", "818", "819", "821", "822", "824", "825"]);
+
+const node = (id: string, x: number, y: number, label = id): GalleryNode => ({
+  id,
+  label,
+  x,
+  y,
+  isQuestGallery: QUEST_GALLERIES.has(id),
+  floor: 2,
+});
+
+// Layout from Alex's sketch of 2026-10-22 (Central Park side at top).
+export const galleryNodes: GalleryNode[] = [
+  node("820", 1, 0), node("823", 2, 0), node("826", 3, 0), node("830", 4, 0),
+  node("819", 1, 1), node("822", 2, 1), node("825", 3, 1), node("828", 4, 1, "828/829"),
+  node("818", 1, 2), node("821", 2, 2), node("824", 3, 2), node("827", 4, 2),
+  node("809", 0, 3), node("810", 1, 3), node("811", 2, 3), node("812", 3, 3),
+  node("813", 0, 4), node("814", 1, 4), node("815", 2, 4), node("816", 3, 4), node("817", 4, 4),
 ];
 
-// Doorways between galleries. Routes may only travel along these.
-// Confirmed: there is no doorway between 817 and 818.
-// Unconfirmed (assumed until Alex checks): 818-810 and 810-814 link the three bands.
-export const doors: [string, string][] = [
-  ["820", "823"], ["823", "826"], ["826", "830"],
-  ["819", "822"], ["822", "825"], ["825", "828"],
-  ["818", "821"], ["821", "824"], ["824", "827"],
-  ["820", "819"], ["823", "822"], ["826", "825"],
-  ["819", "818"], ["822", "821"], ["825", "824"],
-  ["809", "810"], ["810", "811"], ["811", "812"],
-  ["813", "814"], ["814", "815"], ["815", "816"], ["816", "817"],
-  ["818", "810"],
-  ["810", "814"],
+const SKETCH = "Alex’s reading of The Met’s Floor 2 map (sketch sent 2026-10-22)";
+
+const edge = (from: string, to: string, verified: boolean, source = SKETCH): GalleryConnection => ({
+  id: `${from}-${to}`,
+  from,
+  to,
+  bidirectional: true,
+  type: "doorway",
+  verified,
+  source,
+  ...(verified ? { verifiedAt: "2026-10-22" } : {}),
+});
+
+export const galleryConnections: GalleryConnection[] = [
+  // Drawn as connected in the sketch.
+  edge("820", "823", true), edge("823", "826", true), edge("826", "830", true),
+  edge("819", "822", true), edge("822", "825", true), edge("825", "828", true),
+  edge("818", "821", true), edge("821", "824", true), edge("824", "827", true),
+  edge("820", "819", true), edge("823", "822", true), edge("826", "825", true),
+  edge("819", "818", true), edge("822", "821", true), edge("825", "824", true),
+  edge("809", "810", true), edge("810", "811", true), edge("811", "812", true),
+  edge("813", "814", true), edge("814", "815", true), edge("815", "816", true), edge("816", "817", true),
+  // How the three bands link is not yet known. Stored as unknown; never routed through.
+  edge("818", "810", false, "Alex’s first sketch; not shown in the second. Needs checking."),
+  edge("810", "813", false, "Alex’s first sketch; not shown in the second. Needs checking."),
 ];
 
-const neighbors = new Map<string, string[]>();
-for (const [a, b] of doors) {
-  neighbors.set(a, [...(neighbors.get(a) ?? []), b]);
-  neighbors.set(b, [...(neighbors.get(b) ?? []), a]);
-}
-for (const list of neighbors.values()) list.sort();
-
-/**
- * Shortest walk through doorways, including galleries passed through on the way.
- * Rooms in `avoid` are never walked through (e.g. temporarily closed galleries).
- * Returns null when no open walk exists.
- */
-export function walk(from: string, to: string, avoid: (gallery: string) => boolean = () => false): string[] | null {
-  const prev = new Map<string, string | null>([[from, null]]);
-  const queue = [from];
-  while (queue.length) {
-    const cur = queue.shift()!;
-    if (cur === to) break;
-    for (const n of neighbors.get(cur) ?? []) {
-      if (!prev.has(n) && (n === to || !avoid(n))) {
-        prev.set(n, cur);
-        queue.push(n);
-      }
-    }
-  }
-  if (!prev.has(to)) return null;
-  const path: string[] = [];
-  for (let at: string | null = to; at != null; at = prev.get(at) ?? null) path.unshift(at);
-  return path;
-}
+/** One record per quest transition, filled in after checking the official map or walking it. */
+export const routeValidations: RouteValidation[] = [];

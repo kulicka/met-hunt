@@ -3,7 +3,9 @@
 import { useEffect, useState } from "react";
 import { ExternalLink } from "lucide-react";
 import { OFFICIAL_MAP_URL } from "@/lib/links";
+import { useClosures } from "@/lib/closures";
 import { loadReveals, openUnsolved, pack, questById, questNumber } from "@/lib/content";
+import { findRoute } from "@/lib/routing";
 import { updateProgress, useProgress } from "@/lib/progress";
 import type { QuestReveal } from "@/data/types";
 import { navigate } from "./router";
@@ -18,9 +20,12 @@ interface Props {
 
 export function MapScreen({ focus, from }: Props) {
   const progress = useProgress();
-  const current = openUnsolved(progress.completedQuests).includes(progress.currentQuest)
-    ? progress.currentQuest
-    : openUnsolved(progress.completedQuests)[0];
+  const closures = useClosures();
+  const open = openUnsolved(progress.completedQuests, closures);
+  const current = open.includes(progress.currentQuest) ? progress.currentQuest : open[0];
+  const route =
+    from != null && current != null ? findRoute(questById(from)!.gallery, questById(current)!.gallery, closures) : undefined;
+  const closedGalleries = closures.filter((c) => c.galleryId && c.status === "closed").map((c) => c.galleryId!);
   const [selected, setSelected] = useState<number | null>(null);
   const [reveals, setReveals] = useState<QuestReveal[] | null>(null);
 
@@ -34,12 +39,12 @@ export function MapScreen({ focus, from }: Props) {
     navigate({ name: "quest", id });
   };
 
-  const states = pack.questIds.map((id) => ({ id, state: roomState(id, progress.completedQuests, current) }));
+  const states = pack.questIds.map((id) => ({ id, state: roomState(id, progress.completedQuests, closures, current) }));
   const stateText: Record<RoomState, string> = {
     found: "✓ Found",
     current: "● Next mystery",
     upcoming: "○ Still to discover",
-    closed: "Closed today",
+    closed: "Temporarily closed",
   };
 
   return (
@@ -54,10 +59,32 @@ export function MapScreen({ focus, from }: Props) {
         )}
       </header>
 
+      {route === null && current && (
+        <Card className="border-gold">
+          <p className="font-semibold uppercase tracking-widest">Next mystery: Gallery {questById(current)!.gallery}</p>
+          <p className="mt-1 text-lg">Gallery routes can change. Use The Met’s current map or ask a guard for the best way.</p>
+          <a
+            className="mt-3 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl border-2 border-ink bg-card px-4 font-semibold"
+            href={OFFICIAL_MAP_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            OPEN THE MET’S OFFICIAL MAP <ExternalLink aria-hidden size={18} />
+          </a>
+        </Card>
+      )}
+
+      {closedGalleries.length > 0 && (
+        <p className="rounded-xl bg-paper-deep px-4 py-2 text-center">
+          Temporarily closed: Gallery {closedGalleries.join(", ")}
+        </p>
+      )}
+
       <TreasureMap
         completed={progress.completedQuests}
+        closures={closures}
         current={current}
-        legFrom={from}
+        emphasis={route?.path}
         focus={focus ?? current}
         onSelect={setSelected}
       />
@@ -67,13 +94,14 @@ export function MapScreen({ focus, from }: Props) {
         <li>✓ Found</li>
         <li>● Current destination</li>
         <li>○ Still to discover</li>
-        <li>▨ Closed today</li>
+        <li>▨ Temporarily closed</li>
+        <li>? Doorway not yet confirmed</li>
       </ul>
 
       {selected != null && (
         <MarkerSheet
           id={selected}
-          state={roomState(selected, progress.completedQuests, current)}
+          state={roomState(selected, progress.completedQuests, closures, current)}
           reveal={reveals?.find((r) => r.id === selected)}
           onGo={() => goTo(selected)}
           onClose={() => setSelected(null)}
@@ -145,7 +173,7 @@ function MarkerSheet({
           </Button>
         </>
       ) : state === "closed" ? (
-        <p className="mt-1 text-lg">This gallery is closed today. You can skip this mystery.</p>
+        <p className="mt-1 text-lg">This gallery is temporarily closed. You can skip this mystery without losing anything.</p>
       ) : (
         <Button className="mt-3" onClick={onGo}>
           GO TO THIS MYSTERY

@@ -92,3 +92,14 @@ body {
   .tmap .pulse, .tmap .route-leg { animation: none; }
   .tmap .pulse { opacity: 0.6; }
 }
+
+.tmap .door--unknown rect { fill: none; stroke: var(--ink-soft); stroke-dasharray: 3 3; }
+.tmap .door--unknown text { font-size: 13px; font-weight: 700; fill: var(--ink-soft); }
+.tmap .door--closed rect { fill: url(#hatch); }
+.tmap .room--blocked .room-body { stroke: var(--burgundy); stroke-opacity: 0.4; }
+.tmap .closed-note { font-size: 12px; font-style: italic; }
+.tmap .schematic-label { font-size: 12px; letter-spacing: 0.2em; fill: var(--ink-soft); }
+.tmap .room--quiet-body { fill: var(--paper-deep); stroke: var(--line); stroke-width: 1.5; }
+.tmap .room--blocked-body { stroke: var(--burgundy); stroke-opacity: 0.4; }
+/* halo keeps labels readable where the route passes underneath */
+.tmap .labels .num, .tmap .labels .mark { paint-order: stroke; stroke: var(--card); stroke-width: 5px; stroke-linejoin: round; }

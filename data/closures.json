@@ -1,0 +1,18 @@
+{
+  "checkedAt": "2026-10-22",
+  "sourceUrl": "https://www.metmuseum.org/de/plan-your-visit/gallery-closures",
+  "closures": [
+    {
+      "galleryId": "813",
+      "status": "closed",
+      "note": "Partial closure listed under 19th and Early 20th Century European Paintings and Sculpture (page last updated October 20).",
+      "sourceUrl": "https://www.metmuseum.org/de/plan-your-visit/gallery-closures"
+    },
+    {
+      "galleryId": "814",
+      "status": "closed",
+      "note": "Partial closure listed under 19th and Early 20th Century European Paintings and Sculpture (page last updated October 20).",
+      "sourceUrl": "https://www.metmuseum.org/de/plan-your-visit/gallery-closures"
+    }
+  ]
+}

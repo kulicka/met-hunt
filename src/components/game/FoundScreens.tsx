@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { ExternalLink, Map as MapIcon } from "lucide-react";
-import { isGalleryClosed } from "@/data/gallery-status";
+import { isGalleryClosed, useClosures } from "@/lib/closures";
 import type { QuestReveal } from "@/data/types";
 import { loadReveals, pack, questById, questNumber } from "@/lib/content";
 import { useProgress } from "@/lib/progress";
@@ -104,7 +104,7 @@ export function ArtworkFigure({ reveal }: { reveal: QuestReveal }) {
         <span className="block font-semibold">{reveal.artist}</span>
         <span className="block font-serif text-xl italic">
           {reveal.artwork}
-          {reveal.year ? `, ${reveal.year}` : ""}
+          {reveal.year && !reveal.artwork.includes(reveal.year) ? `, ${reveal.year}` : ""}
         </span>
         {reveal.imageAttribution && <span className="block text-sm text-ink-soft">{reveal.imageAttribution}</span>}
       </figcaption>
@@ -114,11 +114,12 @@ export function ArtworkFigure({ reveal }: { reveal: QuestReveal }) {
 
 export function NextScreen({ from }: { from: number }) {
   const progress = useProgress();
+  const closures = useClosures();
   const reduce = useReducedMotion();
   const next = progress.completedQuests.includes(progress.currentQuest) ? null : progress.currentQuest;
-  const closedLeft = pack.questIds.filter((q) => !progress.completedQuests.includes(q) && isGalleryClosed(questById(q)!.gallery));
+  const closedLeft = pack.questIds.filter((q) => !progress.completedQuests.includes(q) && isGalleryClosed(questById(q)!.gallery, closures));
 
-  if (!next || isGalleryClosed(questById(next)!.gallery)) {
+  if (!next || isGalleryClosed(questById(next)!.gallery, closures)) {
     return (
       <Screen className="text-center">
         <motion.div initial={reduce ? false : { scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}>
@@ -127,7 +128,7 @@ export function NextScreen({ from }: { from: number }) {
         <h1 className="font-serif text-4xl font-bold">Treasure added!</h1>
         {closedLeft.length > 0 && (
           <p className="text-lg">
-            {closedLeft.length === 1 ? "One gallery is" : `${closedLeft.length} galleries are`} closed today, so the hunt ends here.
+            {closedLeft.length === 1 ? "One gallery is" : `${closedLeft.length} galleries are`} temporarily closed, so the hunt ends here.
           </p>
         )}
         <Button onClick={() => navigate({ name: "done" }, { replace: true })}>FINISH THE HUNT</Button>

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { ExternalLink } from "lucide-react";
-import { closedGalleries } from "@/data/gallery-status";
+import { isGalleryClosed, useClosures } from "@/lib/closures";
 import type { QuestReveal } from "@/data/types";
 import { GALLERY_CLOSURES_URL, OFFICIAL_MAP_URL } from "@/lib/links";
 import { loadReveals, nextUnsolved, pack, questById, questNumber } from "@/lib/content";
@@ -35,6 +35,7 @@ export function ParentsScreen() {
 
 function ParentsPanel() {
   const progress = useProgress();
+  const closures = useClosures();
   const [reveals, setReveals] = useState<QuestReveal[] | null>(null);
   useEffect(() => {
     loadReveals().then(setReveals, () => {});
@@ -42,7 +43,7 @@ function ParentsPanel() {
 
   const markFound = (id: number) => {
     if (window.confirm(`Mark Mystery #${questNumber(id)} as found?`)) {
-      completeQuest(id, "manual", nextUnsolved(id, [...progress.completedQuests, id]));
+      completeQuest(id, "manual", nextUnsolved(id, [...progress.completedQuests, id], closures));
     }
   };
 
@@ -68,7 +69,7 @@ function ParentsPanel() {
               <Card className="flex flex-col gap-1">
                 <p className="text-sm font-semibold uppercase tracking-widest text-ink-soft">
                   #{questNumber(id)} · Gallery {quest.gallery}
-                  {quest.gallery in closedGalleries && " · closed today"}
+                  {isGalleryClosed(quest.gallery, closures) && " · temporarily closed"}
                   {solved && " · found ✓"}
                 </p>
                 {r ? (
@@ -96,6 +97,17 @@ function ParentsPanel() {
           );
         })}
       </ol>
+
+      {closures.length > 0 && (
+        <Card>
+          <h2 className="font-serif text-2xl font-bold">Closed galleries</h2>
+          <p className="mt-2">
+            The Met lists Gallery {closures.map((c) => c.galleryId ?? c.connectionId).join(", ")} as temporarily closed.
+            Mysteries in a closed gallery can be skipped without penalty, and the map won’t send anyone through a closed
+            room. If no open route is known, the map suggests The Met’s official map or asking a guard.
+          </p>
+        </Card>
+      )}
 
       <Card>
         <h2 className="font-serif text-2xl font-bold">Photos and privacy</h2>

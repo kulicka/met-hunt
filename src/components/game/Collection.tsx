@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { Lock } from "lucide-react";
-import { isGalleryClosed } from "@/data/gallery-status";
+import { isGalleryClosed, useClosures } from "@/lib/closures";
 import type { QuestReveal } from "@/data/types";
 import { loadReveals, openUnsolved, pack, questById, questNumber } from "@/lib/content";
 import { resetProgress, useProgress } from "@/lib/progress";
@@ -13,13 +13,14 @@ import { Button, Card, Eyebrow, Screen, Title } from "./ui";
 
 export function CollectionScreen() {
   const progress = useProgress();
+  const closures = useClosures();
   const reduce = useReducedMotion();
   const [reveals, setReveals] = useState<QuestReveal[] | null>(null);
   useEffect(() => {
     if (progress.completedQuests.length) loadReveals().then(setReveals, () => {});
   }, [progress.completedQuests.length]);
 
-  const done = openUnsolved(progress.completedQuests).length === 0;
+  const done = openUnsolved(progress.completedQuests, closures).length === 0;
 
   return (
     <Screen>
@@ -41,7 +42,7 @@ export function CollectionScreen() {
                     <p className="font-semibold">
                       Mystery #{questNumber(id)} · Gallery {quest.gallery}
                     </p>
-                    <p className="text-ink-soft">{isGalleryClosed(quest.gallery) ? "Gallery closed today" : "Still hidden"}</p>
+                    <p className="text-ink-soft">{isGalleryClosed(quest.gallery, closures) ? "Gallery temporarily closed" : "Still hidden"}</p>
                   </div>
                 </Card>
               </li>
@@ -81,11 +82,12 @@ export function CollectionScreen() {
 
 export function FinalScreen() {
   const progress = useProgress();
+  const closures = useClosures();
   const reduce = useReducedMotion();
   const total = pack.questIds.length;
   const found = progress.completedQuests.length;
-  const closed = pack.questIds.filter((id) => !progress.completedQuests.includes(id) && isGalleryClosed(questById(id)!.gallery)).length;
-  const remaining = openUnsolved(progress.completedQuests);
+  const closed = pack.questIds.filter((id) => !progress.completedQuests.includes(id) && isGalleryClosed(questById(id)!.gallery, closures)).length;
+  const remaining = openUnsolved(progress.completedQuests, closures);
 
   if (remaining.length) {
     // Not finished yet; send them to what is left.
@@ -123,7 +125,7 @@ export function FinalScreen() {
       </p>
       {closed > 0 && (
         <p className="text-ink-soft">
-          {closed === 1 ? "One gallery was" : `${closed} galleries were`} closed today. Those treasures will wait for your next visit.
+          {closed === 1 ? "One gallery was" : `${closed} galleries were`} temporarily closed. Those treasures will wait for your next visit.
         </p>
       )}
       <Card className="mx-auto border-gold">

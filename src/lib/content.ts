@@ -1,4 +1,4 @@
-import { isGalleryClosed } from "@/data/gallery-status";
+import type { ClosureOverride } from "@/data/closures";
 import { hiddenTreasuresPack } from "@/data/hidden-treasures/pack";
 import { quests } from "@/data/hidden-treasures/quests";
 import type { QuestPublic, QuestReveal } from "@/data/types";
@@ -11,24 +11,27 @@ export const questById = (id: number) => packQuests.find((q) => q.id === id);
 
 export const questNumber = (id: number) => pack.questIds.indexOf(id) + 1;
 
+/** Canonical quest order as galleries (spec v2 questOrder). Game sequence only, not connectivity. */
+export const questOrder = pack.questIds.map((id) => questById(id)!.gallery);
+
 export const questByGallery = (gallery: string) => packQuests.find((q) => q.gallery === gallery);
 
-export const isQuestClosed = (id: number) => {
+export const isQuestClosed = (id: number, closures: ClosureOverride[]) => {
   const q = questById(id);
-  return q ? isGalleryClosed(q.gallery) : false;
+  return q ? closures.some((c) => c.galleryId === q.gallery && c.status === "closed") : false;
 };
 
 /** Quests the player can still do today: unsolved and not in a closed gallery. */
-export const openUnsolved = (completed: number[]) =>
-  pack.questIds.filter((id) => !completed.includes(id) && !isQuestClosed(id));
+export const openUnsolved = (completed: number[], closures: ClosureOverride[]) =>
+  pack.questIds.filter((id) => !completed.includes(id) && !isQuestClosed(id, closures));
 
 /** Next open, unsolved quest after `id` in route order, wrapping to any skipped ones. */
-export function nextUnsolved(id: number, completed: number[]): number | null {
+export function nextUnsolved(id: number, completed: number[], closures: ClosureOverride[]): number | null {
   const order = pack.questIds;
   const start = order.indexOf(id);
   for (let i = 1; i <= order.length; i++) {
     const candidate = order[(start + i) % order.length];
-    if (candidate !== id && !completed.includes(candidate) && !isQuestClosed(candidate)) return candidate;
+    if (candidate !== id && !completed.includes(candidate) && !isQuestClosed(candidate, closures)) return candidate;
   }
   return null;
 }
