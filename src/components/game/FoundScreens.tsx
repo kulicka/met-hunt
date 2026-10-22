@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { ExternalLink, Map as MapIcon } from "lucide-react";
+import { statusFor, useArtworkStatus, withMetData } from "@/lib/artwork-status";
 import { isGalleryClosed, useClosures } from "@/lib/closures";
 import type { QuestReveal } from "@/data/types";
 import { loadReveals, pack, questById, questNumber } from "@/lib/content";
@@ -19,7 +20,8 @@ export function useReveal(id: number) {
       () => setFailed(true),
     );
   }, [id]);
-  return { reveal, failed };
+  const artworks = useArtworkStatus();
+  return { reveal: reveal && withMetData(reveal, statusFor(artworks, id)), failed };
 }
 
 /** A few gold sparkles, once. Nothing at all with reduced motion. */

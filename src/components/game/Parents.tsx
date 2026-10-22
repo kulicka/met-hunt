@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { ExternalLink } from "lucide-react";
+import { statusFor, useArtworkStatus, withMetData } from "@/lib/artwork-status";
+import type { ArtworkStatus } from "@/lib/artworks";
 import { isGalleryClosed, useClosures } from "@/lib/closures";
 import type { QuestReveal } from "@/data/types";
 import { GALLERY_CLOSURES_URL, OFFICIAL_MAP_URL } from "@/lib/links";
@@ -12,6 +14,19 @@ import { navigate } from "./router";
 import { Button, Card, Eyebrow, Screen, Title } from "./ui";
 
 const linkClass = "inline-flex min-h-11 items-center gap-1 underline underline-offset-4";
+
+function artworkNote(a?: ArtworkStatus) {
+  switch (a?.check) {
+    case "off_view":
+      return "The Met lists this artwork as not on view right now.";
+    case "moved":
+      return `The Met lists this artwork in Gallery ${a.galleryNumber}, not Gallery ${a.expectedGallery}.`;
+    case "not_found":
+      return "Couldn’t match this artwork in The Met’s online collection. Check before your visit.";
+    default:
+      return null;
+  }
+}
 
 export function ParentsScreen() {
   const [open, setOpen] = useState(false);
@@ -36,6 +51,7 @@ export function ParentsScreen() {
 function ParentsPanel() {
   const progress = useProgress();
   const closures = useClosures();
+  const artworks = useArtworkStatus();
   const [reveals, setReveals] = useState<QuestReveal[] | null>(null);
   useEffect(() => {
     loadReveals().then(setReveals, () => {});
@@ -62,7 +78,9 @@ function ParentsPanel() {
       <ol className="flex flex-col gap-3">
         {pack.questIds.map((id) => {
           const quest = questById(id)!;
-          const r = reveals?.find((x) => x.id === id);
+          const found = reveals?.find((x) => x.id === id);
+          const r = found && withMetData(found, statusFor(artworks, id));
+          const note = artworkNote(statusFor(artworks, id));
           const solved = progress.completedQuests.includes(id);
           return (
             <li key={id}>
@@ -87,6 +105,7 @@ function ParentsPanel() {
                 ) : (
                   <p className="text-ink-soft">Loading…</p>
                 )}
+                {note && <p className="font-semibold text-burgundy">{note}</p>}
                 {!solved && (
                   <Button variant="quiet" className="-ml-2 self-start" onClick={() => markFound(id)}>
                     Mark as found
@@ -97,6 +116,14 @@ function ParentsPanel() {
           );
         })}
       </ol>
+
+      {artworks.checkedAt && (
+        <p className="text-sm text-ink-soft">
+          Artwork locations checked against The Met’s online collection on{" "}
+          {new Date(artworks.checkedAt).toLocaleString([], { dateStyle: "medium", timeStyle: "short" })}. Galleries
+          change often, so a guard can always help.
+        </p>
+      )}
 
       {closures.length > 0 && (
         <Card>
