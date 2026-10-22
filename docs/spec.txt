@@ -2,11 +2,11 @@ The Met: Hidden Treasures
 
 Full Technical & Product Specification
 
-Version: 1.0 Purpose: Implementation handoff for Claude / coding agent
+Version: 2.0 Purpose: Implementation handoff for Claude / coding agent
 
 ------------------------------------------------------------------------
 
-1. Product Overview
+1.  Product Overview
 
 Build a polished, mobile-first web app for a children’s scavenger hunt
 inside The Metropolitan Museum of Art in New York City.
@@ -51,26 +51,37 @@ way.
 
 ------------------------------------------------------------------------
 
-2. Core Product Principles
+2.  Core Product Principles
 
-1.  Physical discovery comes first.
-2.  Minimize screen time while the child is searching.
-3.  Do not show the target artwork before the child finds it.
-4.  Photo verification is the primary answer mechanism.
-5.  AI failure must never trap the child.
-6.  No account is required.
-7.  Do not request GPS/location permission.
-8.  Do not permanently store children’s submitted photographs by
+3.  Physical discovery comes first.
+
+4.  Minimize screen time while the child is searching.
+
+5.  Do not show the target artwork before the child finds it.
+
+6.  Photo verification is the primary answer mechanism.
+
+7.  AI failure must never trap the child.
+
+8.  No account is required.
+
+9.  Do not request GPS/location permission.
+
+10. Do not permanently store children’s submitted photographs by
     default.
-9.  The museum map is a navigation aid, not indoor GPS.
-10. Core riddles, progress, and map should remain usable when
+
+11. The museum map is a navigation aid, not indoor GPS.
+
+12. Core riddles, progress, and map should remain usable when
     connectivity is weak.
-11. Keep educational information short and optional.
-12. Design for children without making the visual design childish.
+
+13. Keep educational information short and optional.
+
+14. Design for children without making the visual design childish.
 
 ------------------------------------------------------------------------
 
-3. Start Screen
+3.  Start Screen
 
 Display:
 
@@ -97,7 +108,7 @@ Do not display target paintings, artists, or answers on this screen.
 
 ------------------------------------------------------------------------
 
-4. How to Play
+4.  How to Play
 
 Keep instructions short.
 
@@ -125,7 +136,7 @@ LET’S GO
 
 ------------------------------------------------------------------------
 
-5. Game Route
+5.  Game Route
 
 There are 10 quests.
 
@@ -153,7 +164,7 @@ updated without rewriting UI code.
 
 ------------------------------------------------------------------------
 
-6. Quest Screen
+6.  Quest Screen
 
 At the top:
 
@@ -198,7 +209,7 @@ fallback/parent mode.
 
 ------------------------------------------------------------------------
 
-7. Hint System
+7.  Hint System
 
 Each quest has two progressive hints.
 
@@ -212,7 +223,7 @@ Track hint usage in local progress data.
 
 ------------------------------------------------------------------------
 
-8. Photo Capture
+8.  Photo Capture
 
 Photo verification is the primary answer mechanism.
 
@@ -255,7 +266,7 @@ The entire game must remain usable without camera permission.
 
 ------------------------------------------------------------------------
 
-9. Photo Processing
+9.  Photo Processing
 
 Before upload, where practical: - resize very large photographs
 client-side - compress the image to a reasonable upload size - normalize
@@ -1290,3 +1301,348 @@ The final experience should consistently reinforce one principle:
 
 THE CHILD SHOULD SPEND MORE TIME LOOKING AT ART THAN LOOKING AT THE
 PHONE.
+
+======================================================================
+VERSION 2.0 ROUTING & MAP UPDATE — CONTROLLING REQUIREMENTS Updated:
+October 21, 2026
+======================================================================
+
+This section is part of the specification and SUPERSEDES any conflicting
+map, route, adjacency, or gallery-connection language elsewhere in this
+file.
+
+The canonical riddles, artworks, hidden objects, photo-verification
+flow, privacy requirements, and other product requirements remain
+unchanged.
+
+  ---------------------------------------------
+  A. QUEST ORDER IS NOT PHYSICAL CONNECTIVITY
+  ---------------------------------------------
+
+Canonical quest order:
+
+1.  Gallery 810
+2.  Gallery 815
+3.  Gallery 816
+4.  Gallery 817
+5.  Gallery 818
+6.  Gallery 819
+7.  Gallery 821
+8.  Gallery 822
+9.  Gallery 824
+10. Gallery 825
+
+This list controls game sequence ONLY.
+
+Never assume that consecutive quest galleries share a doorway.
+
+Never infer a doorway because: - gallery numbers are consecutive; -
+rooms look close on a schematic; - rooms share a wall; - one quest
+follows another.
+
+A shared wall does not imply a doorway.
+
+HARD CONSTRAINT:
+
+Gallery 817 and Gallery 818 MUST NOT be modeled as directly connected.
+
+questOrder may contain:
+
+817 → 818
+
+but galleryConnections MUST NOT contain:
+
+817 ↔ 818
+
+The Quest 4 → Quest 5 transition must use the actual intervening public
+circulation route verified from the current Met map or by on-site
+inspection.
+
+A straight route line from 817 to 818 through a wall is a product bug.
+
+  ---------------------------------
+  B. AUTHORITATIVE ROUTING SOURCE
+  ---------------------------------
+
+Use The Metropolitan Museum of Art’s CURRENT Floor 2 map / interactive
+map as the authoritative reference for:
+
+-   gallery placement;
+-   public circulation;
+-   doorway/pass-through connectivity;
+-   temporary gallery closures;
+-   step-free routing when relevant.
+
+Relevant department:
+
+19th- and Early 20th-Century European Paintings and Sculpture, Floor 2.
+
+Hunt galleries:
+
+810, 815, 816, 817, 818, 819, 821, 822, 824, 825
+
+Nearby and intervening galleries may be included as navigation nodes
+even when they contain no scavenger-hunt quest.
+
+Do not guess an individual doorway from a flat room rectangle. If
+doorway connectivity cannot be verified, store it as unknown and do not
+route through it.
+
+  -------------------------
+  C. SEPARATE DATA MODELS
+  -------------------------
+
+Maintain at least these independent concepts:
+
+1.  questOrder
+2.  galleryNodes
+3.  galleryConnections
+4.  closureOverrides
+5.  routeValidations
+
+Example quest order:
+
+export const questOrder = [ 810, 815, 816, 817, 818, 819, 821, 822, 824,
+825,];
+
+Gallery nodes:
+
+interface GalleryNode { id: number | string; label: string; x: number;
+y: number; isQuestGallery: boolean; floor: number; }
+
+Verified physical connections:
+
+interface GalleryConnection { id: string; from: number | string; to:
+number | string; bidirectional: boolean; type: “doorway” | “passage” |
+“corridor” | “stairs” | “elevator”; stepFree?: boolean; verified:
+boolean; source?: string; verifiedAt?: string; }
+
+Temporary closure override:
+
+interface ClosureOverride { galleryId?: number | string; connectionId?:
+string; status: “closed” | “restricted”; effectiveDate?: string; note?:
+string; sourceUrl?: string; }
+
+Route validation:
+
+interface RouteValidation { fromQuestGallery: number; toQuestGallery:
+number; path: Array<number | string>; verifiedOn?: string; verifiedBy:
+“official-map” | “onsite”; notes?: string; }
+
+Never put an edge into galleryConnections merely because it seems
+plausible.
+
+  -------------------
+  D. ROUTING ENGINE
+  -------------------
+
+When a player finishes a quest:
+
+1.  Read the current quest gallery.
+2.  Read the next quest gallery from questOrder.
+3.  Load verified galleryConnections.
+4.  Apply closureOverrides.
+5.  Remove unavailable nodes/edges.
+6.  Find a valid walkable path.
+7.  Render only the verified path edges.
+
+A simple BFS or Dijkstra implementation is sufficient for MVP.
+
+Do NOT: - route by Euclidean distance alone; - draw a straight line
+between quest markers; - route through a wall; - route through
+staff-only space; - silently use an unverified edge.
+
+If no verified route exists, do not invent one.
+
+Instead display:
+
+NEXT MYSTERY: GALLERY XXX
+
+Gallery routes can change. Use The Met’s current map or ask a guard for
+the best way.
+
+Actions:
+
+OPEN THE MET’S OFFICIAL MAP I’M THERE — SHOW MY CLUE
+
+  ---------------------------------
+  E. CURRENT CLOSURES ARE DYNAMIC
+  ---------------------------------
+
+Gallery closures are operational data, not canonical game content.
+
+As of the current Met closure information checked on October 21, 2026,
+the museum’s page (last updated October 20) lists Galleries 813–814 as
+temporarily closed in this department.
+
+This must NOT be hard-coded as permanently true.
+
+Before production deployment and ideally before a live game session,
+check the current official Met closure page/map.
+
+Model:
+
+interface GalleryAvailability { galleryId: number; status: “open” |
+“closed” | “unknown”; checkedAt?: string; sourceUrl?: string; }
+
+If a QUEST gallery is closed: - mark the quest temporarily
+unavailable; - do not direct the child into the closed gallery; - allow
+the quest to be skipped without penalty; - preserve the canonical quest
+for future use; - explain the situation in Parent Mode.
+
+If an INTERMEDIATE routing gallery is closed: - remove it from
+pathfinding; - find another VERIFIED path; - if none exists, use the
+official-map/guard fallback.
+
+Never alter a riddle because of a temporary closure.
+
+  --------------
+  F. MAP ASSET
+  --------------
+
+Do not copy or mechanically trace The Met’s published visitor map unless
+usage rights explicitly permit that.
+
+Create an original simplified SVG schematic based on verified current
+spatial relationships.
+
+The map should:
+
+-   focus on the relevant Floor 2 area;
+-   emphasize the 10 hunt galleries;
+-   show necessary intervening navigation spaces;
+-   include only verified connections;
+-   be labeled “SCHEMATIC — NOT TO SCALE”;
+-   support pan and pinch-to-zoom;
+-   show completed/current/upcoming/unavailable states.
+
+Include:
+
+OPEN THE MET’S OFFICIAL MAP ↗
+
+The app’s schematic is a game/navigation aid, not an architectural plan
+and not live indoor positioning.
+
+Do not request GPS.
+
+  ------------------------
+  G. ROUTE VISUALIZATION
+  ------------------------
+
+Do not draw one dotted line directly from one quest marker to the next
+unless a verified physical edge supports that exact transition.
+
+Instead, render the route as a sequence of graph edges.
+
+For example, Quest 4 → Quest 5 must be:
+
+817 → [verified intervening public circulation nodes] → 818
+
+NOT:
+
+817 → 818
+
+The exact intervening nodes must be established from current
+authoritative map data or manual on-site verification before production.
+
+Non-game galleries may be shown in subdued styling when they are
+required to explain or traverse the route.
+
+  --------------------
+  H. QUEST-TO-MAP UX
+  --------------------
+
+Every quest screen:
+
+📍 Gallery XXX 🗺 SHOW ON TREASURE MAP
+
+After a verified treasure:
+
+TREASURE FOUND! 🎉
+
+YOUR NEXT MYSTERY Gallery XXX
+
+🗺 SHOW ME THE WAY
+
+The map then shows: - previous quest gallery as completed; - next quest
+gallery highlighted; - verified path between them; - necessary
+intermediate spaces; - closure warnings where applicable.
+
+Then:
+
+I’M THERE — SHOW MY CLUE
+
+The player manually confirms arrival. The app must not claim to know the
+child’s physical indoor position.
+
+  --------------------------------------------
+  I. REQUIRED ROUTE VALIDATION BEFORE LAUNCH
+  --------------------------------------------
+
+Manually validate all nine quest transitions:
+
+810 → 815 815 → 816 816 → 817 817 → 818 818 → 819 819 → 821 821 → 822
+822 → 824 824 → 825
+
+For every transition, store a RouteValidation record.
+
+Validation must confirm: - every edge is publicly walkable; - no route
+crosses a wall; - no currently closed gallery is required; - no
+staff-only area is used; - step-free status is not claimed unless
+verified.
+
+SPECIAL AUTOMATED TEST:
+
+The implementation must reject a direct 817 ↔ 818 gallery edge.
+
+Example invariant:
+
+expect( galleryConnections.some( edge => (edge.from === 817 && edge.to
+=== 818) || (edge.from === 818 && edge.to === 817) ) ).toBe(false);
+
+Do not replace this test with visual inspection alone.
+
+  --------------------------------------------
+  J. UPDATED MAP/Routing ACCEPTANCE CRITERIA
+  --------------------------------------------
+
+In addition to all original MVP acceptance criteria:
+
+1.  questOrder and galleryConnections are separate.
+2.  No doorway is inferred solely from numbering or proximity.
+3.  Gallery 817 and Gallery 818 are not directly connected in the graph.
+4.  The 817→818 quest transition uses verified intermediate circulation
+    nodes or falls back to the official Met map.
+5.  Temporary closures can disable galleries or edges without changing
+    canonical quest content.
+6.  Pathfinding never draws a route through a wall.
+7.  Unknown connectivity is surfaced as unknown instead of guessed.
+8.  Non-game galleries can function as intermediate navigation nodes.
+9.  All nine quest-to-quest transitions have RouteValidation records
+    before production launch.
+10. Current closure information can be updated independently of app
+    code.
+11. The map is clearly labeled as schematic/not to scale.
+12. No GPS or live indoor-location claim is made.
+
+  ---------------------
+  K. UPDATED QA TESTS
+  ---------------------
+
+Add these cases to final QA:
+
+-   direct 817→818 edge is rejected;
+-   valid 817→818 intervening route renders when verified;
+-   unknown 817→818 route triggers official-map fallback;
+-   a closed intermediate gallery causes route recalculation;
+-   a closed quest gallery becomes temporarily unavailable;
+-   a non-game gallery can be used as an intermediate path node;
+-   no SVG route segment crosses a room boundary without a verified
+    edge;
+-   quest order remains unchanged when route geometry changes;
+-   closure overrides do not modify canonical riddles;
+-   official-map fallback preserves game progress.
+
+======================================================================
+END VERSION 2.0 ROUTING & MAP UPDATE
+======================================================================

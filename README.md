@@ -5,7 +5,7 @@ Early 20th-Century European Paintings galleries on Floor 2. Each gallery hides
 one small detail in one painting. The child reads a riddle, finds the detail,
 photographs it, and an AI vision check confirms the discovery.
 
-The full product spec is in [`docs/spec.txt`](docs/spec.txt).
+The full product spec is in [`docs/spec.txt`](docs/spec.txt) (v2.0; its routing section overrides earlier map text).
 
 ## Stack
 
@@ -22,7 +22,13 @@ Quest content is data, not UI code, and is split by who may see it:
 | `src/data/hidden-treasures/quests.ts` | gallery, riddle, hints | yes |
 | `src/data/hidden-treasures/reveals.ts` | artist, title, answer, fact | only after a find, or in grown-up mode |
 | `src/data/hidden-treasures/verification.server.ts` | AI verification targets | never |
-| `src/data/maps/met-floor2-european-paintings.ts` | map rooms and doorways | yes |
+| `src/data/maps/met-floor2-european-paintings.ts` | map nodes, verified doorways, route validations | yes |
+| `data/closures.json` | current temporary gallery closures, read at runtime | yes |
+
+Quest order (game sequence) and gallery connections (physical doorways) are
+separate. Routes only use doorways marked `verified: true`; unknown doorways are
+shown with a "?" and never routed through. When no verified route exists, the
+map tells the player to use The Met's official map or ask a guard.
 
 ## Privacy
 
@@ -33,5 +39,8 @@ stripped of EXIF on the phone, sent only to check the find, and discarded after.
 
 ```bash
 npm install
-npm run dev
+npm run dev          # VERIFY_MOCK_STATUS=verified npm run dev fakes photo checks locally
+npm test             # LAUNCH_CHECK=1 npm test also requires all route validations
 ```
+
+Set `ANTHROPIC_API_KEY` for real photo checks. Deployment: [DEPLOYMENT.md](DEPLOYMENT.md).
