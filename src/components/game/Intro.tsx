@@ -1,38 +1,79 @@
 "use client";
 
 import { pack } from "@/lib/content";
-import { useProgress, updateProgress } from "@/lib/progress";
+import { useAvatar } from "@/lib/profile";
+import { startAdventure, useProgress } from "@/lib/progress";
+import { AvatarArt } from "./AvatarArt";
+import { RestartButton } from "./Lifecycle";
 import { navigate } from "./router";
-import { Button, Card, Eyebrow, Screen, Title } from "./ui";
+import { Button, Card, Eyebrow, ProgressDots, Screen, Title } from "./ui";
 
 export function StartScreen() {
   const progress = useProgress();
-  const resume = progress.gameStarted;
+  const avatar = useAvatar();
+  const count = progress.completedQuests.length;
+  const total = pack.questIds.length;
 
-  const start = () => {
-    updateProgress((p) => ({ ...p, gameStarted: true }));
+  const go = () => {
+    startAdventure();
     navigate({ name: "quest", id: progress.currentQuest });
   };
 
+  let heading: string;
+  let copy: string;
+  let primary: { label: string; onClick: () => void } | null = { label: "START MY ADVENTURE", onClick: go };
+  switch (progress.status) {
+    case "in_progress":
+      heading = `Welcome back, ${avatar.displayName}!`;
+      copy = `You found ${count} of ${total} treasures.`;
+      primary = { label: "CONTINUE ADVENTURE", onClick: go };
+      break;
+    case "ended_early":
+      heading = `Welcome back, ${avatar.displayName}!`;
+      copy = `You ended your last hunt with ${count} of ${total} treasures. Pick up where you left off, or begin again.`;
+      primary = { label: "CONTINUE THIS ADVENTURE", onClick: go };
+      break;
+    case "completed":
+      heading = `Hello again, ${avatar.displayName}!`;
+      copy = `You found all ${total} Hidden Treasures. Ready for another hunt?`;
+      primary = null;
+      break;
+    default:
+      heading = `Ready for another adventure, ${avatar.displayName}?`;
+      copy = "Somewhere inside each gallery, a tiny detail is hiding in plain sight. Read the clue. Look carefully. Find the treasure.";
+      primary = { label: "START THE HUNT", onClick: go };
+  }
+  const finished = progress.status === "ended_early" || progress.status === "completed";
+
   return (
     <Screen className="min-h-dvh justify-center text-center">
-      <div aria-hidden className="mx-auto text-5xl">🔎</div>
-      <Eyebrow>The Met</Eyebrow>
-      <Title className="text-5xl">Hidden Treasures</Title>
-      <p className="font-serif text-2xl text-ink-soft">{pack.description}</p>
-      <p className="text-lg leading-relaxed">
-        Somewhere inside each gallery, a tiny detail is hiding in plain sight. Read the clue. Look carefully. Find the
-        treasure.
-      </p>
-      <div className="mt-4 flex flex-col gap-3">
-        <Button onClick={start}>{resume ? "CONTINUE THE HUNT" : "START THE HUNT"}</Button>
-        <Button variant="secondary" onClick={() => navigate({ name: "how" })}>
-          How to Play
+      <AvatarArt asset={avatar.imageAsset} size={112} className="mx-auto" />
+      <Eyebrow>The Met · Hidden Treasures</Eyebrow>
+      <Title className="text-4xl">{heading}</Title>
+      <p className="text-lg leading-relaxed">{copy}</p>
+      {finished && <ProgressDots completed={progress.completedQuests} />}
+      <div className="mt-2 flex flex-col gap-3">
+        {primary && <Button onClick={primary.onClick}>{primary.label}</Button>}
+        {finished && (
+          <Button variant="secondary" onClick={() => navigate({ name: "collection" })}>
+            SEE MY TREASURES
+          </Button>
+        )}
+        {finished && <RestartButton label="START A NEW ADVENTURE" />}
+        {!finished && (
+          <Button variant="secondary" onClick={() => navigate({ name: "how" })}>
+            How to Play
+          </Button>
+        )}
+      </div>
+      <div className="mt-4 flex flex-wrap justify-center gap-x-4">
+        <Button variant="quiet" onClick={() => navigate({ name: "explorer" })}>
+          Change Explorer
+        </Button>
+        <Button variant="quiet" onClick={() => navigate({ name: "parents" })}>
+          For grown-ups
         </Button>
       </div>
-      <Button variant="quiet" className="mx-auto mt-6" onClick={() => navigate({ name: "parents" })}>
-        For grown-ups
-      </Button>
     </Screen>
   );
 }
@@ -80,7 +121,7 @@ export function HowToPlay() {
       </Card>
       <Button
         onClick={() => {
-          updateProgress((p) => ({ ...p, gameStarted: true }));
+          startAdventure();
           navigate({ name: "quest", id: progress.currentQuest });
         }}
       >

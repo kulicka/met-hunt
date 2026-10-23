@@ -1,0 +1,134 @@
+"use client";
+
+import { useState } from "react";
+import { avatarById, avatars } from "@/data/avatars";
+import { AGE_CHOICES, type AgeChoice } from "@/lib/adventure";
+import { finishOnboarding, setAge, setAvatar, useProfile } from "@/lib/profile";
+import { playQuest, useProgress } from "@/lib/progress";
+import { AvatarArt } from "./AvatarArt";
+import { navigate } from "./router";
+import { Button, Eyebrow, Screen, Title } from "./ui";
+
+// First launch: age, then explorer, then ready. No name, birthday, email, or
+// account is ever asked for. Choices are saved as they are made, so a closed
+// tab resumes where it stopped.
+
+const tile =
+  "flex items-center justify-center rounded-2xl border-2 bg-card font-semibold transition focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-burgundy";
+const tileState = (selected: boolean) => (selected ? "border-burgundy bg-burgundy/10 ring-2 ring-burgundy" : "border-line hover:border-ink-soft");
+
+export function AgePicker({ value, onPick }: { value?: AgeChoice; onPick: (age: AgeChoice) => void }) {
+  return (
+    <fieldset>
+      <legend className="mb-3 font-serif text-2xl font-bold">How old are you?</legend>
+      <div className="grid grid-cols-4 gap-3">
+        {AGE_CHOICES.map((age) => (
+          <label key={age} className={`${tile} ${tileState(value === age)} min-h-16 cursor-pointer text-2xl has-[:focus-visible]:outline-3 has-[:focus-visible]:outline-burgundy`}>
+            <input type="radio" name="age" className="sr-only" checked={value === age} onChange={() => onPick(age)} />
+            {age}
+          </label>
+        ))}
+      </div>
+    </fieldset>
+  );
+}
+
+export function ExplorerPicker({ value, onPick }: { value?: string; onPick: (id: string) => void }) {
+  return (
+    <fieldset>
+      <legend className="sr-only">Choose your explorer</legend>
+      <div className="grid grid-cols-2 gap-3">
+        {avatars.map((a) => (
+          <label
+            key={a.id}
+            className={`${tile} ${tileState(value === a.id)} cursor-pointer flex-col justify-start gap-1 p-3 text-center has-[:focus-visible]:outline-3 has-[:focus-visible]:outline-burgundy`}
+          >
+            <input type="radio" name="explorer" className="sr-only" checked={value === a.id} onChange={() => onPick(a.id)} />
+            <AvatarArt asset={a.imageAsset} size={88} />
+            <span className="font-serif text-2xl font-bold">{a.displayName}</span>
+            <span className="text-sm font-normal leading-snug text-ink-soft">{a.description}</span>
+          </label>
+        ))}
+      </div>
+    </fieldset>
+  );
+}
+
+type Step = "age" | "explorer" | "ready";
+
+export function Onboarding() {
+  const profile = useProfile();
+  const progress = useProgress();
+  const [step, setStep] = useState<Step>(profile?.age ? (profile.avatarId ? "ready" : "explorer") : "age");
+  if (!profile) return null;
+  const avatar = avatarById(profile.avatarId);
+  // Players from before onboarding existed keep their hunt.
+  const resuming = progress.status !== "not_started";
+
+  if (step === "age") {
+    return (
+      <Screen className="min-h-dvh justify-center">
+        <div className="text-center">
+          <div aria-hidden className="text-5xl">🔎</div>
+          <Eyebrow>The Met · Hidden Treasures</Eyebrow>
+          <Title className="mt-2">WELCOME, DETECTIVE!</Title>
+          <p className="mt-3 text-lg">Before we enter the museum, let’s get your explorer identity ready.</p>
+        </div>
+        <AgePicker value={profile.age} onPick={setAge} />
+        <Button disabled={!profile.age} className="disabled:opacity-40" onClick={() => setStep("explorer")}>
+          CONTINUE
+        </Button>
+      </Screen>
+    );
+  }
+
+  if (step === "explorer") {
+    return (
+      <Screen>
+        <Title className="text-center">CHOOSE YOUR EXPLORER</Title>
+        <ExplorerPicker value={profile.avatarId} onPick={setAvatar} />
+        <div className="sticky bottom-0 -mx-5 flex flex-col gap-2 bg-paper/95 px-5 pb-4 pt-3 backdrop-blur">
+          <Button disabled={!profile.avatarId} className="disabled:opacity-40" onClick={() => setStep("ready")}>
+            CONTINUE
+          </Button>
+          <Button variant="quiet" className="mx-auto" onClick={() => setStep("age")}>
+            Back to age
+          </Button>
+        </div>
+      </Screen>
+    );
+  }
+
+  const start = () => {
+    finishOnboarding();
+    if (progress.status === "completed") return navigate({ name: "start" }, { replace: true });
+    playQuest(progress.currentQuest);
+    navigate({ name: "quest", id: progress.currentQuest }, { replace: true });
+  };
+
+  return (
+    <Screen className="min-h-dvh justify-center text-center">
+      <AvatarArt asset={avatar.imageAsset} size={160} className="mx-auto" />
+      <Title>Great choice, {avatar.displayName}!</Title>
+      <p className="text-xl">{resuming ? "Your mystery is waiting where you left it." : "Your first mystery is waiting."}</p>
+      <Button onClick={start}>{resuming ? "CONTINUE ADVENTURE" : "START MY ADVENTURE"}</Button>
+      <Button variant="quiet" className="mx-auto" onClick={() => setStep("explorer")}>
+        Back
+      </Button>
+    </Screen>
+  );
+}
+
+/** Settings: change explorer or age without touching hunt progress. */
+export function EditProfile({ field }: { field: "explorer" | "age" }) {
+  const profile = useProfile();
+  if (!profile) return null;
+  return (
+    <Screen>
+      <Title>{field === "explorer" ? "Change Explorer" : "Edit Age"}</Title>
+      <p className="text-ink-soft">Your treasures and progress stay just as they are.</p>
+      {field === "explorer" ? <ExplorerPicker value={profile.avatarId} onPick={setAvatar} /> : <AgePicker value={profile.age} onPick={setAge} />}
+      <Button onClick={() => history.back()}>DONE</Button>
+    </Screen>
+  );
+}

@@ -1,33 +1,31 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
+import { hiddenTreasuresPack } from "@/data/hidden-treasures/pack";
+import {
+  begin,
+  endEarly,
+  freshAdventure,
+  parseAdventure,
+  restart,
+  solve,
+  type AdventureState,
+  type VerificationMethod,
+} from "./adventure";
 
-// Local-only progress. Never holds photos, names, emails, or locations.
+// Local-only adventure progress. Never holds photos, names, emails, or locations.
+// The player profile (age, explorer) is stored separately in profile.ts.
 
-export type VerificationMethod = "ai-photo" | "grown-up" | "manual";
+export type { AdventureState, VerificationMethod } from "./adventure";
 
-export interface GameProgress {
-  gameStarted: boolean;
-  currentQuest: number;
-  completedQuests: number[];
-  hintsUsed: Record<number, number>;
-  /** Photo checks per quest that came back unsure or failed to connect. */
-  attempts: Record<number, number>;
-  verificationMethod: Record<number, VerificationMethod>;
-}
+const KEY = "met-hidden-treasures:adventure:v2";
+const LEGACY_KEY = "met-hidden-treasures:progress:v1";
+const questIds = hiddenTreasuresPack.questIds;
+const firstQuest = questIds[0];
 
-const KEY = "met-hidden-treasures:progress:v1";
+export const initialProgress: AdventureState = freshAdventure(firstQuest);
 
-export const initialProgress: GameProgress = {
-  gameStarted: false,
-  currentQuest: 1,
-  completedQuests: [],
-  hintsUsed: {},
-  attempts: {},
-  verificationMethod: {},
-};
-
-let current: GameProgress = initialProgress;
+let current: AdventureState = initialProgress;
 let loaded = false;
 const listeners = new Set<() => void>();
 
@@ -35,10 +33,10 @@ function load() {
   if (loaded || typeof window === "undefined") return;
   loaded = true;
   try {
-    const raw = window.localStorage.getItem(KEY);
-    if (raw) current = { ...initialProgress, ...JSON.parse(raw) };
+    const raw = window.localStorage.getItem(KEY) ?? window.localStorage.getItem(LEGACY_KEY);
+    if (raw) current = parseAdventure(JSON.parse(raw), questIds);
   } catch {
-    // Storage blocked (private mode): progress lasts for this visit only.
+    // Storage blocked (private mode) or unreadable: start fresh for this visit.
   }
 }
 
@@ -50,20 +48,16 @@ function persist() {
   }
 }
 
-export function getProgress(): GameProgress {
+export function getProgress(): AdventureState {
   load();
   return current;
 }
 
-export function updateProgress(change: (p: GameProgress) => GameProgress) {
+export function updateProgress(change: (p: AdventureState) => AdventureState) {
   load();
-  current = change(current);
-  persist();
-  listeners.forEach((l) => l());
-}
-
-export function resetProgress() {
-  current = initialProgress;
+  const next = change(current);
+  if (next === current) return;
+  current = next;
   persist();
   listeners.forEach((l) => l());
 }
@@ -73,16 +67,25 @@ function subscribe(listener: () => void) {
   return () => listeners.delete(listener);
 }
 
-export function useProgress(): GameProgress {
+export function useProgress(): AdventureState {
   return useSyncExternalStore(subscribe, getProgress, () => initialProgress);
 }
 
+/** Start a new adventure or continue an ended one. */
+export const startAdventure = () => updateProgress(begin);
+
+/** The player is working on quest `id` (opened it, or picked it on the map). */
+export const playQuest = (id: number) =>
+  updateProgress((p) => {
+    const started = begin(p);
+    return started.currentQuest === id ? started : { ...started, currentQuest: id };
+  });
+
+export const endAdventure = () => updateProgress(endEarly);
+
+/** Clears all hunt progress. Age and explorer are kept. */
+export const restartAdventure = () => updateProgress(() => restart(firstQuest));
+
 export function completeQuest(id: number, method: VerificationMethod, nextQuest: number | null) {
-  updateProgress((p) => ({
-    ...p,
-    gameStarted: true,
-    completedQuests: p.completedQuests.includes(id) ? p.completedQuests : [...p.completedQuests, id],
-    verificationMethod: { ...p.verificationMethod, [id]: method },
-    currentQuest: nextQuest ?? p.currentQuest,
-  }));
+  updateProgress((p) => solve(p, id, method, nextQuest, questIds));
 }

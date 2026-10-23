@@ -7,10 +7,13 @@ import { statusFor, useArtworkStatus, withMetData } from "@/lib/artwork-status";
 import { isGalleryClosed, useClosures } from "@/lib/closures";
 import type { QuestReveal } from "@/data/types";
 import { loadReveals, openUnsolved, pack, questById, questNumber } from "@/lib/content";
-import { resetProgress, useProgress } from "@/lib/progress";
+import { useAvatar } from "@/lib/profile";
+import { startAdventure, useProgress } from "@/lib/progress";
+import { AvatarArt } from "./AvatarArt";
 import { ArtworkFigure } from "./FoundScreens";
+import { RestartButton } from "./Lifecycle";
 import { navigate } from "./router";
-import { Button, Card, Eyebrow, Screen, Title } from "./ui";
+import { Button, Card, Eyebrow, ProgressDots, Screen, Title } from "./ui";
 
 export function CollectionScreen() {
   const progress = useProgress();
@@ -76,9 +79,11 @@ export function CollectionScreen() {
           );
         })}
       </ul>
-      <Button onClick={() => (done ? navigate({ name: "done" }) : navigate({ name: "quest", id: progress.currentQuest }))}>
-        {done ? "BACK" : "BACK TO MY MYSTERY"}
-      </Button>
+      {progress.status === "in_progress" && !done ? (
+        <Button onClick={() => navigate({ name: "quest", id: progress.currentQuest })}>BACK TO MY MYSTERY</Button>
+      ) : (
+        <Button onClick={() => navigate({ name: progress.status === "in_progress" ? "done" : "start" })}>BACK</Button>
+      )}
     </Screen>
   );
 }
@@ -86,13 +91,18 @@ export function CollectionScreen() {
 export function FinalScreen() {
   const progress = useProgress();
   const closures = useClosures();
+  const avatar = useAvatar();
   const reduce = useReducedMotion();
   const total = pack.questIds.length;
   const found = progress.completedQuests.length;
   const closed = pack.questIds.filter((id) => !progress.completedQuests.includes(id) && isGalleryClosed(questById(id)!.gallery, closures)).length;
   const remaining = openUnsolved(progress.completedQuests, closures);
+  const [reveals, setReveals] = useState<QuestReveal[] | null>(null);
+  useEffect(() => {
+    if (found) loadReveals().then(setReveals, () => {});
+  }, [found]);
 
-  if (remaining.length) {
+  if (progress.status === "in_progress" && remaining.length) {
     // Not finished yet; send them to what is left.
     return (
       <Screen className="text-center">
@@ -105,40 +115,83 @@ export function FinalScreen() {
     );
   }
 
-  const playAgain = () => {
-    if (window.confirm("Start over? This clears all found treasures on this phone.")) {
-      resetProgress();
-      navigate({ name: "start" }, { replace: true });
-    }
-  };
+  // The top award is only for finding every treasure.
+  if (progress.status === "completed") {
+    return (
+      <Screen className="min-h-[80dvh] justify-center text-center">
+        <motion.div aria-hidden className="text-7xl" initial={reduce ? false : { scale: 0.6, rotate: -8 }} animate={{ scale: 1, rotate: 0 }}>
+          🏆
+        </motion.div>
+        <Title className="text-5xl">Mission complete!</Title>
+        <p className="text-xl">You found all {total} Hidden Treasures at The Met.</p>
+        <p className="font-serif text-3xl font-bold">
+          {found} / {total} mysteries solved
+        </p>
+        <Certificate avatarAsset={avatar.imageAsset} name={avatar.displayName} title="Official Met Detective" />
+        <Button onClick={() => navigate({ name: "collection" })}>SEE MY TREASURES</Button>
+        <RestartButton label="START A NEW ADVENTURE" />
+      </Screen>
+    );
+  }
 
+  // Ended early, or every open gallery is done while some are closed.
   return (
     <Screen className="min-h-[80dvh] justify-center text-center">
-      <motion.div aria-hidden className="text-7xl" initial={reduce ? false : { scale: 0.6, rotate: -8 }} animate={{ scale: 1, rotate: 0 }}>
-        🏆
-      </motion.div>
-      <Title className="text-5xl">Mission complete!</Title>
+      <Title className="text-4xl">ADVENTURE COMPLETE FOR TODAY!</Title>
       <p className="text-xl">
-        {found === total
-          ? `You found all ${total} Hidden Treasures at The Met.`
-          : `You found ${found} Hidden Treasures at The Met.`}
+        Nice work, {avatar.displayName}! You discovered {found} hidden {found === 1 ? "treasure" : "treasures"}.
       </p>
-      <p className="font-serif text-3xl font-bold">
-        {found} / {total} mysteries solved
-      </p>
+      <p className="font-serif text-xl italic text-ink-soft">Every great detective knows when it’s time to head home.</p>
+      <div className="flex justify-center">
+        <ProgressDots completed={progress.completedQuests} />
+      </div>
+      {reveals && found > 0 && (
+        <ul aria-label="Treasures you found" className="flex flex-wrap justify-center gap-2">
+          {pack.questIds
+            .filter((id) => progress.completedQuests.includes(id))
+            .map((id) => (
+              <li key={id} className="rounded-full border border-gold bg-card px-3 py-1 text-sm font-semibold">
+                ✓ {reveals.find((r) => r.id === id)?.hiddenObject}
+              </li>
+            ))}
+        </ul>
+      )}
       {closed > 0 && (
         <p className="text-ink-soft">
           {closed === 1 ? "One gallery was" : `${closed} galleries were`} temporarily closed. Those treasures will wait for your next visit.
         </p>
       )}
-      <Card className="mx-auto border-gold">
-        <Eyebrow>Award</Eyebrow>
-        <p className="font-serif text-3xl font-bold text-burgundy">Official Met Detective</p>
-      </Card>
-      <Button onClick={() => navigate({ name: "collection" })}>SEE MY TREASURES</Button>
-      <Button variant="secondary" onClick={playAgain}>
-        PLAY AGAIN
+      <Certificate
+        avatarAsset={avatar.imageAsset}
+        name={avatar.displayName}
+        title="Met Treasure Hunter"
+        detail={`${found} of ${total} hidden treasures discovered`}
+      />
+      <Button
+        onClick={() => {
+          startAdventure();
+          navigate({ name: "quest", id: remaining[0] ?? progress.currentQuest });
+        }}
+      >
+        CONTINUE THIS ADVENTURE
       </Button>
+      {found > 0 && (
+        <Button variant="secondary" onClick={() => navigate({ name: "collection" })}>
+          SEE MY TREASURES
+        </Button>
+      )}
+      <RestartButton label="RESTART ADVENTURE" variant="quiet" />
     </Screen>
+  );
+}
+
+function Certificate({ avatarAsset, name, title, detail }: { avatarAsset: string; name: string; title: string; detail?: string }) {
+  return (
+    <Card className="mx-auto flex w-full flex-col items-center gap-1 border-2 border-gold">
+      <AvatarArt asset={avatarAsset} size={72} />
+      <Eyebrow>Awarded to {name}</Eyebrow>
+      <p className="font-serif text-3xl font-bold text-burgundy">{title}</p>
+      {detail && <p className="text-ink-soft">{detail}</p>}
+    </Card>
   );
 }

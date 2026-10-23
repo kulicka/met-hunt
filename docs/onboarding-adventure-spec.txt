@@ -1,0 +1,132 @@
+THE MET: HIDDEN TREASURES
+PLAYER ONBOARDING & ADVENTURE LIFECYCLE — FEATURE SPEC v1.0
+October 22, 2026
+
+PURPOSE
+Add first-launch age selection, named avatars, and controls to start, continue, end early, and restart an adventure. This extends the existing game without altering the ten riddles, photo verification, or gallery map.
+
+1. FIRST-LAUNCH ONBOARDING
+Only display onboarding when a saved local player profile does not exist.
+
+Step 1 — Age
+Heading: WELCOME, DETECTIVE!
+Copy: Before we enter the museum, let's get your explorer identity ready.
+Question: How old are you?
+Large selectable age tiles: 5, 6, 7, 8, 9, 10, 11, 12+.
+Require selection. Do not ask for name, birthdate, email, or account. Store age choice locally; 12+ is a category, not a precise age. Age may guide future hint difficulty but must not rewrite approved riddles.
+
+Step 2 — Choose Your Explorer
+Heading: CHOOSE YOUR EXPLORER
+Show 6–8 original illustrated avatar cards. Each has a fixed name and one-line personality; no custom name entry or gender selection.
+Suggested roster:
+- Scout: sharp-eyed young detective who spots tiny details.
+- Fig: clever, curious fox who loves clues.
+- Otto: thoughtful owl who always looks twice.
+- Milo: adventurous museum mouse who discovers overlooked treasures.
+- Cleo: elegant art-loving cat who notices beautiful details.
+- Pip: lively bird who sees things from new angles.
+- Dash: curious dog who follows every lead.
+- Remy: playful raccoon who finds the unexpected.
+Use cohesive original museum-adventure illustrations, with notebooks, scarves, magnifiers, or satchels; avoid copied franchise characters. Selection highlights the card and enables Continue. Provide Back to age selection.
+
+Step 3 — Ready
+Heading: Great choice, {avatarName}!
+Copy: Your first mystery is waiting.
+Button: START MY ADVENTURE
+Starting sets status to in_progress and opens Quest 1 / Gallery 810, with zero completed quests.
+
+2. RETURNING PLAYER
+Skip onboarding if a valid local profile exists.
+- in_progress: Welcome back, {avatarName}! You found {count} of 10 treasures. CONTINUE ADVENTURE.
+- ended_early: show collected treasures; CONTINUE THIS ADVENTURE or START A NEW ADVENTURE.
+- completed: show final collection; START A NEW ADVENTURE.
+- not_started: START MY ADVENTURE.
+Use the avatar subtly on hint screens, map, and certificate, without distracting from the art.
+
+3. END ADVENTURE EARLY
+Provide End Adventure in the in-game menu, not as a prominent quest button.
+Confirmation:
+Title: End your adventure?
+Body: You've found {count} of 10 treasures. You can end the hunt here and keep everything you've discovered.
+Buttons: KEEP EXPLORING (safe default) / END ADVENTURE.
+On confirmation, set status ended_early and endedAt. Preserve current quest, completed quests, hints, attempts, verification methods, collection, age, and avatar.
+Positive end screen:
+ADVENTURE COMPLETE FOR TODAY!
+Nice work, {avatarName}! You discovered {count} hidden treasures.
+Every great detective knows when it's time to head home.
+Show collected treasures and a MET TREASURE HUNTER certificate with discovery count. Do not award 10/10 or OFFICIAL MET DETECTIVE unless all quests were completed. Allow later resumption.
+
+4. RESTART FROM BEGINNING
+Provide Restart Adventure in menu and end screens. Always require explicit confirmation.
+Title: Start over from the beginning?
+Body: This will erase your current hunt progress, including your {count} discovered treasures. You can't undo this.
+Buttons: CANCEL (visually primary and initial focus) / YES, START OVER.
+On confirmation: clear current quest position, completed quests, hints, attempts, verification methods, collection, and adventure timestamps; set status not_started. Preserve age and avatar. Return to Ready for another adventure, {avatarName}? START THE HUNT.
+Cancel changes nothing. Refresh, browser close, and updates must not reset progress.
+Offer Change Explorer and Edit Age separately in settings; neither should erase progress.
+
+5. DATA MODEL
+TypeScript reference:
+
+type AdventureStatus = 'not_started' | 'in_progress' | 'ended_early' | 'completed';
+type AgeChoice = 5 | 6 | 7 | 8 | 9 | 10 | 11 | '12+';
+
+interface Avatar {
+  id: string;
+  displayName: string;
+  description: string;
+  imageAsset: string;
+}
+interface PlayerProfile {
+  age: AgeChoice;
+  avatarId: string;
+  onboardingComplete: boolean;
+}
+interface AdventureState {
+  status: AdventureStatus;
+  startedAt?: string;
+  endedAt?: string;
+  completedAt?: string;
+  currentQuest: number;
+  completedQuests: number[];
+  hintsUsed: Record<number, number>;
+  attempts: Record<number, number>;
+  verificationMethod: Record<number, 'ai-photo' | 'grown-up' | 'manual'>;
+}
+
+Persist profile and adventure separately using versioned localStorage keys. Validate loaded state, recover gracefully from missing/corrupt records, and never store uploaded photos. Resolve avatar names from built-in avatar IDs, not user-entered text.
+
+6. STATE TRANSITIONS
+No profile -> onboarding -> not_started.
+not_started -> in_progress: Start Adventure.
+in_progress -> ended_early: confirmed End Adventure.
+ended_early -> in_progress: Continue This Adventure.
+in_progress -> completed: all ten quests solved.
+in_progress / ended_early / completed -> not_started: confirmed Restart.
+Refresh -> preserve existing state.
+
+7. UI / ACCESSIBILITY / PRIVACY
+Mobile-first (375–430px; support 320px), large age/avatar cards and 44px tap targets. Accessible labels, keyboard support, visible focus, reduced-motion support, adequate contrast. Dialogs must keep focus inside while open, support Escape to cancel, and restore focus afterward. Safe choice is default; destructive choice never is. No real name, birthday, email, account, or GPS is collected.
+
+8. ACCEPTANCE CRITERIA
+1. First launch requests age and avatar before starting.
+2. No name input anywhere in onboarding.
+3. Each avatar has a fixed name, personality, and original illustration.
+4. Profile persists and onboarding is skipped on return.
+5. Start begins at Gallery 810 with no completed quests.
+6. Continue resumes progress accurately.
+7. End Early requires confirmation and preserves progress.
+8. Early ending has a positive partial-finish screen, not a 10/10 award.
+9. Early-ended adventure can be resumed.
+10. Restart requires confirmation; Cancel changes nothing.
+11. Restart clears adventure progress but retains age and avatar.
+12. Changing avatar or age does not erase progress.
+13. Refresh and browser close preserve progress.
+14. iPhone Safari and Android Chrome supported.
+15. Existing riddles, photo verification, map, and privacy requirements unchanged.
+
+9. QA SCENARIOS
+New install; interrupted onboarding; return mid-hunt; end with zero treasures; end with several treasures; resume ended adventure; finish all ten; restart cancel/confirm; change avatar mid-hunt; malformed local storage; refresh in each state; confirm no accidental loss of progress.
+
+IMPLEMENTATION NOTE
+Integrate into existing application. End Adventure is a reversible stop with preserved progress; Restart Adventure is destructive and must be confirmed.

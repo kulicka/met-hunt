@@ -6,7 +6,7 @@ import { OFFICIAL_MAP_URL } from "@/lib/links";
 import { useClosures } from "@/lib/closures";
 import { loadReveals, openUnsolved, pack, questById, questNumber } from "@/lib/content";
 import { findRoute } from "@/lib/routing";
-import { updateProgress, useProgress } from "@/lib/progress";
+import { playQuest, useProgress } from "@/lib/progress";
 import type { QuestReveal } from "@/data/types";
 import { navigate } from "./router";
 import { roomState, TreasureMap, type RoomState } from "./TreasureMap";
@@ -35,7 +35,7 @@ export function MapScreen({ focus, from }: Props) {
   }, [progress.completedQuests.length]);
 
   const goTo = (id: number) => {
-    updateProgress((p) => ({ ...p, gameStarted: true, currentQuest: id }));
+    playQuest(id);
     navigate({ name: "quest", id });
   };
 
