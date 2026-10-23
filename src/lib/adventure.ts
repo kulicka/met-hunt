@@ -56,6 +56,7 @@ function record<T>(v: unknown, questIds: number[], ok: (x: unknown) => x is T): 
 }
 
 const isCount = (x: unknown): x is number => typeof x === "number" && Number.isInteger(x) && x >= 0 && x < 1000;
+const isHintCount = (x: unknown): x is number => x === 0 || x === 1 || x === 2;
 const isMethod = (x: unknown): x is VerificationMethod => METHODS.includes(x as VerificationMethod);
 
 export function parseProfile(raw: unknown, avatarIds: string[]): PlayerProfile {
@@ -87,7 +88,7 @@ export function parseAdventure(raw: unknown, questIds: number[]): AdventureState
     completedAt: isTime(raw.completedAt) ? raw.completedAt : undefined,
     currentQuest: questIds.includes(raw.currentQuest as number) ? (raw.currentQuest as number) : fresh.currentQuest,
     completedQuests,
-    hintsUsed: record(raw.hintsUsed, questIds, isCount),
+    hintsUsed: record(raw.hintsUsed, questIds, isHintCount),
     attempts: record(raw.attempts, questIds, isCount),
     verificationMethod: record(raw.verificationMethod, questIds, isMethod),
   };

@@ -103,3 +103,12 @@ body {
 .tmap .room--blocked-body { stroke: var(--burgundy); stroke-opacity: 0.4; }
 /* halo keeps labels readable where the route passes underneath */
 .tmap .labels .num, .tmap .labels .mark { paint-order: stroke; stroke: var(--card); stroke-width: 5px; stroke-linejoin: round; }
+
+@media print {
+  @page {
+    margin: 12mm;
+  }
+  body {
+    background: #fff;
+  }
+}

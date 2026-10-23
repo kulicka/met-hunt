@@ -1,13 +1,15 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Camera, ImageUp, Lightbulb, Map as MapIcon } from "lucide-react";
+import { Camera, ImageUp, Map as MapIcon } from "lucide-react";
 import { isGalleryClosed, useClosures } from "@/lib/closures";
 import { loadReveals, nextUnsolved, pack, questById, questNumber } from "@/lib/content";
 import { preparePhoto } from "@/lib/photo";
 import { completeQuest, playQuest, updateProgress, useProgress, type VerificationMethod } from "@/lib/progress";
 import { type VerificationResult, type VerificationStatus } from "@/lib/verification";
 import { GrownUpCheck } from "./GrownUpCheck";
+import { MagnifierHints } from "./MagnifierHints";
+import { warmStamps } from "./Notebook";
 import { navigate } from "./router";
 import { Button, Card, Eyebrow, ProgressDots, Screen } from "./ui";
 
@@ -35,6 +37,7 @@ export function QuestScreen({ id }: { id: number }) {
   useEffect(() => {
     // Warm the answers chunk so a grown-up check still works if signal drops later.
     loadReveals().catch(() => {});
+    warmStamps();
     if (quest) playQuest(id);
     return () => discardPhoto();
   }, [id, quest]);
@@ -242,7 +245,7 @@ export function QuestScreen({ id }: { id: number }) {
             Quest {n} of {pack.questIds.length}
           </Eyebrow>
           <button type="button" className="min-h-11 text-sm text-ink-soft underline underline-offset-4" onClick={() => navigate({ name: "collection" })}>
-            My treasures
+            My notebook
           </button>
         </div>
         <p className="font-serif text-5xl font-bold tracking-wide" aria-label={`Gallery ${quest.gallery}`}>
@@ -280,16 +283,13 @@ export function QuestScreen({ id }: { id: number }) {
           <p>“{quest.riddle[0]}</p>
           <p>{quest.riddle[1]}”</p>
         </blockquote>
-        {hintsUsed > 0 && (
-          <ol className="mt-4 flex flex-col gap-2 border-t border-line pt-4 text-left text-lg">
-            {quest.hints.slice(0, hintsUsed).map((h, i) => (
-              <li key={h}>
-                <span className="font-semibold">Hint {i + 1}:</span> {h}
-              </li>
-            ))}
-          </ol>
-        )}
       </Card>
+
+      <MagnifierHints
+        hints={quest.hints}
+        used={hintsUsed}
+        onReveal={() => updateProgress((p) => ({ ...p, hintsUsed: { ...p.hintsUsed, [id]: Math.min((p.hintsUsed[id] ?? 0) + 1, 2) } }))}
+      />
 
       {solved ? (
         <Button onClick={() => navigate({ name: "found", id })}>SEE MY TREASURE</Button>
@@ -298,19 +298,9 @@ export function QuestScreen({ id }: { id: number }) {
           <Button onClick={() => pick(camera.current)}>
             <Camera aria-hidden size={22} /> I FOUND IT — TAKE A PHOTO
           </Button>
-          <div className="grid grid-cols-2 gap-3">
-            <Button variant="secondary" onClick={() => pick(library.current)}>
-              <ImageUp aria-hidden size={20} /> Choose a photo
-            </Button>
-            <Button
-              variant="secondary"
-              disabled={hintsUsed >= 2}
-              className="disabled:opacity-50"
-              onClick={() => updateProgress((p) => ({ ...p, hintsUsed: { ...p.hintsUsed, [id]: Math.min(hintsUsed + 1, 2) } }))}
-            >
-              <Lightbulb aria-hidden size={20} /> {hintsUsed >= 2 ? "No more hints" : "HINT"}
-            </Button>
-          </div>
+          <Button variant="secondary" onClick={() => pick(library.current)}>
+            <ImageUp aria-hidden size={20} /> Choose a photo
+          </Button>
           <p className="text-center text-sm text-ink-soft">
             Photograph the artwork — not other visitors. 📷 Zoom with your camera if the treasure is tiny.
           </p>

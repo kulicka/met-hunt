@@ -88,3 +88,34 @@ describe("adventure state", () => {
     expect(parseAdventure({ status: "ended_early", completedQuests: ids }, ids).status).toBe("completed");
   });
 });
+
+describe("certificate wording", async () => {
+  const { certificateText } = await import("@/lib/certificate");
+  const base = { completedQuests: [] as number[] };
+
+  it("gives the top title only for all ten", () => {
+    const full = certificateText({ status: "completed", completedQuests: ids, completedAt: "2026-10-22T20:00:00Z" }, 10, "Fig");
+    expect(full).toMatchObject({ kind: "full", title: "LEGENDARY ART DETECTIVE", countLine: "10/10 treasures discovered", date: "2026-10-22T20:00:00Z" });
+    expect(full.statement).toBe("This certifies that Fig discovered all 10 hidden treasures at The Met.");
+    const nine = certificateText({ status: "ended_early", completedQuests: ids.slice(0, 9) }, 10, "Fig");
+    expect(nine.kind).toBe("explorer");
+    expect(nine.title).not.toMatch(/LEGENDARY/);
+  });
+
+  it("uses truthful partial wording, including zero", () => {
+    expect(certificateText({ ...base, status: "ended_early", completedQuests: [1, 2, 3, 4, 5, 6] }, 10, "Otto").statement).toBe(
+      "Otto discovered 6 hidden treasures during a museum adventure.",
+    );
+    expect(certificateText({ ...base, status: "ended_early", completedQuests: [1] }, 10, "Otto").statement).toContain("1 hidden treasure during");
+    const zero = certificateText({ ...base, status: "ended_early" }, 10, "Pip");
+    expect(zero.statement).toBe("Pip began a museum adventure.");
+    expect(zero.countLine).toBeUndefined();
+    expect(certificateText({ ...base, status: "in_progress", completedQuests: [1, 2] }, 10, "Pip").statement).toContain("so far");
+  });
+});
+
+describe("hint counts", () => {
+  it("are clamped to 0, 1 or 2", () => {
+    expect(parseAdventure({ hintsUsed: { 1: 3, 2: 2, 3: 1.5, 4: 0 } }, ids).hintsUsed).toEqual({ 2: 2, 4: 0 });
+  });
+});

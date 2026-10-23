@@ -142,14 +142,24 @@ const art: Record<string, ReactElement> = {
   ),
 };
 
+/** The medallion as SVG children on a 120×120 grid, for use inside another SVG (the certificate). */
+export function AvatarMedallion({ asset, idPrefix = "av" }: { asset: string; idPrefix?: string }) {
+  const clip = `${idPrefix}-clip-${asset}`;
+  return (
+    <>
+      <circle cx={60} cy={60} r={57} fill={DEEP} stroke={GOLD_SOFT} strokeWidth={3} />
+      <clipPath id={clip}>
+        <circle cx={60} cy={60} r={55} />
+      </clipPath>
+      <g clipPath={`url(#${clip})`}>{art[asset] ?? art.scout}</g>
+    </>
+  );
+}
+
 export function AvatarArt({ asset, size = 96, className = "" }: { asset: string; size?: number; className?: string }) {
   return (
     <svg viewBox="0 0 120 120" width={size} height={size} className={className} aria-hidden focusable="false">
-      <circle cx={60} cy={60} r={57} fill={DEEP} stroke={GOLD_SOFT} strokeWidth={3} />
-      <clipPath id={`clip-${asset}`}>
-        <circle cx={60} cy={60} r={55} />
-      </clipPath>
-      <g clipPath={`url(#clip-${asset})`}>{art[asset] ?? art.scout}</g>
+      <AvatarMedallion asset={asset} />
     </svg>
   );
 }

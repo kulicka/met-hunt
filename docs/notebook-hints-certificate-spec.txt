@@ -1,0 +1,197 @@
+THE MET: HIDDEN TREASURES
+Feature Specification — Detective Notebook, Magnifying Glass Hints, Detective Certificate
+Version 1.0 | October 22, 2026
+
+PURPOSE AND SCOPE
+Add three complementary features to the existing mobile-first museum scavenger hunt: (1) a collectible Detective Notebook, (2) progressive Magnifying Glass Hints, and (3) a personalized Detective Certificate. This is an additive implementation specification, not a replacement for the existing v2 technical specification or the onboarding/adventure-lifecycle specification. Preserve all ten approved two-line riddles, gallery/quest assignments, photo-first AI verification, parent/manual fallback, gallery-map routing constraints (including no direct 817–818 edge), privacy protections, avatar onboarding, early ending, and confirmed restart behavior.
+
+DESIGN PRINCIPLES
+- Keep attention on physical artworks, not the screen.
+- Reward discovery and curiosity, never speed or competition.
+- Use the child's chosen avatar and its predefined name; never request a real name.
+- No timer, leaderboard, public profile, or account.
+- Maintain an elegant museum-adventure aesthetic (warm ivory, charcoal, muted gold, burgundy/forest-green accents); accessible mobile typography and touch targets.
+- Ensure all new features work without audio, and most functionality works offline after initial load.
+
+1. DETECTIVE NOTEBOOK
+
+Concept
+The Notebook is a personal, collectible record of treasures discovered during the current adventure. Each successfully verified or grown-up-confirmed quest unlocks one notebook entry. The notebook is available from the main game menu and from the success screen.
+
+Entry content (only for unlocked quests)
+- Quest number and gallery number.
+- Treasure/detail name.
+- Artwork title and artist.
+- Artwork thumbnail only if image rights and asset availability permit.
+- One brief, kid-friendly fact, sourced or editorially reviewed.
+- A unique collectible stamp or emblem (e.g., monocle, horse, fan, elephant, tower, travelers, flower, figure, vase, book), using original graphics.
+- Verification indicator: AI-confirmed or grown-up-confirmed; do not rank one above the other.
+- Optional link to the official Met artwork page.
+
+Locked entries
+- Display an elegant placeholder such as 'Mystery #7 — Not discovered yet' and the gallery number only if that gallery has already been revealed as part of normal game navigation.
+- Do not leak the artist, painting title, target object, answer image, or future hint text.
+
+Interactions
+- From a successful verification: 'ADD TO MY NOTEBOOK' (the entry is already saved when the quest is marked complete; this CTA opens the notebook, not a second write operation).
+- A small unobtrusive Notebook icon/button in game navigation.
+- Notebook opens as a scrollable grid/list of ten entries, with a detail view for unlocked treasures.
+- Optional subtle page-turn or stamp-unlock animation; respect prefers-reduced-motion.
+- Clearly show count: '{N} treasures discovered'.
+- Avoid requiring a child to read long text before continuing to the next gallery.
+
+Persistence
+- Notebook is derived from the adventure's completedQuests and canonical quest metadata; do not maintain a conflicting second source of truth.
+- Entries survive refresh, app closure, weak signal, and End Adventure Early.
+- On confirmed Restart Adventure, clear notebook unlocks along with quest progress, while preserving age/avatar.
+- If a quest is temporarily skipped due to closure, keep it locked/marked unavailable, never falsely unlocked.
+
+2. MAGNIFYING GLASS HINTS
+
+Concept
+Replace the generic Hint presentation with a tappable magnifying-glass affordance that reveals two progressive hints per quest, with a subtle 'invisible ink' or lens-reveal visual treatment.
+
+UI
+- Visible button: 'MAGNIFYING GLASS — GET A HINT' with magnifying-glass icon and accessible label.
+- First tap reveals Hint 1; second tap reveals Hint 2.
+- Once revealed, hints remain accessible when revisiting that quest, including after refresh.
+- Show 'Hint 1 of 2' and 'Hint 2 of 2' to communicate progression.
+- After both hints are revealed, the button becomes 'REVIEW HINTS', not a broken or endlessly incrementing action.
+- Make the reveal immediate with an optional short animation; no mandatory wait, drag, rubbing gesture, or device motion.
+
+Content
+- Reuse the existing two progressive hints for each of the ten quests unless a content editor deliberately changes hint text.
+- Never modify the canonical approved two-line riddles.
+- Hint 1 should gently narrow the search; Hint 2 may be more specific but should avoid stating the answer outright.
+- Hints do not reduce rewards, ranks, certificate eligibility, or the legitimacy of a discovery.
+
+Accessibility and offline
+- Use a real button, keyboard operable, minimum 44x44px target, visible focus, adequate contrast.
+- The hint text must exist in accessible DOM text, not only in a visual effect.
+- Respect prefers-reduced-motion; show instantly when enabled.
+- No camera, sound, network, or special permissions needed.
+- Store hintsUsed[questId] as 0, 1, or 2, clamped and validated.
+
+3. DETECTIVE CERTIFICATE
+
+Concept
+Provide a personalized keepsake featuring the child's selected avatar and predefined avatar name. Offer an appropriate certificate for both all-ten completion and early ending, with clearly distinct wording.
+
+Full completion
+Heading: 'THE MET: HIDDEN TREASURES'
+Award title: 'LEGENDARY ART DETECTIVE'
+Suggested text: 'This certifies that {avatarName} discovered all 10 hidden treasures at The Met.'
+Include avatar illustration, 10/10 treasures discovered, completion date (optional; local date), and tasteful original decorative border/stamp.
+
+Early ending
+Heading: 'THE MET: HIDDEN TREASURES'
+Award title: 'EXPLORER OF HIDDEN TREASURES'
+Suggested text: '{avatarName} discovered {N} hidden treasures during a museum adventure.'
+Show the actual discovered count without a failure message or implying full completion.
+- Offer the early-ending certificate even at zero discoveries, but use suitable wording such as 'began a museum adventure' rather than claiming treasures were found.
+- Early ending must never issue the 10/10 title.
+
+Access and export
+- Show certificate CTA on the full-completion screen and early-ending summary screen.
+- Also allow re-opening the certificate from the Notebook or adventure summary.
+- Provide 'SAVE AS IMAGE' and 'PRINT' where technically supported; a clean browser print layout is acceptable for MVP.
+- Generate the certificate locally in the browser where practical; do not upload personal data or require an account.
+- Use original avatar and decorative assets. Do not imply the certificate is officially issued or endorsed by The Metropolitan Museum of Art; label it as a game keepsake and avoid unauthorized Met logos/seals.
+- Include a small note such as 'A Hidden Treasures adventure keepsake — not an official museum certificate.'
+- Do not collect or print the child's real name.
+
+Behavior on resumption/restart
+- An early-ending certificate reflects the count at the time of ending. If the adventure resumes, the app may show a refreshed current-progress certificate; do not misrepresent it as a full-completion award.
+- On confirmed restart, prior adventure certificate state is cleared with progress. If a parent saved/printed an image externally, the app cannot delete that external copy.
+
+4. DATA MODEL / INTEGRATION
+
+Existing source of truth:
+
+interface AdventureState {
+  status: 'not_started' | 'in_progress' | 'ended_early' | 'completed';
+  currentQuest: number;
+  completedQuests: number[];
+  hintsUsed: Record<number, number>;
+  attempts: Record<number, number>;
+  verificationMethod: Record<number, 'ai-photo' | 'grown-up' | 'manual'>;
+  startedAt?: string;
+  endedAt?: string;
+  completedAt?: string;
+}
+
+interface PlayerProfile {
+  age: 5 | 6 | 7 | 8 | 9 | 10 | 11 | '12+';
+  avatarId: string;
+  onboardingComplete: boolean;
+}
+
+Optional metadata:
+
+interface NotebookPresentation {
+  questId: number;
+  stampAsset: string;
+  shortFact: string;
+  artworkImageUrl?: string;
+  metObjectUrl?: string;
+}
+
+Derived state:
+- notebookUnlocked(questId) = completedQuests.includes(questId)
+- treasureCount = completedQuests.length
+- fullCertificateEligible = status === 'completed' && treasureCount === 10
+- earlyCertificateEligible = status === 'ended_early'
+
+Important: canonical quest IDs are not gallery numbers; keep this distinction explicit. Do not expose unsolved answers through notebook metadata on pre-solve screens. A determined user can inspect client assets, so do not claim client-side answer secrecy is cryptographic; server-side verification targets remain server-side as already specified.
+
+5. USER FLOWS
+
+A. Find a treasure:
+Quest riddle -> magnifying-glass hint (optional) -> photograph -> AI or grown-up verification -> success -> notebook entry unlocks -> 'ADD TO MY NOTEBOOK' or 'SHOW ME THE WAY' -> next gallery.
+
+B. Revisit:
+Open Notebook -> view unlocked entries and locked placeholders -> tap a completed entry -> artwork/detail and short fact -> return to hunt.
+
+C. Finish all ten:
+10th discovery -> full completion screen -> 'VIEW DETECTIVE CERTIFICATE' -> save/print or return to Notebook.
+
+D. End early:
+Menu -> End Adventure -> confirmation -> early-ending summary -> 'VIEW MY CERTIFICATE' and Notebook -> later resume if desired.
+
+E. Restart:
+Menu -> Restart Adventure -> explicit destructive confirmation -> clear quest progress, notebook unlocks, and certificate eligibility -> preserve avatar/age -> start screen.
+
+6. ACCEPTANCE CRITERIA
+
+1. Each completed quest unlocks exactly one Notebook entry; no duplicates.
+2. Unsolved entries do not reveal target art or answers.
+3. Notebook progress persists across refresh and End Adventure Early.
+4. Confirmed restart clears unlocked entries, but canceled restart changes nothing.
+5. Each quest supports exactly two progressive hints via magnifying-glass UI.
+6. Hints persist and do not affect rewards.
+7. Hint interaction works with touch, keyboard, and reduced-motion settings.
+8. Full certificate is available only for all ten completed quests.
+9. Early-ending certificate uses truthful partial-progress wording, including at zero discoveries.
+10. Certificate uses the predefined avatar name; never requests a real name.
+11. Certificate can be viewed and saved/printed where supported, with accessible fallback.
+12. Certificate is clearly a game keepsake, not an official Met-issued award.
+13. All new content functions on iPhone Safari and Android Chrome.
+14. Core Notebook/hints/certificate viewing works offline after assets are cached, where technically feasible.
+15. Existing quests, photo verification, gallery routing/closures, onboarding, privacy, early-end, and confirmed-restart behavior remain intact.
+
+7. QA CHECKLIST
+
+- First treasure; repeated verification of same treasure; all ten treasures.
+- Open Notebook with 0, 1, 6, and 10 treasures.
+- Verify locked cards reveal no future answers.
+- Reveal first hint, refresh, reveal second hint, revisit; no third hint.
+- Test keyboard/screen-reader/reduced-motion hint experience.
+- End adventure at 0 and 6 discoveries; inspect truthful certificate.
+- Complete all ten; inspect full award and export.
+- Resume an early-ended adventure and then complete it.
+- Cancel restart; confirm restart; verify age/avatar remain.
+- Offline revisit of cached Notebook and certificate.
+- Export/print on iPhone Safari and Android Chrome; use fallback if unsupported.
+
+IMPLEMENTATION NOTE
+Implement as a feature addendum to the existing Hidden Treasures codebase. Do not change the canonical ten riddles, the photo-first answer mechanism, the verified gallery-routing architecture, or the established adventure-state semantics.

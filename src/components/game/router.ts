@@ -16,6 +16,8 @@ export type Route =
   | { name: "done" }
   | { name: "parents" }
   | { name: "explorer" }
+  | { name: "entry"; id: number; fresh?: boolean }
+  | { name: "certificate" }
   | { name: "age" };
 
 export function parseRoute(hash: string): Route {
@@ -30,7 +32,10 @@ export function parseRoute(hash: string): Route {
     case "parents":
     case "explorer":
     case "age":
+    case "certificate":
       return { name };
+    case "entry":
+      return num(arg) ? { name, id: num(arg)!, fresh: params.get("new") === "1" } : { name: "collection" };
     case "quest":
     case "found":
       return num(arg) ? { name, id: num(arg)! } : { name: "start" };
@@ -52,6 +57,8 @@ export function routeHash(route: Route): string {
       return `#/${route.name}/${route.id}`;
     case "next":
       return `#/next/${route.from}`;
+    case "entry":
+      return `#/entry/${route.id}${route.fresh ? "?new=1" : ""}`;
     case "map": {
       const params = new URLSearchParams();
       if (route.focus) params.set("focus", String(route.focus));

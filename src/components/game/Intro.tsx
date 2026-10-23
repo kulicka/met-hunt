@@ -56,7 +56,7 @@ export function StartScreen() {
         {primary && <Button onClick={primary.onClick}>{primary.label}</Button>}
         {finished && (
           <Button variant="secondary" onClick={() => navigate({ name: "collection" })}>
-            SEE MY TREASURES
+            OPEN MY NOTEBOOK
           </Button>
         )}
         {finished && <RestartButton label="START A NEW ADVENTURE" />}
