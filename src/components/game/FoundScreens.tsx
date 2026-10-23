@@ -50,6 +50,7 @@ function Sparkles() {
 
 export function FoundScreen({ id }: { id: number }) {
   const progress = useProgress();
+  const closures = useClosures();
   const { reveal, failed } = useReveal(id);
   const quest = questById(id);
 
@@ -59,6 +60,13 @@ export function FoundScreen({ id }: { id: number }) {
   }, [id, quest, progress.completedQuests]);
 
   if (!quest) return null;
+
+  const showTheWay = () => {
+    const next = progress.currentQuest;
+    const open = !progress.completedQuests.includes(next) && !isGalleryClosed(questById(next)!.gallery, closures);
+    // When nothing is left (or only closed galleries), the next screen wraps up the hunt.
+    navigate(open ? { name: "map", focus: next, from: id } : { name: "next", from: id }, { replace: true });
+  };
 
   return (
     <Screen className="relative text-center">
@@ -90,7 +98,10 @@ export function FoundScreen({ id }: { id: number }) {
         <p className="text-ink-soft">Unwrapping your treasure…</p>
       )}
 
-      <Button onClick={() => navigate({ name: "next", from: id }, { replace: true })}>ADD TO MY COLLECTION</Button>
+      <Button onClick={() => navigate({ name: "entry", id, fresh: true }, { replace: true })}>ADD TO MY NOTEBOOK</Button>
+      <Button variant="secondary" onClick={showTheWay}>
+        <MapIcon aria-hidden size={20} /> SHOW ME THE WAY
+      </Button>
     </Screen>
   );
 }

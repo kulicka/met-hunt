@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Menu } from "lucide-react";
+import { BookOpen, Menu } from "lucide-react";
 import { pack } from "@/lib/content";
 import { useAvatar } from "@/lib/profile";
 import { endAdventure, restartAdventure, useProgress } from "@/lib/progress";
@@ -87,6 +87,16 @@ export function GameBar() {
           <AvatarArt asset={avatar.imageAsset} size={34} />
           <span className="text-sm font-semibold">{avatar.displayName}</span>
         </div>
+        <div className="flex items-center">
+        <button
+          type="button"
+          className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-xl px-2 text-ink-soft hover:bg-paper-deep"
+          aria-label={`Detective Notebook, ${progress.completedQuests.length} treasures`}
+          onClick={() => navigate({ name: "collection" })}
+        >
+          <BookOpen aria-hidden size={20} />
+          <span className="ml-1 text-sm font-semibold">{progress.completedQuests.length}</span>
+        </button>
         <button
           type="button"
           className="inline-flex min-h-11 items-center gap-1.5 rounded-xl px-3 text-ink-soft hover:bg-paper-deep"
@@ -95,6 +105,7 @@ export function GameBar() {
         >
           <Menu aria-hidden size={20} /> Menu
         </button>
+        </div>
       </div>
 
       <Dialog open={sheet === "menu"} onClose={close} labelledBy="game-menu-title">
@@ -102,7 +113,10 @@ export function GameBar() {
           Menu
         </h2>
         <nav className="-mx-3 flex flex-col">
-          <button type="button" className={item} onClick={() => go({ name: "collection" })}>My Treasures</button>
+          <button type="button" className={item} onClick={() => go({ name: "collection" })}>Detective Notebook</button>
+          {progress.status !== "not_started" && (
+            <button type="button" className={item} onClick={() => go({ name: "certificate" })}>My Certificate</button>
+          )}
           <button type="button" className={item} onClick={() => go({ name: "map" })}>Treasure Map</button>
           <button type="button" className={item} onClick={() => go({ name: "how" })}>How to Play</button>
           <button type="button" className={item} onClick={() => go({ name: "explorer" })}>Change Explorer</button>

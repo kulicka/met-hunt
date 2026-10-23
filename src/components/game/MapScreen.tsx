@@ -129,7 +129,7 @@ export function MapScreen({ focus, from }: Props) {
 
       <div className="flex flex-col items-center gap-1">
         <Button variant="quiet" onClick={() => navigate({ name: "collection" })}>
-          My treasures ({progress.completedQuests.length})
+          My notebook ({progress.completedQuests.length})
         </Button>
         <a
           className="inline-flex min-h-11 items-center gap-1 text-base text-ink-soft underline underline-offset-4"

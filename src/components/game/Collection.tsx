@@ -2,91 +2,15 @@
 
 import { useEffect, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
-import { Lock } from "lucide-react";
-import { statusFor, useArtworkStatus, withMetData } from "@/lib/artwork-status";
 import { isGalleryClosed, useClosures } from "@/lib/closures";
 import type { QuestReveal } from "@/data/types";
-import { loadReveals, openUnsolved, pack, questById, questNumber } from "@/lib/content";
+import { loadReveals, openUnsolved, pack, questById } from "@/lib/content";
 import { useAvatar } from "@/lib/profile";
 import { startAdventure, useProgress } from "@/lib/progress";
 import { AvatarArt } from "./AvatarArt";
-import { ArtworkFigure } from "./FoundScreens";
 import { RestartButton } from "./Lifecycle";
 import { navigate } from "./router";
 import { Button, Card, Eyebrow, ProgressDots, Screen, Title } from "./ui";
-
-export function CollectionScreen() {
-  const progress = useProgress();
-  const closures = useClosures();
-  const reduce = useReducedMotion();
-  const artworks = useArtworkStatus();
-  const [reveals, setReveals] = useState<QuestReveal[] | null>(null);
-  useEffect(() => {
-    if (progress.completedQuests.length) loadReveals().then(setReveals, () => {});
-  }, [progress.completedQuests.length]);
-
-  const done = openUnsolved(progress.completedQuests, closures).length === 0;
-
-  return (
-    <Screen>
-      <Title>My Treasures</Title>
-      <p className="text-lg text-ink-soft">
-        {progress.completedQuests.length} of {pack.questIds.length} found
-      </p>
-      <ul className="flex flex-col gap-4">
-        {pack.questIds.map((id, i) => {
-          const quest = questById(id)!;
-          const solved = progress.completedQuests.includes(id);
-          const found = reveals?.find((r) => r.id === id);
-          const reveal = found && withMetData(found, statusFor(artworks, id));
-          if (!solved) {
-            return (
-              <li key={id}>
-                <Card className="flex items-center gap-4 border-dashed bg-paper-deep/50 opacity-80">
-                  <Lock aria-hidden className="shrink-0 text-ink-soft" />
-                  <div>
-                    <p className="font-semibold">
-                      Mystery #{questNumber(id)} · Gallery {quest.gallery}
-                    </p>
-                    <p className="text-ink-soft">{isGalleryClosed(quest.gallery, closures) ? "Gallery temporarily closed" : "Still hidden"}</p>
-                  </div>
-                </Card>
-              </li>
-            );
-          }
-          return (
-            <motion.li
-              key={id}
-              initial={reduce ? false : { opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.03 }}
-            >
-              <Card>
-                <p className="text-sm font-semibold uppercase tracking-widest text-gold">
-                  Mystery #{questNumber(id)} · Gallery {quest.gallery} · ✓
-                </p>
-                {reveal ? (
-                  <>
-                    <p className="font-serif text-2xl font-bold">{reveal.hiddenObject}</p>
-                    <ArtworkFigure reveal={reveal} />
-                    {reveal.fact && <p className="mt-2">{reveal.fact}</p>}
-                  </>
-                ) : (
-                  <p className="font-serif text-2xl font-bold">Treasure found</p>
-                )}
-              </Card>
-            </motion.li>
-          );
-        })}
-      </ul>
-      {progress.status === "in_progress" && !done ? (
-        <Button onClick={() => navigate({ name: "quest", id: progress.currentQuest })}>BACK TO MY MYSTERY</Button>
-      ) : (
-        <Button onClick={() => navigate({ name: progress.status === "in_progress" ? "done" : "start" })}>BACK</Button>
-      )}
-    </Screen>
-  );
-}
 
 export function FinalScreen() {
   const progress = useProgress();
@@ -127,8 +51,11 @@ export function FinalScreen() {
         <p className="font-serif text-3xl font-bold">
           {found} / {total} mysteries solved
         </p>
-        <Certificate avatarAsset={avatar.imageAsset} name={avatar.displayName} title="Official Met Detective" />
-        <Button onClick={() => navigate({ name: "collection" })}>SEE MY TREASURES</Button>
+        <Certificate avatarAsset={avatar.imageAsset} name={avatar.displayName} title="Legendary Art Detective" />
+        <Button onClick={() => navigate({ name: "certificate" })}>VIEW DETECTIVE CERTIFICATE</Button>
+        <Button variant="secondary" onClick={() => navigate({ name: "collection" })}>
+          OPEN MY NOTEBOOK
+        </Button>
         <RestartButton label="START A NEW ADVENTURE" />
       </Screen>
     );
@@ -164,10 +91,15 @@ export function FinalScreen() {
       <Certificate
         avatarAsset={avatar.imageAsset}
         name={avatar.displayName}
-        title="Met Treasure Hunter"
-        detail={`${found} of ${total} hidden treasures discovered`}
+        title="Explorer of Hidden Treasures"
+        detail={found ? `${found} of ${total} hidden treasures discovered` : "Began a museum adventure"}
       />
+      <Button onClick={() => navigate({ name: "certificate" })}>VIEW MY CERTIFICATE</Button>
+      <Button variant="secondary" onClick={() => navigate({ name: "collection" })}>
+        OPEN MY NOTEBOOK
+      </Button>
       <Button
+        variant="secondary"
         onClick={() => {
           startAdventure();
           navigate({ name: "quest", id: remaining[0] ?? progress.currentQuest });
@@ -175,11 +107,6 @@ export function FinalScreen() {
       >
         CONTINUE THIS ADVENTURE
       </Button>
-      {found > 0 && (
-        <Button variant="secondary" onClick={() => navigate({ name: "collection" })}>
-          SEE MY TREASURES
-        </Button>
-      )}
       <RestartButton label="RESTART ADVENTURE" variant="quiet" />
     </Screen>
   );

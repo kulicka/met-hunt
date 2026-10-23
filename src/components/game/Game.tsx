@@ -1,11 +1,13 @@
 "use client";
 
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { CollectionScreen, FinalScreen } from "./Collection";
+import { CertificateScreen } from "./Certificate";
+import { FinalScreen } from "./Collection";
 import { FoundScreen, NextScreen } from "./FoundScreens";
 import { HowToPlay, StartScreen } from "./Intro";
 import { GameBar } from "./Lifecycle";
 import { MapScreen } from "./MapScreen";
+import { EntryScreen, NotebookScreen } from "./Notebook";
 import { EditProfile, Onboarding } from "./Onboarding";
 import { ParentsScreen } from "./Parents";
 import { QuestScreen } from "./QuestScreen";
@@ -13,7 +15,7 @@ import { parseRoute, useHash, type Route } from "./router";
 import { useProfile } from "@/lib/profile";
 
 // Screens that show the explorer and the menu above them.
-const IN_GAME = new Set<Route["name"]>(["quest", "found", "next", "map", "collection", "how"]);
+const IN_GAME = new Set<Route["name"]>(["quest", "found", "next", "map", "collection", "entry", "how"]);
 
 function screenFor(route: Route) {
   switch (route.name) {
@@ -30,7 +32,7 @@ function screenFor(route: Route) {
     case "map":
       return <MapScreen focus={route.focus} from={route.from} />;
     case "collection":
-      return <CollectionScreen />;
+      return <NotebookScreen />;
     case "done":
       return <FinalScreen />;
     case "parents":
@@ -38,6 +40,10 @@ function screenFor(route: Route) {
     case "explorer":
     case "age":
       return <EditProfile field={route.name} />;
+    case "entry":
+      return <EntryScreen id={route.id} fresh={route.fresh} />;
+    case "certificate":
+      return <CertificateScreen />;
   }
 }
 
