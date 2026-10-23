@@ -33,7 +33,8 @@ self.addEventListener("fetch", (event) => {
   const { request } = event;
   const url = new URL(request.url);
   if (request.method !== "GET" || url.origin !== self.location.origin) return;
-  if (url.pathname.startsWith("/api/")) return;
+  // Never cache API calls or the admin dashboard.
+  if (url.pathname.startsWith("/api/") || url.pathname.startsWith("/admin")) return;
 
   if (request.mode === "navigate") {
     event.respondWith(networkFirst(request, "/"));

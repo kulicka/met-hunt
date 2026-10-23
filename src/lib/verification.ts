@@ -9,6 +9,8 @@ export interface VerificationResult {
   artworkMatch: boolean | null;
   detailMatch: boolean | null;
   feedback: string;
+  /** The model that served the check, for analytics. Never the model's own words. */
+  model?: string;
 }
 
 export const FEEDBACK: Record<VerificationStatus, string> = {

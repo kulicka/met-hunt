@@ -30,6 +30,10 @@ Actions). Until then the deploy steps are skipped.
 `fly secrets set CLOSURES_JSON="$(cat data/closures.json)"` (this restarts the
 machines), or edit `data/closures.json` and redeploy.
 
+**Analytics (optional):** needs a Postgres database and three secrets
+(`DATABASE_URL`, `ADMIN_PASSWORD`, `ANALYTICS_ENABLED=on`). Steps, privacy notes
+and the pre-launch review are in [docs/analytics.md](docs/analytics.md).
+
 Note: the in-memory rate limit is per machine, so with two machines the effective
 limit is doubled. That is fine at this scale.
 

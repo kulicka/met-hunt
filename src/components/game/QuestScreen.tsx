@@ -2,10 +2,12 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Camera, ImageUp, Map as MapIcon } from "lucide-react";
+import { photoAttempts, photoSubmitted, questViewed, trackQuest } from "@/lib/analytics/client";
+import { latencyBucket, type ERROR_KINDS } from "@/lib/analytics/schema";
 import { isGalleryClosed, useClosures } from "@/lib/closures";
 import { loadReveals, nextUnsolved, pack, questById, questNumber } from "@/lib/content";
 import { preparePhoto } from "@/lib/photo";
-import { completeQuest, playQuest, updateProgress, useProgress, type VerificationMethod } from "@/lib/progress";
+import { completeQuest, getProgress, playQuest, updateProgress, useProgress, type VerificationMethod } from "@/lib/progress";
 import { type VerificationResult, type VerificationStatus } from "@/lib/verification";
 import { GrownUpCheck } from "./GrownUpCheck";
 import { MagnifierHints } from "./MagnifierHints";
@@ -15,6 +17,7 @@ import { Button, Card, Eyebrow, ProgressDots, Screen } from "./ui";
 
 const GROWN_UP_AFTER = 2;
 const REQUEST_TIMEOUT_MS = 35_000;
+const MODEL_TOKEN = /^[A-Za-z0-9._-]{1,40}$/;
 
 type Phase =
   | { kind: "clue" }
@@ -30,7 +33,7 @@ export function QuestScreen({ id }: { id: number }) {
   const progress = useProgress();
   const closures = useClosures();
   const [phase, setPhase] = useState<Phase>({ kind: "clue" });
-  const photo = useRef<{ blob: Blob; url: string } | null>(null);
+  const photo = useRef<{ blob: Blob; url: string; source: "camera" | "library" } | null>(null);
   const camera = useRef<HTMLInputElement>(null);
   const library = useRef<HTMLInputElement>(null);
 
@@ -38,7 +41,10 @@ export function QuestScreen({ id }: { id: number }) {
     // Warm the answers chunk so a grown-up check still works if signal drops later.
     loadReveals().catch(() => {});
     warmStamps();
-    if (quest) playQuest(id);
+    if (quest) {
+      playQuest(id);
+      questViewed(id, getProgress());
+    }
     return () => discardPhoto();
   }, [id, quest]);
 
@@ -62,12 +68,13 @@ export function QuestScreen({ id }: { id: number }) {
 
   async function onFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
+    const source = e.target === library.current ? "library" : "camera";
     e.target.value = "";
     if (!file) return;
     discardPhoto();
     try {
       const blob = await preparePhoto(file);
-      photo.current = { blob, url: URL.createObjectURL(blob) };
+      photo.current = { blob, url: URL.createObjectURL(blob), source };
       setPhase({ kind: "preview" });
     } catch {
       setPhase({ kind: "result", status: "invalid_image" });
@@ -85,6 +92,18 @@ export function QuestScreen({ id }: { id: number }) {
   async function verify() {
     if (!photo.current) return;
     setPhase({ kind: "checking" });
+    // Analytics records only that a photo was sent and what came back, never the photo.
+    const attempt = photoSubmitted(id, photo.current.source);
+    const sentAt = Date.now();
+    const report = (result: VerificationStatus | "error", errorKind: (typeof ERROR_KINDS)[number] = "none", model?: string) =>
+      attempt > 0 &&
+      trackQuest("quest_verification_result", id, {
+        attempt_number: attempt,
+        result,
+        error_kind: errorKind,
+        model_version: model && MODEL_TOKEN.test(model) ? model : null,
+        latency_bucket: latencyBucket(Date.now() - sentAt),
+      });
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
     let response: Response;
@@ -99,17 +118,21 @@ export function QuestScreen({ id }: { id: number }) {
       clearTimeout(timer);
       // Keep the photo: it never reached the server, so TRY AGAIN can resend it.
       countAttempt();
-      setPhase(controller.signal.aborted || navigator.onLine ? { kind: "unavailable" } : { kind: "offline" });
+      const offline = !controller.signal.aborted && !navigator.onLine;
+      report("error", controller.signal.aborted ? "timeout" : offline ? "offline" : "unavailable");
+      setPhase(offline ? { kind: "offline" } : { kind: "unavailable" });
       return;
     }
     clearTimeout(timer);
     if (!response.ok) {
+      report("error", response.status === 429 ? "rate_limited" : response.status >= 500 ? "unavailable" : "rejected");
       countAttempt();
       setPhase({ kind: "unavailable" });
       return;
     }
     const result = (await response.json()) as VerificationResult;
     discardPhoto(); // the server has checked it; nothing of it is kept here either
+    report(result.status, "none", result.model);
     if (result.status === "verified") return finish("ai-photo");
     if (result.status !== "not_found") countAttempt();
     setPhase({ kind: "result", status: result.status });
@@ -132,7 +155,10 @@ export function QuestScreen({ id }: { id: number }) {
     return (
       <GrownUpCheck
         questId={id}
-        onConfirm={() => finish(attempts > 0 ? "grown-up" : "manual")}
+        onConfirm={() => {
+          trackQuest("quest_parent_override", id, { kind: attempts > 0 ? "after_attempts" : "without_photo", photo_attempts: photoAttempts(id) });
+          finish(attempts > 0 ? "grown-up" : "manual");
+        }}
         onCancel={() => setPhase({ kind: "clue" })}
       />
     );
@@ -266,11 +292,23 @@ export function QuestScreen({ id }: { id: number }) {
           <p className="font-semibold">This gallery is temporarily closed.</p>
           <p className="mt-1 text-ink-soft">Please don’t go in. You can skip this mystery without losing anything and try it another visit.</p>
           {nextUnsolved(id, progress.completedQuests, closures) ? (
-            <Button className="mt-3" onClick={() => navigate({ name: "quest", id: nextUnsolved(id, progress.completedQuests, closures)! })}>
+            <Button
+              className="mt-3"
+              onClick={() => {
+                trackQuest("quest_skipped", id, { reason: "closed" });
+                navigate({ name: "quest", id: nextUnsolved(id, progress.completedQuests, closures)! });
+              }}
+            >
               SKIP TO THE NEXT MYSTERY
             </Button>
           ) : (
-            <Button className="mt-3" onClick={() => navigate({ name: "done" })}>
+            <Button
+              className="mt-3"
+              onClick={() => {
+                trackQuest("quest_skipped", id, { reason: "closed" });
+                navigate({ name: "done" });
+              }}
+            >
               FINISH THE HUNT
             </Button>
           )}

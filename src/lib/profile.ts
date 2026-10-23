@@ -36,7 +36,7 @@ function update(change: Partial<PlayerProfile>) {
   listeners.forEach((l) => l());
 }
 
-const getProfile = () => {
+export const getProfile = () => {
   load();
   return current;
 };

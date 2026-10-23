@@ -1,9 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ExternalLink } from "lucide-react";
 import { OFFICIAL_MAP_URL } from "@/lib/links";
-import { useClosures } from "@/lib/closures";
+import { arrivalConfirmed, routeRequested, track, trackQuest } from "@/lib/analytics/client";
+import { closureVersion, useClosures } from "@/lib/closures";
+import { ROUTE_GRAPH_VERSION } from "@/data/maps/met-floor2-european-paintings";
 import { loadReveals, openUnsolved, pack, questById, questNumber } from "@/lib/content";
 import { findRoute } from "@/lib/routing";
 import { playQuest, useProgress } from "@/lib/progress";
@@ -34,7 +36,32 @@ export function MapScreen({ focus, from }: Props) {
     if (progress.completedQuests.length) loadReveals().then(setReveals, () => {});
   }, [progress.completedQuests.length]);
 
-  const goTo = (id: number) => {
+  // Analytics: how the map was opened and, after SHOW ME THE WAY, whether a verified route existed.
+  // Recorded once per visit to this screen, with the route as first shown.
+  const first = useRef({ from, current, route, closures });
+  useEffect(() => {
+    const { from, current, route, closures } = first.current;
+    track("map_opened", { source: from != null ? "found" : focus != null ? "quest" : "menu" });
+    if (from == null || current == null || route === undefined) return;
+    const a = questById(from)!.gallery;
+    const b = questById(current)!.gallery;
+    const unavailable = route ? null : findRoute(a, b, []) ? "closure_blocking" : "no_verified_route";
+    routeRequested(
+      {
+        from_gallery: Number(a),
+        to_gallery: Number(b),
+        route_graph_version: ROUTE_GRAPH_VERSION,
+        closure_version: closureVersion(),
+        closures_active: closures.filter((c) => c.status === "closed").length,
+      },
+      unavailable,
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- once per screen visit
+  }, []);
+
+  const goTo = (id: number, arrived = false) => {
+    if (arrived) arrivalConfirmed(id, "map");
+    else if (current != null && id !== current) trackQuest("quest_skipped", current, { reason: "user_switched" });
     playQuest(id);
     navigate({ name: "quest", id });
   };
@@ -109,7 +136,7 @@ export function MapScreen({ focus, from }: Props) {
       )}
 
       {current && from != null ? (
-        <Button onClick={() => goTo(current)}>I’M THERE — SHOW MY CLUE</Button>
+        <Button onClick={() => goTo(current, true)}>I’M THERE — SHOW MY CLUE</Button>
       ) : current ? (
         <Button onClick={() => goTo(current)}>SHOW MY CLUE</Button>
       ) : (

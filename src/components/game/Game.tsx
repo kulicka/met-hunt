@@ -1,6 +1,8 @@
 "use client";
 
+import { useEffect } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { startAnalytics } from "@/lib/analytics/client";
 import { CertificateScreen } from "./Certificate";
 import { FinalScreen } from "./Collection";
 import { FoundScreen, NextScreen } from "./FoundScreens";
@@ -51,6 +53,7 @@ export function Game() {
   const hash = useHash();
   const profile = useProfile();
   const reduce = useReducedMotion();
+  useEffect(startAnalytics, []);
   if (hash === null || profile === null) return null; // server render: progress lives on the phone only
   const route = parseRoute(hash);
   // First launch (or interrupted onboarding): age and explorer come first. Grown-ups can still open their page.

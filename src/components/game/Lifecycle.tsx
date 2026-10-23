@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { BookOpen, Menu } from "lucide-react";
+import { restartConfirmed } from "@/lib/analytics/client";
 import { pack } from "@/lib/content";
 import { useAvatar } from "@/lib/profile";
 import { endAdventure, restartAdventure, useProgress } from "@/lib/progress";
@@ -46,6 +47,7 @@ export function RestartDialog({ open, onClose }: { open: boolean; onClose: () =>
       onCancel={onClose}
       onConfirm={() => {
         onClose();
+        restartConfirmed(progress);
         restartAdventure();
         navigate({ name: "start" }, { replace: true });
       }}

@@ -8,6 +8,7 @@ import { isGalleryClosed, useClosures } from "@/lib/closures";
 import type { QuestReveal } from "@/data/types";
 import { loadReveals, pack, questById, questNumber } from "@/lib/content";
 import { endAdventure, useProgress } from "@/lib/progress";
+import { arrivalConfirmed } from "@/lib/analytics/client";
 import { navigate } from "./router";
 import { Button, Card, Eyebrow, ProgressDots, Screen } from "./ui";
 
@@ -174,7 +175,13 @@ export function NextScreen({ from }: { from: number }) {
       <Button onClick={() => navigate({ name: "map", focus: next, from })}>
         <MapIcon aria-hidden size={22} /> SHOW ME THE WAY
       </Button>
-      <Button variant="secondary" onClick={() => navigate({ name: "quest", id: next })}>
+      <Button
+        variant="secondary"
+        onClick={() => {
+          arrivalConfirmed(next, "next_screen");
+          navigate({ name: "quest", id: next });
+        }}
+      >
         I’M THERE — SHOW MY CLUE
       </Button>
     </Screen>

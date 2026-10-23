@@ -22,10 +22,19 @@ function allow(key: string, { limit, windowMs }: { limit: number; windowMs: numb
   return true;
 }
 
-export function checkRateLimit(request: Request): boolean {
+type Limit = { limit: number; windowMs: number };
+
+function check(request: Request, bucket: string, perClient: Limit, global: Limit): boolean {
   const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || request.headers.get("x-real-ip") || "unknown";
   const client = createHash("sha256").update(SALT + ip).digest("base64url").slice(0, 16);
   const now = Date.now();
   if (hits.size > 10_000) hits.clear(); // crude memory cap
-  return allow(client, PER_CLIENT, now) && allow("global", GLOBAL, now);
+  return allow(`${bucket}:${client}`, perClient, now) && allow(`${bucket}:global`, global, now);
 }
+
+/** Photo checks: each one costs a model call. */
+export const checkRateLimit = (request: Request) => check(request, "verify", PER_CLIENT, GLOBAL);
+
+/** Analytics uploads: small batches, sent every 30 seconds at most while playing. */
+export const checkEventsRateLimit = (request: Request) =>
+  check(request, "events", { limit: 60, windowMs: 10 * 60_000 }, { limit: 20_000, windowMs: 60 * 60_000 });

@@ -1,0 +1,158 @@
+THE MET: HIDDEN TREASURES
+GAME ANALYTICS & CONTENT OPTIMIZATION — FEATURE SPECIFICATION
+Version 1.0 | October 22, 2026
+Status: Additive specification for implementation by Claude / coding agent
+
+1. PURPOSE
+Build a privacy-conscious event analytics system to understand which artworks, hidden details, riddles, and navigation experiences work best for children, and to guide content updates. Preserve the existing ten canonical quests, exact approved rhymes, photo verification, avatar onboarding, detective notebook, magnifying glass hints, certificate, end-early, resume, restart, and verified gallery routing. Analytics must not change game mechanics or make a child's experience competitive.
+
+2. PRODUCT QUESTIONS
+- Which quests are completed, skipped, or abandoned most often?
+- How long do children engage with each quest, and how often are hints needed?
+- Are AI photo failures caused by unclear clues, difficult subjects, poor photos, or model performance?
+- Where do navigation or temporary closures interrupt play?
+- Do outcomes differ across the predefined age categories?
+- How do content revisions change results over time?
+- Does ending early correlate with a particular quest, route, or overall session duration?
+
+3. PRIVACY FIRST
+- No real name, email, exact birthday, precise location, GPS, device advertising ID, facial recognition, or child-created text is required or logged.
+- Never send or retain children's photos in analytics. Photo verification remains ephemeral under the existing privacy specification.
+- Do not log raw AI prompts/responses if they may include image content, personally identifying details, or sensitive information.
+- Do not use third-party advertising trackers, fingerprinting, cross-site identifiers, or behavioral advertising.
+- Generate a random adventure ID; rotate it for a newly started adventure. Do not make a persistent cross-session child identifier in server analytics.
+- Record the selected age bucket only when necessary; consider grouping categories for reporting to avoid small cohorts. Do not transmit avatar name as a personal identity.
+- Obtain appropriate adult-facing notice and consent before optional analytics begins; default to no analytics until consent is given. Provide a clear opt-out in Parent Mode, effective immediately.
+- Support deletion of locally queued analytics, and an implementable deletion/retention policy for server-side data. Do not promise deletion by ID unless a deletion mechanism exists.
+- Consult legal/privacy counsel about COPPA and applicable children's privacy rules before deployment. This specification is a product design, not a legal compliance determination.
+
+4. EVENT DESIGN PRINCIPLES
+- All events have an explicit event name, schema version, UTC timestamp, random adventure_id, content_pack_version, app_version, and session_id (random, scoped to the visit).
+- Add quest_id, gallery_id, artwork_id, riddle_version, artwork_assignment_version, and hint_set_version where relevant. Never use only a display title as the identifier.
+- Use a controlled allowlist of event properties; reject unexpected fields. No free-form text.
+- Make event ingestion idempotent via event_id UUID to avoid duplicates during retries/offline replay.
+- Do not infer physical arrival from map taps or time on screen; arrival is only a user-confirmed event.
+- Distinguish child action, app behavior, and AI assessment.
+
+5. EVENT CATALOG
+app_opened: whether a returning adventure exists; no user identity.
+analytics_consent_changed: granted/withdrawn, timestamp; avoid emitting remotely before consent.
+adventure_started: content pack version and age category when consented.
+adventure_resumed: resumed after an app reopening or ended-early state.
+adventure_ended_early: completed quest count, current quest ID, reason = user_action (never infer motivation).
+adventure_completed: total completed quests and total elapsed active time.
+adventure_restart_confirmed: previous completion count; create new adventure ID; do not send an event on canceled confirmation.
+quest_viewed: quest ID, gallery ID, content versions.
+quest_arrival_confirmed: user tapped 'I'm there'; not GPS-derived.
+quest_hint_opened: hint level 1 or 2, hint version.
+quest_photo_submitted: attempt number, no photo payload or image metadata.
+quest_verification_result: verified/not_found/uncertain/error; confidence bucket if safe and meaningful; verification model version; latency bucket; attempt number; never raw model output.
+quest_parent_override: manual success/fallback, without explanation or personal details.
+quest_completed: quest ID, completion method (ai_verified/parent_confirmed), number of hints, number of photo attempts, measured active duration.
+quest_skipped: explicit user skip vs unavailable due to closure; preserve distinction.
+route_requested: from gallery, to gallery, route graph version.
+route_unavailable: no verified route, closure blocking, or unknown connectivity; never imply live location.
+map_opened: source screen; optional.
+app_error: sanitized error code, component, app version; no raw exception payload containing user content.
+
+6. TIMING DEFINITIONS
+- Record elapsed wall-clock time separately from active engagement time.
+- Active quest time starts when the clue is shown, pauses when the tab/app is backgrounded or inactive beyond a documented idle threshold (suggest 90 seconds), and stops on solve/skip/end.
+- Keep navigation time separate: from opening 'Show Me the Way' until user-confirmed arrival. Label it 'navigation interval', not verified walking time.
+- Exclude app background time from active metrics. Do not use time as a competitive score.
+- Mark incomplete/censored observations rather than treating them as completed solve times.
+
+7. CONTENT VERSIONING
+Every quest must have stable IDs and explicit versions:
+quest_id, gallery_id, artwork_id, hidden_detail_id, riddle_version, hint_set_version, artwork_assignment_version, content_pack_version.
+Keep immutable records of published content versions and release dates. Aggregate results by version, not just gallery number. Preserve the ten existing approved riddles until the owner explicitly approves edits. Allow future A/B testing only after adult consent, sufficient volume, and careful child-appropriate review; do not silently randomize museum routes or canonical clues.
+
+8. METRICS & DEFINITIONS
+- Quest exposure count: unique consenting adventures with quest_viewed.
+- Completion rate: adventures with quest_completed / adventures with quest_viewed; separate closures/skips.
+- Hint rate: exposed adventures with >=1 hint / exposed adventures; track hint level distribution.
+- First-attempt AI verification rate: first eligible photo submissions returning verified / first eligible photo submissions; exclude transport failures and report separately.
+- Retry rate: adventures with >1 photo submission for a quest / adventures submitting a photo for that quest.
+- Parent override rate: quests completed via parent fallback / completed quests.
+- Median active solve time and interquartile range, for solved quests only; pair with abandon/skip counts to avoid survivorship bias.
+- Early-exit distribution: quest shown at time of early exit; avoid treating that quest as proven cause.
+- Route failure rate: route_unavailable / route_requested, segmented by graph version and closure status.
+- Adventure completion rate: completed adventures / started adventures, with cohort window and handling of still-in-progress adventures explicitly documented.
+- Error rates and p50/p95 verification latency.
+- Sample sizes and uncertainty must be displayed; avoid ranking content from tiny samples.
+
+9. DASHBOARD (ADMIN ONLY)
+Overview: consented adventures, starts, completions, early endings, median quests completed, trend by content version.
+Quest performance table: quest/gallery/artwork/riddle version, exposures, completions, hint usage, median active solve time, attempts, first-pass AI rate, overrides, skips, errors.
+Quest detail: version history and metrics over time, optional age-bucket comparison when privacy threshold is met.
+Funnel: started -> first quest -> 3 quests -> 6 quests -> 10 quests; distinguish early-ended, still-active, and technical failures.
+Navigation diagnostics: transitions with route-unavailable events, closure versions, and drop-off correlations.
+Quality alerts: sudden rise in uncertain AI results, repeated failures, or unexpectedly high skip rate.
+Filtering: date range, content version, quest, verification model version, and sufficiently large age group.
+Export: aggregated CSV only by default; no raw child-level event export in the UI.
+
+10. INTERPRETATION & DECISIONS
+Do not automatically label a riddle 'bad' because of long duration, low AI verification, or high hint use. Compare metrics jointly and review potential confounders: artwork relocation, crowding, closures, network conditions, camera quality, and verification-model changes. Use a review workflow: flag -> inspect metrics -> verify on-site artwork/location -> propose wording/artwork adjustment -> approve -> publish new content version -> compare cohorts. Maintain an editorial change log.
+
+11. IMPLEMENTATION ARCHITECTURE
+Client: typed analytics adapter with a strict event allowlist; no direct third-party SDK required. Queue consented events locally for unreliable museum connectivity, cap queue size and age, batch upload when online, discard on opt-out.
+Server: authenticated or abuse-protected ingestion endpoint, payload validation, size/rate limits, deduplication by event_id, server-side timestamps for ingestion, secure storage, scheduled aggregate generation. Avoid retaining IP addresses or user-agent strings in analytics; configure infrastructure logs accordingly as feasible.
+Admin: access-controlled dashboard; separate admin credentials and audit logs for data access and content edits.
+Operations: retention configuration, backups, deletion procedures, monitoring, schema migrations, and sampling/test-event exclusion.
+
+12. EXAMPLE TYPE CONTRACT
+```ts
+type AnalyticsEventName =
+  | 'adventure_started' | 'adventure_resumed' | 'adventure_ended_early'
+  | 'adventure_completed' | 'adventure_restart_confirmed'
+  | 'quest_viewed' | 'quest_arrival_confirmed' | 'quest_hint_opened'
+  | 'quest_photo_submitted' | 'quest_verification_result'
+  | 'quest_parent_override' | 'quest_completed' | 'quest_skipped'
+  | 'route_requested' | 'route_unavailable' | 'map_opened' | 'app_error';
+
+interface AnalyticsEvent {
+  event_id: string; // UUID
+  event_name: AnalyticsEventName;
+  schema_version: number;
+  occurred_at: string; // ISO UTC
+  adventure_id: string; // random; new on restart
+  session_id: string; // random, visit-scoped
+  app_version: string;
+  content_pack_version: string;
+  quest_id?: string;
+  gallery_id?: number;
+  artwork_id?: string;
+  riddle_version?: string;
+  hint_set_version?: string;
+  artwork_assignment_version?: string;
+  properties: Record<string, string | number | boolean | null>; // per-event allowlist
+}
+```
+The example is illustrative; implement discriminated union types per event and server validation to prevent arbitrary properties.
+
+13. ACCEPTANCE CRITERIA
+1. Game remains fully playable with analytics declined or offline.
+2. Analytics starts only after required adult consent; opt-out stops future collection and clears local event queue.
+3. No photos, names, birthdays, GPS, free text, or persistent cross-adventure child identifiers are logged.
+4. All quest events carry stable IDs and published content versions.
+5. Duplicate/offline-retried events do not inflate counts.
+6. App background/idle time is excluded from active solve time.
+7. AI failure, wrong target, technical error, and parent override remain analytically distinct.
+8. Ending early preserves progress and is recorded distinctly from restart and completion.
+9. Restart creates a fresh adventure ID after confirmation only.
+10. Dashboard shows denominators, date range, sample size, and version for each metric.
+11. Suppress small age-segment cells (set a configurable minimum cohort threshold, initially 10; review with privacy counsel).
+12. Admin access is authenticated and aggregate exports contain no child-level event rows.
+13. Closures and unverified routes are distinguishable from content difficulty.
+14. Canonical riddles, quest order, and routing are unchanged by this feature.
+15. Retention, deletion, incident handling, and children's privacy review are documented before launch.
+
+14. TEST CASES
+Consent decline; consent grant; opt-out while queued; offline queue and retry; duplicate event delivery; background/foreground timing; multiple hints; AI uncertain and error states; parent confirmation; gallery closure skip; missing verified route; early end and later resume; restart canceled and confirmed; app reinstall; corrupt local queue; content revision; model-version change; dashboard small-cohort suppression; unauthorized admin access; expired-event deletion.
+
+15. RECOMMENDED DELIVERY ORDER
+Phase 1: content IDs/versioning, consent UX, event schema, first-party event collection, secure ingestion, retention policy.
+Phase 2: basic aggregate quest dashboard and funnel, verification diagnostics, admin permissions.
+Phase 3: version comparison, quality alerts, editorial review workflow and optional privacy-reviewed experiments.
+
+END OF FEATURE SPECIFICATION

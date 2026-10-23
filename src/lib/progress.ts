@@ -28,6 +28,7 @@ export const initialProgress: AdventureState = freshAdventure(firstQuest);
 let current: AdventureState = initialProgress;
 let loaded = false;
 const listeners = new Set<() => void>();
+const observers = new Set<(prev: AdventureState, next: AdventureState) => void>();
 
 function load() {
   if (loaded || typeof window === "undefined") return;
@@ -57,9 +58,17 @@ export function updateProgress(change: (p: AdventureState) => AdventureState) {
   load();
   const next = change(current);
   if (next === current) return;
+  const prev = current;
   current = next;
   persist();
+  observers.forEach((o) => o(prev, next));
   listeners.forEach((l) => l());
+}
+
+/** Called with the old and new state after every change (analytics derives its events from these). */
+export function observeProgress(observer: (prev: AdventureState, next: AdventureState) => void) {
+  observers.add(observer);
+  return () => observers.delete(observer);
 }
 
 function subscribe(listener: () => void) {

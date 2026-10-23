@@ -49,6 +49,9 @@ const node = (id: string, x: number, y: number, label = id): GalleryNode => ({
   floor: 2,
 });
 
+/** Bump whenever a node or connection below changes, so analytics can compare route results by graph version. */
+export const ROUTE_GRAPH_VERSION = "2026.10.22-1";
+
 // Layout from Alex's sketch of 2026-10-22 (Central Park side at top).
 export const galleryNodes: GalleryNode[] = [
   node("820", 1, 0), node("823", 2, 0), node("826", 3, 0), node("830", 4, 0),

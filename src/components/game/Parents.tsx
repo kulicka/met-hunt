@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { ExternalLink } from "lucide-react";
+import { photoAttempts, trackQuest } from "@/lib/analytics/client";
 import { statusFor, useArtworkStatus, withMetData } from "@/lib/artwork-status";
 import type { ArtworkStatus } from "@/lib/artworks";
 import { isGalleryClosed, useClosures } from "@/lib/closures";
@@ -9,6 +10,7 @@ import type { QuestReveal } from "@/data/types";
 import { GALLERY_CLOSURES_URL, OFFICIAL_MAP_URL } from "@/lib/links";
 import { loadReveals, nextUnsolved, pack, questById, questNumber } from "@/lib/content";
 import { completeQuest, useProgress } from "@/lib/progress";
+import { AnalyticsConsentCard } from "./AnalyticsConsent";
 import { HoldButton } from "./HoldButton";
 import { RestartButton } from "./Lifecycle";
 import { navigate } from "./router";
@@ -60,6 +62,7 @@ function ParentsPanel() {
 
   const markFound = (id: number) => {
     if (window.confirm(`Mark Mystery #${questNumber(id)} as found?`)) {
+      trackQuest("quest_parent_override", id, { kind: "answer_key", photo_attempts: photoAttempts(id) });
       completeQuest(id, "manual", nextUnsolved(id, [...progress.completedQuests, id], closures));
     }
   };
@@ -138,12 +141,14 @@ function ParentsPanel() {
             Each photo is shrunk and stripped of hidden data (like location) on this phone, sent once to our checker, and
             not kept afterward. The checker uses an AI service from Anthropic to look at the photo.
           </li>
-          <li>The game never asks for your child’s name, birthday, email, or location, and does no facial recognition. The age group and explorer your child picks stay on this phone.</li>
+          <li>The game never asks for your child’s name, birthday, email, or location, and does no facial recognition. The explorer your child picks stays on this phone, and so does the age group unless you turn on the optional analytics below (then only a broad group like “8–10” is sent).</li>
           <li>Please photograph the artwork, not other museum visitors.</li>
           <li>AI checks can be wrong. A grown-up can always confirm a find.</li>
           <li>Progress is saved only on this phone.</li>
         </ul>
       </Card>
+
+      <AnalyticsConsentCard />
 
       <div className="flex flex-col gap-1">
         <a className={linkClass} href={OFFICIAL_MAP_URL} target="_blank" rel="noopener noreferrer">
