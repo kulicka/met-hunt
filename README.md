@@ -47,12 +47,17 @@ the check off, or `MET_API_BASE` to point it at a mock.
 No accounts, names, emails, GPS, or facial recognition. Photos are resized and
 stripped of EXIF on the phone, sent only to check the find, and discarded after.
 
+Optional first-party analytics (off unless the server enables it and a grown-up
+opts in) records game events with random per-adventure ids, never photos or names.
+Admin dashboard at `/admin`. See [docs/analytics.md](docs/analytics.md).
+
 ## Development
 
 ```bash
 npm install
 npm run dev          # VERIFY_MOCK_STATUS=verified npm run dev fakes photo checks locally
 npm test             # LAUNCH_CHECK=1 npm test also requires all route validations
+TEST_DATABASE_URL=postgres://localhost/met_test npm test   # also runs the analytics SQL tests
 ```
 
 Set `ANTHROPIC_API_KEY` for real photo checks. Deployment: [DEPLOYMENT.md](DEPLOYMENT.md).

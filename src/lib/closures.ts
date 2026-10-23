@@ -62,5 +62,11 @@ export function useClosures(): ClosureOverride[] {
   return list.closures;
 }
 
+/** Which closure list is in use, as a short token for analytics (its checkedAt date). */
+export const closureVersion = () => {
+  load();
+  return current.checkedAt.replace(/[^A-Za-z0-9._-]/g, "-").slice(0, 40) || "unknown";
+};
+
 export const isGalleryClosed = (gallery: string, closures: ClosureOverride[]) =>
   closures.some((c) => c.galleryId === gallery && c.status === "closed");
