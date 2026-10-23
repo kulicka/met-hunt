@@ -8,8 +8,9 @@ import { isGalleryClosed, useClosures } from "@/lib/closures";
 import type { QuestReveal } from "@/data/types";
 import { GALLERY_CLOSURES_URL, OFFICIAL_MAP_URL } from "@/lib/links";
 import { loadReveals, nextUnsolved, pack, questById, questNumber } from "@/lib/content";
-import { completeQuest, resetProgress, useProgress } from "@/lib/progress";
+import { completeQuest, useProgress } from "@/lib/progress";
 import { HoldButton } from "./HoldButton";
+import { RestartButton } from "./Lifecycle";
 import { navigate } from "./router";
 import { Button, Card, Eyebrow, Screen, Title } from "./ui";
 
@@ -60,13 +61,6 @@ function ParentsPanel() {
   const markFound = (id: number) => {
     if (window.confirm(`Mark Mystery #${questNumber(id)} as found?`)) {
       completeQuest(id, "manual", nextUnsolved(id, [...progress.completedQuests, id], closures));
-    }
-  };
-
-  const reset = () => {
-    if (window.confirm("Start over? This clears all progress and found treasures on this phone.")) {
-      resetProgress();
-      navigate({ name: "start" }, { replace: true });
     }
   };
 
@@ -144,7 +138,7 @@ function ParentsPanel() {
             Each photo is shrunk and stripped of hidden data (like location) on this phone, sent once to our checker, and
             not kept afterward. The checker uses an AI service from Anthropic to look at the photo.
           </li>
-          <li>The game never asks for your child’s name, email, or location, and does no facial recognition.</li>
+          <li>The game never asks for your child’s name, birthday, email, or location, and does no facial recognition. The age group and explorer your child picks stay on this phone.</li>
           <li>Please photograph the artwork, not other museum visitors.</li>
           <li>AI checks can be wrong. A grown-up can always confirm a find.</li>
           <li>Progress is saved only on this phone.</li>
@@ -160,10 +154,10 @@ function ParentsPanel() {
         </a>
       </div>
 
-      <Button variant="secondary" onClick={reset}>
-        Start over
+      <RestartButton />
+      <Button onClick={() => navigate(progress.status === "in_progress" ? { name: "quest", id: progress.currentQuest } : { name: "start" })}>
+        Back to the hunt
       </Button>
-      <Button onClick={() => navigate({ name: "quest", id: progress.currentQuest })}>Back to the hunt</Button>
     </Screen>
   );
 }

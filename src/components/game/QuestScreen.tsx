@@ -5,7 +5,7 @@ import { Camera, ImageUp, Lightbulb, Map as MapIcon } from "lucide-react";
 import { isGalleryClosed, useClosures } from "@/lib/closures";
 import { loadReveals, nextUnsolved, pack, questById, questNumber } from "@/lib/content";
 import { preparePhoto } from "@/lib/photo";
-import { completeQuest, updateProgress, useProgress, type VerificationMethod } from "@/lib/progress";
+import { completeQuest, playQuest, updateProgress, useProgress, type VerificationMethod } from "@/lib/progress";
 import { type VerificationResult, type VerificationStatus } from "@/lib/verification";
 import { GrownUpCheck } from "./GrownUpCheck";
 import { navigate } from "./router";
@@ -35,7 +35,7 @@ export function QuestScreen({ id }: { id: number }) {
   useEffect(() => {
     // Warm the answers chunk so a grown-up check still works if signal drops later.
     loadReveals().catch(() => {});
-    if (quest) updateProgress((p) => (p.currentQuest === id && p.gameStarted ? p : { ...p, gameStarted: true, currentQuest: id }));
+    if (quest) playQuest(id);
     return () => discardPhoto();
   }, [id, quest]);
 

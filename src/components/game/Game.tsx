@@ -4,10 +4,16 @@ import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { CollectionScreen, FinalScreen } from "./Collection";
 import { FoundScreen, NextScreen } from "./FoundScreens";
 import { HowToPlay, StartScreen } from "./Intro";
+import { GameBar } from "./Lifecycle";
 import { MapScreen } from "./MapScreen";
+import { EditProfile, Onboarding } from "./Onboarding";
 import { ParentsScreen } from "./Parents";
 import { QuestScreen } from "./QuestScreen";
 import { parseRoute, useHash, type Route } from "./router";
+import { useProfile } from "@/lib/profile";
+
+// Screens that show the explorer and the menu above them.
+const IN_GAME = new Set<Route["name"]>(["quest", "found", "next", "map", "collection", "how"]);
 
 function screenFor(route: Route) {
   switch (route.name) {
@@ -29,14 +35,20 @@ function screenFor(route: Route) {
       return <FinalScreen />;
     case "parents":
       return <ParentsScreen />;
+    case "explorer":
+    case "age":
+      return <EditProfile field={route.name} />;
   }
 }
 
 export function Game() {
   const hash = useHash();
+  const profile = useProfile();
   const reduce = useReducedMotion();
-  if (hash === null) return null; // server render: progress lives on the phone only
+  if (hash === null || profile === null) return null; // server render: progress lives on the phone only
   const route = parseRoute(hash);
+  // First launch (or interrupted onboarding): age and explorer come first. Grown-ups can still open their page.
+  if (!profile.onboardingComplete && route.name !== "parents") return <Onboarding />;
   return (
     <AnimatePresence mode="wait" initial={false}>
       <motion.div
@@ -46,6 +58,7 @@ export function Game() {
         exit={reduce ? undefined : { opacity: 0 }}
         transition={{ duration: 0.18 }}
       >
+        {IN_GAME.has(route.name) && <GameBar />}
         {screenFor(route)}
       </motion.div>
     </AnimatePresence>

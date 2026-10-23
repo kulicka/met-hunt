@@ -14,7 +14,9 @@ export type Route =
   | { name: "map"; focus?: number; from?: number }
   | { name: "collection" }
   | { name: "done" }
-  | { name: "parents" };
+  | { name: "parents" }
+  | { name: "explorer" }
+  | { name: "age" };
 
 export function parseRoute(hash: string): Route {
   const [path, query = ""] = hash.replace(/^#\/?/, "").split("?");
@@ -26,6 +28,8 @@ export function parseRoute(hash: string): Route {
     case "collection":
     case "done":
     case "parents":
+    case "explorer":
+    case "age":
       return { name };
     case "quest":
     case "found":

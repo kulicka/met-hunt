@@ -7,7 +7,7 @@ import { statusFor, useArtworkStatus, withMetData } from "@/lib/artwork-status";
 import { isGalleryClosed, useClosures } from "@/lib/closures";
 import type { QuestReveal } from "@/data/types";
 import { loadReveals, pack, questById, questNumber } from "@/lib/content";
-import { useProgress } from "@/lib/progress";
+import { endAdventure, useProgress } from "@/lib/progress";
 import { navigate } from "./router";
 import { Button, Card, Eyebrow, ProgressDots, Screen } from "./ui";
 
@@ -133,7 +133,14 @@ export function NextScreen({ from }: { from: number }) {
             {closedLeft.length === 1 ? "One gallery is" : `${closedLeft.length} galleries are`} temporarily closed, so the hunt ends here.
           </p>
         )}
-        <Button onClick={() => navigate({ name: "done" }, { replace: true })}>FINISH THE HUNT</Button>
+        <Button
+          onClick={() => {
+            endAdventure(); // no-op once all ten are found (already completed)
+            navigate({ name: "done" }, { replace: true });
+          }}
+        >
+          FINISH THE HUNT
+        </Button>
       </Screen>
     );
   }
