@@ -1,4 +1,4 @@
-import { galleryConnections, type GalleryConnection } from "@/data/maps/met-floor2-european-paintings";
+import { galleryConnections, galleryNodes, type GalleryConnection } from "@/data/maps/met-floor2-european-paintings";
 import type { ClosureOverride } from "@/data/closures";
 
 export interface Route {
@@ -8,9 +8,19 @@ export interface Route {
   edges: GalleryConnection[];
 }
 
+const centers = new Map(galleryNodes.map((n) => [n.id, { x: n.x + n.w / 2, y: n.y + n.h / 2 }]));
+
+/** Walking cost of a doorway: room middle to the doorway to the next room's middle. 1 when positions are unknown. */
+function cost(from: string, to: string, edge: GalleryConnection) {
+  const a = centers.get(from), b = centers.get(to);
+  if (!edge.at || !a || !b) return 1;
+  return Math.hypot(edge.at.x - a.x, edge.at.y - a.y) + Math.hypot(b.x - edge.at.x, b.y - edge.at.y);
+}
+
 /**
  * Shortest walkable route between two galleries (spec v2, section D):
  * verified connections only, closed galleries and connections removed.
+ * "Shortest" is walking distance on the schematic when doorway positions are known.
  * Returns null when no verified route exists; callers show the official-map fallback.
  */
 export function findRoute(
@@ -26,28 +36,35 @@ export function findRoute(
   const usable = connections.filter(
     (c) => c.verified && !closedEdges.has(c.id) && !closedGalleries.has(c.from) && !closedGalleries.has(c.to),
   );
-  const adjacency = new Map<string, { next: string; edge: GalleryConnection }[]>();
+  const adjacency = new Map<string, { next: string; edge: GalleryConnection; w: number }[]>();
   const link = (a: string, b: string, e: GalleryConnection) =>
-    adjacency.set(a, [...(adjacency.get(a) ?? []), { next: b, edge: e }]);
+    adjacency.set(a, [...(adjacency.get(a) ?? []), { next: b, edge: e, w: cost(a, b, e) }]);
   for (const c of usable) {
     link(c.from, c.to, c);
     if (c.bidirectional) link(c.to, c.from, c);
   }
-  for (const list of adjacency.values()) list.sort((p, q) => p.next.localeCompare(q.next));
 
-  const prev = new Map<string, { at: string; edge: GalleryConnection } | null>([[from, null]]);
-  const queue = [from];
-  while (queue.length) {
-    const cur = queue.shift()!;
-    if (cur === to) break;
-    for (const { next, edge } of adjacency.get(cur) ?? []) {
-      if (!prev.has(next)) {
+  // Dijkstra; ties broken by gallery id so the same map always gives the same route.
+  const dist = new Map<string, number>([[from, 0]]);
+  const prev = new Map<string, { at: string; edge: GalleryConnection }>();
+  const done = new Set<string>();
+  while (true) {
+    let cur: string | null = null;
+    for (const [id, d] of dist) {
+      if (done.has(id)) continue;
+      if (cur === null || d < dist.get(cur)! - 1e-9 || (Math.abs(d - dist.get(cur)!) < 1e-9 && id < cur)) cur = id;
+    }
+    if (cur === null || cur === to) break;
+    done.add(cur);
+    for (const { next, edge, w } of adjacency.get(cur) ?? []) {
+      const d = dist.get(cur)! + w;
+      if (!dist.has(next) || d < dist.get(next)! - 1e-9) {
+        dist.set(next, d);
         prev.set(next, { at: cur, edge });
-        queue.push(next);
       }
     }
   }
-  if (!prev.has(to)) return null;
+  if (!dist.has(to)) return null;
 
   const path = [to];
   const edges: GalleryConnection[] = [];
