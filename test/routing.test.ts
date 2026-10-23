@@ -47,6 +47,22 @@ describe("gallery graph (spec v2)", () => {
     }
   });
 
+  it("routes every quest leg along the path checked on the official map (817 → 818 goes the long way round)", () => {
+    for (const v of routeValidations) {
+      expect(findRoute(v.fromQuestGallery, v.toQuestGallery, [])?.path, `${v.fromQuestGallery} → ${v.toQuestGallery}`).toEqual(v.path);
+    }
+    expect(routeValidations).toHaveLength(questOrder.length - 1);
+  });
+
+  it("puts every doorway on the wall its two rooms share", () => {
+    const byId = new Map(galleryNodes.map((n) => [n.id, n]));
+    const on = (n: (typeof galleryNodes)[number], x: number, y: number) =>
+      x >= n.x - 0.6 && x <= n.x + n.w + 0.6 && y >= n.y - 0.6 && y <= n.y + n.h + 0.6;
+    for (const c of galleryConnections) {
+      expect(on(byId.get(c.from)!, c.at!.x, c.at!.y) && on(byId.get(c.to)!, c.at!.x, c.at!.y), c.id).toBe(true);
+    }
+  });
+
   it("every step of every quest route uses a verified doorway", () => {
     const verified = new Set(galleryConnections.filter((c) => c.verified).flatMap((c) => [`${c.from}|${c.to}`, `${c.to}|${c.from}`]));
     for (let i = 1; i < questOrder.length; i++) {

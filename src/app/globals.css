@@ -59,7 +59,7 @@ body {
 .tmap .room--found .room-body { fill: #e6ede6; stroke: var(--forest); }
 .tmap .room--current .room-body { fill: #fbeee9; stroke: var(--burgundy); stroke-width: 3; }
 .tmap .room--upcoming .room-body { stroke: var(--ink-soft); stroke-dasharray: 5 4; }
-.tmap .door { fill: var(--paper-deep); stroke: var(--line); }
+.tmap .door { fill: var(--card); stroke: none; }
 .tmap .num { font-family: var(--font-serif); font-weight: 700; font-size: 24px; fill: var(--ink); }
 .tmap .mark { font-size: 17px; fill: var(--ink-soft); }
 .tmap .room--found .mark { fill: var(--forest); font-weight: 700; }
@@ -70,11 +70,6 @@ body {
 .tmap .badge text { fill: #fff; font-size: 12px; font-weight: 700; }
 .tmap .route path { fill: none; stroke: var(--gold); stroke-width: 3; stroke-dasharray: 2 8; stroke-linecap: round; opacity: 0.8; }
 .tmap .route-leg { fill: none; stroke: var(--burgundy); stroke-width: 5; stroke-dasharray: 3 10; stroke-linecap: round; animation: march 1.2s linear infinite; }
-.tmap .edge-label { font-family: var(--font-serif); font-size: 15px; letter-spacing: 0.3em; fill: var(--ink-soft); }
-.tmap .compass circle { fill: none; stroke: var(--gold); stroke-width: 1.5; }
-.tmap .compass path { fill: var(--gold-soft); }
-.tmap .compass .north { fill: var(--burgundy); }
-.tmap .compass text { font-family: var(--font-serif); font-size: 14px; fill: var(--ink-soft); }
 .tmap .pulse { fill: none; stroke: var(--burgundy); stroke-width: 3; transform-box: fill-box; transform-origin: center; animation: pulse 2.4s ease-out infinite; }
 .tmap text { text-anchor: middle; pointer-events: none; }
 .tmap [data-gallery] { cursor: pointer; }

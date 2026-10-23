@@ -8,19 +8,42 @@ import { isGalleryClosed } from "@/lib/closures";
 import { isQuestClosed, questByGallery, questById, questNumber, questOrder } from "@/lib/content";
 import { findRoute } from "@/lib/routing";
 
-const COL_W = 118, ROW_H = 86, GAP = 22, PAD_X = 24, PAD_TOP = 56, PAD_BOTTOM = 76;
-const ROOM_W = COL_W - GAP, ROOM_H = ROW_H - GAP;
-const maxCol = Math.max(...galleryNodes.map((n) => n.x));
-const maxRow = Math.max(...galleryNodes.map((n) => n.y));
-const MAP_W = PAD_X * 2 + (maxCol + 1) * COL_W - GAP;
-const MAP_H = PAD_TOP + PAD_BOTTOM + (maxRow + 1) * ROW_H - GAP;
+// Scale and the part of the floor shown: the quest galleries and Hall 800. Rooms
+// beyond the edges are drawn too and simply run off the map.
+const S = 6;
+const VIEW = { x: 31, y: -2, w: 102.6, h: 126 };
+const PAD_BOTTOM = 34;
+const INSET = 1.6; // px between neighbouring rooms, so walls read as gaps
+const MAP_W = VIEW.w * S;
+const MAP_H = VIEW.h * S + PAD_BOTTOM;
 
 const byId = new Map(galleryNodes.map((n) => [n.id, n]));
-const rx = (n: GalleryNode) => PAD_X + n.x * COL_W;
-const ry = (n: GalleryNode) => PAD_TOP + n.y * ROW_H;
-const cx = (id: string) => rx(byId.get(id)!) + ROOM_W / 2;
-const cy = (id: string) => ry(byId.get(id)!) + ROOM_H / 2;
-const pathD = (path: string[]) => path.map((g, i) => `${i ? "L" : "M"}${cx(g)} ${cy(g)}`).join(" ");
+const px = (x: number) => (x - VIEW.x) * S;
+const py = (y: number) => (y - VIEW.y) * S;
+const box = (n: GalleryNode) => ({ x: px(n.x) + INSET, y: py(n.y) + INSET, w: n.w * S - 2 * INSET, h: n.h * S - 2 * INSET });
+const center = (n: GalleryNode) => ({ x: px(n.x + n.w / 2), y: py(n.y + n.h / 2) });
+const edgeBetween = (a: string, b: string) =>
+  galleryConnections.find((c) => (c.from === a && c.to === b) || (c.from === b && c.to === a));
+const doorPoint = (a: string, b: string) => {
+  const at = edgeBetween(a, b)?.at;
+  return at ? { x: px(at.x), y: py(at.y) } : center(byId.get(b)!);
+};
+
+/** Room middle → doorway → room middle. Through a hallway the line follows the hall instead of its middle. */
+function pathD(path: string[]) {
+  const pts: { x: number; y: number }[] = [];
+  path.forEach((id, i) => {
+    const n = byId.get(id)!;
+    if (n.kind === "corridor" && i > 0 && i < path.length - 1) {
+      const c = center(n);
+      pts.push({ x: c.x, y: doorPoint(path[i - 1], id).y }, { x: c.x, y: doorPoint(id, path[i + 1]).y });
+    } else {
+      pts.push(center(n));
+    }
+    if (i < path.length - 1) pts.push(doorPoint(id, path[i + 1]));
+  });
+  return pts.map((p, i) => `${i ? "L" : "M"}${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(" ");
+}
 
 export type RoomState = "found" | "current" | "upcoming" | "closed";
 
@@ -42,31 +65,20 @@ function huntPaths(closures: ClosureOverride[]): string[][] {
 }
 
 function Doorway({ c, closures }: { c: GalleryConnection; closures: ClosureOverride[] }) {
-  const a = byId.get(c.from), b = byId.get(c.to);
-  if (!a || !b) return null;
+  const a = byId.get(c.from);
+  if (!a || !c.at) return null;
   const closed = isGalleryClosed(c.from, closures) || isGalleryClosed(c.to, closures) || closures.some((o) => o.connectionId === c.id);
   const cls = !c.verified ? "door door--unknown" : closed ? "door door--closed" : "door";
-  if (a.y === b.y) {
-    const left = a.x < b.x ? a : b;
-    const x = rx(left) + ROOM_W - 2, y = ry(left) + ROOM_H / 2 - 9;
-    return (
-      <g className={cls}>
-        <rect x={x} y={y} width={GAP + 4} height={18} rx={3} />
-        {!c.verified && <text x={x + (GAP + 4) / 2} y={y + 14}>?</text>}
-      </g>
-    );
-  }
-  if (a.x === b.x) {
-    const top = a.y < b.y ? a : b;
-    const x = rx(top) + ROOM_W / 2 - 9, y = ry(top) + ROOM_H - 2;
-    return (
-      <g className={cls}>
-        <rect x={x} y={y} width={18} height={GAP + 4} rx={3} />
-        {!c.verified && <text x={x + 9} y={y + (GAP + 4) / 2 + 5}>?</text>}
-      </g>
-    );
-  }
-  return null; // not drawable on this grid; still usable for routing if verified
+  // An opening in a left/right wall sits on the x edge of a room; otherwise it is in a top/bottom wall.
+  const sideWall = Math.abs(c.at.x - a.x) < 0.6 || Math.abs(c.at.x - (a.x + a.w)) < 0.6;
+  const [w, h] = sideWall ? [12, 26] : [26, 12];
+  const x = px(c.at.x) - w / 2, y = py(c.at.y) - h / 2;
+  return (
+    <g className={cls}>
+      <rect x={x} y={y} width={w} height={h} rx={3} />
+      {!c.verified && <text x={px(c.at.x)} y={py(c.at.y) + 5}>?</text>}
+    </g>
+  );
 }
 
 const MARK: Record<RoomState, string> = { found: "✓", current: "●", upcoming: "○", closed: "closed" };
@@ -112,27 +124,16 @@ export function TreasureMap({ completed, closures, current, emphasis, focus, onS
             </pattern>
           </defs>
 
-          <text className="edge-label" x={MAP_W / 2} y={30}>CENTRAL PARK SIDE</text>
-          <text className="edge-label" x={MAP_W / 2} y={MAP_H - 40}>FIFTH AVENUE SIDE</text>
-          <text className="schematic-label" x={MAP_W / 2} y={MAP_H - 14}>SCHEMATIC — NOT TO SCALE</text>
-
-          <g className="compass" transform={`translate(${PAD_X + ROOM_W / 2} ${PAD_TOP + ROW_H})`} aria-hidden>
-            <circle r="28" />
-            <path d="M0 -24 L6 0 L0 24 L-6 0 Z" />
-            <path className="north" d="M0 -24 L6 0 L-6 0 Z" />
-            <text y="-32">N</text>
-          </g>
+          <text className="schematic-label" x={MAP_W / 2} y={MAP_H - 12}>SCHEMATIC · LAID OUT LIKE THE MET’S FLOOR 2 MAP</text>
 
           <g filter="url(#ink)">
-            {galleryConnections.map((c) => (
-              <Doorway key={c.id} c={c} closures={closures} />
-            ))}
             {galleryNodes.map((n) => {
+              const b = box(n);
               const quest = questByGallery(n.id);
               const closed = isGalleryClosed(n.id, closures);
               if (!quest) {
                 return (
-                  <rect key={n.id} className={`room-body room--quiet-body${closed ? " room--blocked-body" : ""}`} x={rx(n)} y={ry(n)} width={ROOM_W} height={ROOM_H} rx={10} fill={closed ? "url(#hatch)" : undefined} aria-hidden />
+                  <rect key={n.id} className={`room-body room--quiet-body${closed ? " room--blocked-body" : ""}`} x={b.x} y={b.y} width={b.w} height={b.h} rx={6} fill={closed ? "url(#hatch)" : undefined} aria-hidden />
                 );
               }
               const state = roomState(quest.id, completed, closures, current);
@@ -153,11 +154,14 @@ export function TreasureMap({ completed, closures, current, emphasis, focus, onS
                     }
                   }}
                 >
-                  {state === "current" && <rect className="pulse" x={rx(n)} y={ry(n)} width={ROOM_W} height={ROOM_H} rx={10} />}
-                  <rect className="room-body" x={rx(n)} y={ry(n)} width={ROOM_W} height={ROOM_H} rx={10} fill={state === "closed" ? "url(#hatch)" : undefined} />
+                  {state === "current" && <rect className="pulse" x={b.x} y={b.y} width={b.w} height={b.h} rx={6} />}
+                  <rect className="room-body" x={b.x} y={b.y} width={b.w} height={b.h} rx={6} fill={state === "closed" ? "url(#hatch)" : undefined} />
                 </g>
               );
             })}
+            {galleryConnections.map((c) => (
+              <Doorway key={c.id} c={c} closures={closures} />
+            ))}
           </g>
 
           <g className="route" aria-hidden>
@@ -170,22 +174,23 @@ export function TreasureMap({ completed, closures, current, emphasis, focus, onS
           {/* Labels sit above the route so the dotted line never hides a gallery number. */}
           <g className="labels" aria-hidden>
             {galleryNodes.map((n) => {
+              const b = box(n);
               const quest = questByGallery(n.id);
               const closed = isGalleryClosed(n.id, closures);
               if (!quest) {
                 return (
                   <g key={n.id} className={`room room--quiet${closed ? " room--blocked" : ""}`}>
-                    <text x={rx(n) + ROOM_W / 2} y={ry(n) + ROOM_H / 2 + (closed ? -2 : 5)}>{n.label}</text>
-                    {closed && <text className="closed-note" x={rx(n) + ROOM_W / 2} y={ry(n) + ROOM_H / 2 + 16}>closed</text>}
+                    <text x={b.x + b.w / 2} y={b.y + b.h / 2 + (closed ? -2 : 5)}>{n.label}</text>
+                    {closed && <text className="closed-note" x={b.x + b.w / 2} y={b.y + b.h / 2 + 16}>closed</text>}
                   </g>
                 );
               }
               const state = roomState(quest.id, completed, closures, current);
               return (
                 <g key={n.id} className={`room room--${state}`}>
-                  <text className="num" x={rx(n) + ROOM_W / 2} y={ry(n) + ROOM_H / 2 + 2}>{n.label}</text>
-                  <text className="mark" x={rx(n) + ROOM_W / 2} y={ry(n) + ROOM_H / 2 + 22}>{MARK[state]}</text>
-                  <g className="badge" transform={`translate(${rx(n) + 4} ${ry(n) + 4})`}>
+                  <text className="num" x={b.x + b.w / 2} y={b.y + b.h / 2 + 2}>{n.label}</text>
+                  <text className="mark" x={b.x + b.w / 2} y={b.y + b.h / 2 + 22}>{MARK[state]}</text>
+                  <g className="badge" transform={`translate(${b.x + 16} ${b.y + 16})`}>
                     <circle r="11" />
                     <text y="4">{questNumber(quest.id)}</text>
                   </g>
