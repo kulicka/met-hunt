@@ -38,7 +38,7 @@ export function MagnifierHints({ hints, used, onReveal }: { hints: [string, stri
         </span>
         {done ? (open ? "HIDE HINTS" : "REVIEW HINTS") : (
           <span className="flex flex-col items-start leading-tight">
-            <span>MAGNIFYING GLASS — GET A HINT</span>
+            <span>GET A HINT</span>
             <span className="text-sm font-normal text-ink-soft">Hint {shown + 1} of {total}</span>
           </span>
         )}
