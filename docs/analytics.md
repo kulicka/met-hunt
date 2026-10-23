@@ -58,7 +58,7 @@ adventure), `session_id` (random, per visit), `app_version`,
 | `adventure_restart_confirmed` | `previous_completed_count`, `previous_status` | YES, START OVER (cancel sends nothing). The next adventure gets a new id. |
 | `quest_viewed` | `already_solved` | Clue screen shown |
 | `quest_arrival_confirmed` | `via`, `navigation_ms` | The child taps "I'M THERE". Never inferred. |
-| `quest_hint_opened` | `hint_level` (1, 2) | Magnifying glass |
+| `quest_hint_opened` | `hint_level` (1, 2) | GET A HINT |
 | `quest_photo_submitted` | `attempt_number`, `source` (camera, library) | USE THIS PHOTO. No photo or image data. |
 | `quest_verification_result` | `attempt_number`, `result`, `error_kind`, `model_version`, `latency_bucket` | Checker answered or failed. Never the model's output. |
 | `quest_parent_override` | `kind` (after_attempts, without_photo, answer_key), `photo_attempts` | Grown-up confirms a find |
