@@ -16,7 +16,7 @@ export function AnalyticsConsentCard() {
 
   return (
     <Card>
-      <h2 className="font-serif text-2xl font-bold">Help improve the hunt (optional)</h2>
+      <h2 className="font-display text-2xl font-semibold">Help improve the hunt (optional)</h2>
       <p className="mt-2">
         With your permission, this phone sends us game events (no names, no photos) so we can tell which riddles, hints, and routes
         work for kids, and fix the ones that don’t.

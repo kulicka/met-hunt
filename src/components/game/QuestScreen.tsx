@@ -168,7 +168,7 @@ export function QuestScreen({ id }: { id: number }) {
     return (
       <Screen>
         {inputs}
-        <h1 className="text-center font-serif text-3xl font-bold">Is this your treasure?</h1>
+        <h1 className="text-center font-display text-3xl font-semibold">Is this your treasure?</h1>
         {/* eslint-disable-next-line @next/next/no-img-element -- local object URL, never uploaded anywhere else */}
         <img src={photo.current.url} alt="Your photo" className="max-h-[55dvh] w-full rounded-2xl border border-line object-contain" />
         <Button onClick={verify}>USE THIS PHOTO</Button>
@@ -183,7 +183,7 @@ export function QuestScreen({ id }: { id: number }) {
     return (
       <Screen className="min-h-[70dvh] justify-center text-center" >
         <div aria-hidden className="text-6xl motion-safe:animate-bounce">🔍</div>
-        <p role="status" className="font-serif text-3xl font-bold">Checking your treasure…</p>
+        <p role="status" className="font-display text-3xl font-semibold">Checking your treasure…</p>
         <p className="text-lg text-ink-soft">Take another look at the painting while you wait.</p>
       </Screen>
     );
@@ -199,7 +199,7 @@ export function QuestScreen({ id }: { id: number }) {
     if (phase.kind === "offline") {
       body = (
         <>
-          <h1 className="font-serif text-4xl font-bold">No signal? No problem.</h1>
+          <h1 className="font-display text-4xl font-semibold">No signal? No problem.</h1>
           <p className="text-lg">A grown-up can check your discovery.</p>
           <Button onClick={verify}>TRY AGAIN</Button>
           <Button variant="secondary" onClick={() => setPhase({ kind: "grownup" })}>
@@ -210,7 +210,7 @@ export function QuestScreen({ id }: { id: number }) {
     } else if (phase.kind === "unavailable") {
       body = (
         <>
-          <h1 className="font-serif text-4xl font-bold">Hmm… the treasure checker is taking a break.</h1>
+          <h1 className="font-display text-4xl font-semibold">Hmm… the treasure checker is taking a break.</h1>
           <p className="text-lg">Try again in a moment, or ask a grown-up to check.</p>
           {photo.current ? <Button onClick={verify}>TRY AGAIN</Button> : tryAgain}
           <Button variant="secondary" onClick={() => setPhase({ kind: "grownup" })}>
@@ -221,7 +221,7 @@ export function QuestScreen({ id }: { id: number }) {
     } else if (phase.status === "likely") {
       body = (
         <>
-          <h1 className="font-serif text-4xl font-bold">SO CLOSE! 👀</h1>
+          <h1 className="font-display text-4xl font-semibold">SO CLOSE! 👀</h1>
           <p className="text-lg">You may have the right painting. Can you get a clearer shot of the hidden treasure?</p>
           <p className="text-ink-soft">Zoom with your camera if the treasure is tiny.</p>
           {tryAgain}
@@ -231,7 +231,7 @@ export function QuestScreen({ id }: { id: number }) {
     } else if (phase.status === "not_found") {
       body = (
         <>
-          <h1 className="font-serif text-4xl font-bold">KEEP HUNTING 🔎</h1>
+          <h1 className="font-display text-4xl font-semibold">KEEP HUNTING 🔎</h1>
           <p className="text-lg">This doesn’t look like our mystery painting yet.</p>
           <Button onClick={() => setPhase({ kind: "clue" })}>BACK TO THE GALLERY</Button>
           {grownUpOffer}
@@ -240,7 +240,7 @@ export function QuestScreen({ id }: { id: number }) {
     } else {
       body = (
         <>
-          <h1 className="font-serif text-4xl font-bold">Hmm… I can’t quite see it.</h1>
+          <h1 className="font-display text-4xl font-semibold">Hmm… I can’t quite see it.</h1>
           <p className="text-lg">Try another photo — zooming in a little may help.</p>
           {tryAgain}
           <Button variant="secondary" onClick={() => setPhase({ kind: "grownup" })}>
@@ -270,17 +270,17 @@ export function QuestScreen({ id }: { id: number }) {
           <Eyebrow>
             Quest {n} of {pack.questIds.length}
           </Eyebrow>
-          <button type="button" className="min-h-11 text-sm text-ink-soft underline underline-offset-4" onClick={() => navigate({ name: "collection" })}>
+          <button type="button" className="min-h-11 text-sm text-ink-soft underline decoration-ink/20 underline-offset-4 hover:text-ink" onClick={() => navigate({ name: "collection" })}>
             My notebook
           </button>
         </div>
-        <p className="font-serif text-5xl font-bold tracking-wide" aria-label={`Gallery ${quest.gallery}`}>
+        <p className="font-display text-5xl font-semibold" aria-label={`Gallery ${quest.gallery}`}>
           <span aria-hidden>📍 </span>Gallery {quest.gallery}
         </p>
         <ProgressDots completed={progress.completedQuests} current={id} />
         <button
           type="button"
-          className="flex min-h-11 items-center gap-2 self-start text-base font-semibold text-forest underline underline-offset-4"
+          className="flex min-h-11 items-center gap-2 self-start rounded-full border border-line bg-card px-4 text-base font-semibold text-ink shadow-[0_1px_2px_rgb(13_13_16/0.05)] transition hover:border-ink/40"
           onClick={() => navigate({ name: "map", focus: id })}
         >
           <MapIcon aria-hidden size={20} /> Show on Treasure Map
@@ -316,8 +316,8 @@ export function QuestScreen({ id }: { id: number }) {
       )}
 
       <Card className="relative text-center">
-        <p className="text-sm font-semibold uppercase tracking-[0.25em] text-gold">Mystery #{n}</p>
-        <blockquote className="mt-3 font-serif text-[1.75rem] font-semibold leading-snug">
+        <p className="font-mono text-[13px] font-medium uppercase tracking-[0.14em] text-gold">Mystery #{n}</p>
+        <blockquote className="mt-3 font-display text-[1.75rem] font-semibold leading-snug">
           <p>“{quest.riddle[0]}</p>
           <p>{quest.riddle[1]}”</p>
         </blockquote>

@@ -107,9 +107,9 @@ export function HowToPlay() {
           <li key={s}>{s}</li>
         ))}
       </ol>
-      <p className="font-serif text-xl italic">Don’t Google it — the fun is finding it yourself. 🔎</p>
+      <p className="font-display text-xl italic">Don’t Google it — the fun is finding it yourself. 🔎</p>
       <Card>
-        <h2 className="mb-3 font-serif text-2xl font-bold">Museum Detective Rules</h2>
+        <h2 className="mb-3 font-display text-2xl font-semibold">Museum Detective Rules</h2>
         <ul className="flex flex-col gap-2 text-base">
           {rules.map(([icon, text]) => (
             <li key={text} className="flex gap-3">

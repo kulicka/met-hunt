@@ -14,13 +14,13 @@ import { Button, Eyebrow, Screen, Title } from "./ui";
 // tab resumes where it stopped.
 
 const tile =
-  "flex items-center justify-center rounded-2xl border-2 bg-card font-semibold transition focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-burgundy";
-const tileState = (selected: boolean) => (selected ? "border-burgundy bg-burgundy/10 ring-2 ring-burgundy" : "border-line hover:border-ink-soft");
+  "flex items-center justify-center rounded-3xl border bg-card font-semibold shadow-[0_1px_2px_rgb(13_13_16/0.04)] transition focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-burgundy";
+const tileState = (selected: boolean) => (selected ? "border-ink bg-card ring-2 ring-ink" : "border-line hover:border-ink/40");
 
 export function AgePicker({ value, onPick }: { value?: AgeChoice; onPick: (age: AgeChoice) => void }) {
   return (
     <fieldset>
-      <legend className="mb-3 font-serif text-2xl font-bold">How old are you?</legend>
+      <legend className="mb-3 font-display text-2xl font-semibold">How old are you?</legend>
       <div className="grid grid-cols-4 gap-3">
         {AGE_CHOICES.map((age) => (
           <label key={age} className={`${tile} ${tileState(value === age)} min-h-16 cursor-pointer text-2xl has-[:focus-visible]:outline-3 has-[:focus-visible]:outline-burgundy`}>
@@ -45,7 +45,7 @@ export function ExplorerPicker({ value, onPick }: { value?: string; onPick: (id:
           >
             <input type="radio" name="explorer" className="sr-only" checked={value === a.id} onChange={() => onPick(a.id)} />
             <AvatarArt asset={a.imageAsset} size={88} />
-            <span className="font-serif text-2xl font-bold">{a.displayName}</span>
+            <span className="font-display text-2xl font-semibold">{a.displayName}</span>
             <span className="text-sm font-normal leading-snug text-ink-soft">{a.description}</span>
           </label>
         ))}
@@ -87,7 +87,7 @@ export function Onboarding() {
       <Screen>
         <Title className="text-center">CHOOSE YOUR EXPLORER</Title>
         <ExplorerPicker value={profile.avatarId} onPick={setAvatar} />
-        <div className="sticky bottom-0 -mx-5 flex flex-col gap-2 bg-paper/95 px-5 pb-4 pt-3 backdrop-blur">
+        <div className="sticky bottom-0 -mx-5 flex flex-col gap-2 border-t border-line bg-paper/85 px-5 pb-4 pt-3 backdrop-blur-md">
           <Button disabled={!profile.avatarId} className="disabled:opacity-40" onClick={() => setStep("ready")}>
             CONTINUE
           </Button>

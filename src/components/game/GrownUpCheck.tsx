@@ -19,13 +19,13 @@ export function GrownUpCheck({ questId, onConfirm, onCancel }: { questId: number
   return (
     <Screen>
       <Eyebrow>For grown-ups · Gallery {quest.gallery}</Eyebrow>
-      <h1 className="font-serif text-4xl font-bold">Did they find it?</h1>
+      <h1 className="font-display text-4xl font-semibold">Did they find it?</h1>
       <p className="text-lg">
         Take a look at what your explorer found. AI checks can be wrong, so your word counts.
       </p>
       {answer && answer !== "error" ? (
         <Card>
-          <p className="text-sm font-semibold uppercase tracking-widest text-ink-soft">The answer</p>
+          <p className="font-mono text-[13px] font-medium uppercase tracking-[0.14em] text-ink-soft">The answer</p>
           <p className="mt-1 text-xl font-semibold">{answer.hiddenObject}</p>
           <p className="text-ink-soft">
             in <em>{answer.artwork}</em> by {answer.artist}
