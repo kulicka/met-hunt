@@ -36,7 +36,7 @@ export function HoldButton({ seconds = 3, onComplete, children }: { seconds?: nu
   return (
     <button
       type="button"
-      className="relative min-h-14 w-full overflow-hidden rounded-xl border-2 border-ink bg-card px-5 font-semibold"
+      className="relative min-h-14 w-full overflow-hidden rounded-full border border-ink/30 bg-card px-5 font-semibold"
       onPointerDown={begin}
       onPointerUp={stop}
       onPointerLeave={stop}

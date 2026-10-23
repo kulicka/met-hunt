@@ -68,9 +68,9 @@ export function NotebookScreen() {
             const closed = isGalleryClosed(quest.gallery, closures);
             return (
               <li key={id}>
-                <div className="flex h-full min-h-44 flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-line bg-paper-deep/40 p-3 text-center text-ink-soft">
+                <div className="flex h-full min-h-44 flex-col items-center justify-center gap-2 rounded-3xl border border-dashed border-ink/20 bg-card/50 p-3 text-center text-ink-soft">
                   <Lock aria-hidden size={22} />
-                  <p className="font-serif text-xl font-bold">Mystery #{n}</p>
+                  <p className="font-display text-xl font-semibold">Mystery #{n}</p>
                   <p className="text-sm">{closed ? `Gallery ${quest.gallery} is closed today` : "Not discovered yet"}</p>
                 </div>
               </li>
@@ -82,13 +82,13 @@ export function NotebookScreen() {
               <button
                 type="button"
                 onClick={() => navigate({ name: "entry", id })}
-                className="flex h-full min-h-44 w-full flex-col items-center gap-1 rounded-2xl border-2 border-gold/60 bg-card p-3 text-center shadow-sm hover:border-gold focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-burgundy"
+                className="flex h-full min-h-44 w-full flex-col items-center gap-1 rounded-3xl border border-line bg-card p-3 text-center shadow-[0_1px_2px_rgb(13_13_16/0.04),0_12px_30px_-22px_rgb(13_13_16/0.3)] hover:border-ink/40 focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-burgundy"
               >
                 <StampSlot questId={id} size={76} />
-                <span className="text-xs font-semibold uppercase tracking-widest text-gold">
+                <span className="font-mono text-xs font-medium uppercase tracking-[0.12em] text-gold">
                   #{n} · Gallery {quest.gallery}
                 </span>
-                <span className="font-serif text-lg font-bold leading-tight">{reveal?.hiddenObject ?? "Treasure found"}</span>
+                <span className="font-display text-lg font-semibold leading-tight">{reveal?.hiddenObject ?? "Treasure found"}</span>
               </button>
             </motion.li>
           );
@@ -138,10 +138,10 @@ export function EntryScreen({ id, fresh }: { id: number; fresh?: boolean }) {
       {fresh && <p className="font-semibold text-forest">Added to your Detective Notebook!</p>}
       {reveal ? (
         <Card className="text-left">
-          <p className="font-serif text-3xl font-bold">{reveal.hiddenObject}</p>
+          <p className="font-display text-3xl font-semibold">{reveal.hiddenObject}</p>
           <ArtworkFigure reveal={reveal} />
           {reveal.fact && <p className="mt-3 text-lg">{reveal.fact}</p>}
-          {method && <p className="mt-3 text-sm font-semibold uppercase tracking-widest text-ink-soft">✓ {CONFIRMED[method]}</p>}
+          {method && <p className="mt-3 font-mono text-[13px] font-medium uppercase tracking-[0.14em] text-ink-soft">✓ {CONFIRMED[method]}</p>}
           {reveal.metObjectUrl && (
             <a href={reveal.metObjectUrl} target="_blank" rel="noopener noreferrer" className="mt-2 inline-flex min-h-11 items-center gap-1 text-ink-soft underline underline-offset-4">
               See it on The Met’s website <ExternalLink aria-hidden size={16} />

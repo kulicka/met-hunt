@@ -82,7 +82,7 @@ function ParentsPanel() {
           return (
             <li key={id}>
               <Card className="flex flex-col gap-1">
-                <p className="text-sm font-semibold uppercase tracking-widest text-ink-soft">
+                <p className="font-mono text-[13px] font-medium uppercase tracking-[0.14em] text-ink-soft">
                   #{questNumber(id)} · Gallery {quest.gallery}
                   {isGalleryClosed(quest.gallery, closures) && " · temporarily closed"}
                   {solved && " · found ✓"}
@@ -124,7 +124,7 @@ function ParentsPanel() {
 
       {closures.length > 0 && (
         <Card>
-          <h2 className="font-serif text-2xl font-bold">Closed galleries</h2>
+          <h2 className="font-display text-2xl font-semibold">Closed galleries</h2>
           <p className="mt-2">
             The Met lists Gallery {closures.map((c) => c.galleryId ?? c.connectionId).join(", ")} as temporarily closed.
             Mysteries in a closed gallery can be skipped without penalty, and the map won’t send anyone through a closed
@@ -134,7 +134,7 @@ function ParentsPanel() {
       )}
 
       <Card>
-        <h2 className="font-serif text-2xl font-bold">Photos and privacy</h2>
+        <h2 className="font-display text-2xl font-semibold">Photos and privacy</h2>
         <ul className="mt-2 flex list-disc flex-col gap-1.5 pl-5">
           <li>Photos are used only to check whether your child found the scavenger-hunt detail.</li>
           <li>

@@ -53,7 +53,7 @@ export function Dialog({
     <dialog
       ref={ref}
       aria-labelledby={labelledBy}
-      className="m-auto w-[calc(100%-2rem)] max-w-md rounded-2xl border border-line bg-card p-0 text-ink shadow-2xl backdrop:bg-ink/50"
+      className="m-auto w-[calc(100%-2rem)] max-w-md rounded-3xl border border-line bg-card p-0 text-ink shadow-[0_30px_80px_-20px_rgb(13_13_16/0.45)] backdrop:bg-ink/40 backdrop:backdrop-blur-sm"
       onClick={(e) => {
         if (e.target === ref.current) onClose(); // tap on the backdrop
       }}
@@ -87,7 +87,7 @@ export function ConfirmDialog({
   const id = `dlg-${title.replace(/\W+/g, "-").toLowerCase()}`;
   return (
     <Dialog open={open} onClose={onCancel} labelledBy={id}>
-      <h2 id={id} className="font-serif text-3xl font-bold leading-tight">
+      <h2 id={id} className="font-display text-3xl font-semibold leading-[1.05]">
         {title}
       </h2>
       <div className="text-lg">{body}</div>
@@ -95,7 +95,7 @@ export function ConfirmDialog({
         <Button autoFocus onClick={onCancel}>
           {safeLabel}
         </Button>
-        <Button variant="secondary" className={destructive ? "border-burgundy text-burgundy" : ""} onClick={onConfirm}>
+        <Button variant="secondary" className={destructive ? "border-burgundy/50 text-burgundy hover:border-burgundy" : ""} onClick={onConfirm}>
           {actionLabel}
         </Button>
       </div>

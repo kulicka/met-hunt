@@ -73,13 +73,13 @@ export function FoundScreen({ id }: { id: number }) {
     <Screen className="relative text-center">
       <Sparkles />
       <Eyebrow>Gallery {quest.gallery} · Mystery #{questNumber(id)}</Eyebrow>
-      <h1 className="font-serif text-5xl font-bold">✨ Treasure found! 🎉</h1>
-      <p className="font-serif text-2xl italic">“That’s the one!”</p>
+      <h1 className="font-display text-5xl font-semibold">✨ Treasure found! 🎉</h1>
+      <p className="font-display text-2xl italic">“That’s the one!”</p>
 
       {reveal ? (
         <Card className="text-left">
-          <p className="text-sm font-semibold uppercase tracking-widest text-gold">You found</p>
-          <p className="font-serif text-3xl font-bold">{reveal.hiddenObject}</p>
+          <p className="font-mono text-[13px] font-medium uppercase tracking-[0.14em] text-gold">You found</p>
+          <p className="font-display text-3xl font-semibold">{reveal.hiddenObject}</p>
           <ArtworkFigure reveal={reveal} />
           {reveal.fact && <p className="mt-3 text-lg">{reveal.fact}</p>}
           {reveal.metObjectUrl && (
@@ -112,11 +112,11 @@ export function ArtworkFigure({ reveal }: { reveal: QuestReveal }) {
     <figure className="mt-3 flex flex-col gap-2">
       {reveal.imageUrl && reveal.openAccess && (
         // eslint-disable-next-line @next/next/no-img-element -- Met Open Access image, shown only after the find
-        <img src={reveal.imageUrl} alt={`${reveal.artwork} by ${reveal.artist}`} className="w-full rounded-lg border border-line" />
+        <img src={reveal.imageUrl} alt={`${reveal.artwork} by ${reveal.artist}`} className="w-full rounded-2xl border border-line" />
       )}
-      <figcaption className="border-l-4 border-gold pl-3">
+      <figcaption className="border-l-2 border-ink pl-3">
         <span className="block font-semibold">{reveal.artist}</span>
-        <span className="block font-serif text-xl italic">
+        <span className="block font-display text-xl italic">
           {reveal.artwork}
           {reveal.year && !reveal.artwork.includes(reveal.year) ? `, ${reveal.year}` : ""}
         </span>
@@ -139,7 +139,7 @@ export function NextScreen({ from }: { from: number }) {
         <motion.div initial={reduce ? false : { scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}>
           <ProgressDots completed={progress.completedQuests} />
         </motion.div>
-        <h1 className="font-serif text-4xl font-bold">Treasure added!</h1>
+        <h1 className="font-display text-4xl font-semibold">Treasure added!</h1>
         {closedLeft.length > 0 && (
           <p className="text-lg">
             {closedLeft.length === 1 ? "One gallery is" : `${closedLeft.length} galleries are`} temporarily closed, so the hunt ends here.
@@ -170,8 +170,8 @@ export function NextScreen({ from }: { from: number }) {
       <Eyebrow>
         {progress.completedQuests.length} of {pack.questIds.length} treasures collected
       </Eyebrow>
-      <h1 className="font-serif text-4xl font-bold">Your next mystery</h1>
-      <p className="font-serif text-6xl font-bold">Gallery {questById(next)!.gallery}</p>
+      <h1 className="font-display text-4xl font-semibold">Your next mystery</h1>
+      <p className="font-display text-6xl font-semibold">Gallery {questById(next)!.gallery}</p>
       <Button onClick={() => navigate({ name: "map", focus: next, from })}>
         <MapIcon aria-hidden size={22} /> SHOW ME THE WAY
       </Button>

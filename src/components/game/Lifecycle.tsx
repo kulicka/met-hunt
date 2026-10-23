@@ -81,18 +81,19 @@ export function GameBar() {
     navigate(route);
   };
 
-  const item = "flex min-h-12 w-full items-center rounded-xl px-3 text-left text-lg hover:bg-paper-deep";
+  const item = "flex min-h-12 w-full items-center rounded-2xl px-3 text-left text-lg hover:bg-paper";
   return (
     <>
-      <div className="mx-auto flex w-full max-w-md items-center justify-between px-5 pt-3">
-        <div className="flex items-center gap-2 text-ink-soft">
+      <div className="mx-auto w-full max-w-md px-4 pt-3">
+      <div className="flex items-center justify-between rounded-full border border-line bg-card/80 py-1 pl-1.5 pr-1 shadow-[0_1px_2px_rgb(13_13_16/0.04)] backdrop-blur-md">
+        <div className="flex items-center gap-2 text-ink">
           <AvatarArt asset={avatar.imageAsset} size={34} />
           <span className="text-sm font-semibold">{avatar.displayName}</span>
         </div>
         <div className="flex items-center">
         <button
           type="button"
-          className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-xl px-2 text-ink-soft hover:bg-paper-deep"
+          className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-full px-3 text-ink-soft hover:bg-paper hover:text-ink"
           aria-label={`Detective Notebook, ${progress.completedQuests.length} treasures`}
           onClick={() => navigate({ name: "collection" })}
         >
@@ -101,17 +102,18 @@ export function GameBar() {
         </button>
         <button
           type="button"
-          className="inline-flex min-h-11 items-center gap-1.5 rounded-xl px-3 text-ink-soft hover:bg-paper-deep"
+          className="inline-flex min-h-11 items-center gap-1.5 rounded-full bg-ink px-4 text-sm font-semibold text-white hover:bg-[#25252b]"
           aria-haspopup="dialog"
           onClick={() => setSheet("menu")}
         >
-          <Menu aria-hidden size={20} /> Menu
+          <Menu aria-hidden size={18} /> Menu
         </button>
         </div>
       </div>
+      </div>
 
       <Dialog open={sheet === "menu"} onClose={close} labelledBy="game-menu-title">
-        <h2 id="game-menu-title" className="font-serif text-3xl font-bold">
+        <h2 id="game-menu-title" className="font-display text-3xl font-semibold">
           Menu
         </h2>
         <nav className="-mx-3 flex flex-col">

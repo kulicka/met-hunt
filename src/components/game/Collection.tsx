@@ -48,7 +48,7 @@ export function FinalScreen() {
         </motion.div>
         <Title className="text-5xl">Mission complete!</Title>
         <p className="text-xl">You found all {total} Hidden Treasures at The Met.</p>
-        <p className="font-serif text-3xl font-bold">
+        <p className="font-display text-3xl font-semibold">
           {found} / {total} mysteries solved
         </p>
         <Certificate avatarAsset={avatar.imageAsset} name={avatar.displayName} title="Legendary Art Detective" />
@@ -68,7 +68,7 @@ export function FinalScreen() {
       <p className="text-xl">
         Nice work, {avatar.displayName}! You discovered {found} hidden {found === 1 ? "treasure" : "treasures"}.
       </p>
-      <p className="font-serif text-xl italic text-ink-soft">Every great detective knows when it’s time to head home.</p>
+      <p className="font-display text-xl italic text-ink-soft">Every great detective knows when it’s time to head home.</p>
       <div className="flex justify-center">
         <ProgressDots completed={progress.completedQuests} />
       </div>
@@ -77,7 +77,7 @@ export function FinalScreen() {
           {pack.questIds
             .filter((id) => progress.completedQuests.includes(id))
             .map((id) => (
-              <li key={id} className="rounded-full border border-gold bg-card px-3 py-1 text-sm font-semibold">
+              <li key={id} className="rounded-full border border-line bg-card px-3 py-1 text-sm font-semibold">
                 ✓ {reveals.find((r) => r.id === id)?.hiddenObject}
               </li>
             ))}
@@ -114,10 +114,10 @@ export function FinalScreen() {
 
 function Certificate({ avatarAsset, name, title, detail }: { avatarAsset: string; name: string; title: string; detail?: string }) {
   return (
-    <Card className="mx-auto flex w-full flex-col items-center gap-1 border-2 border-gold">
+    <Card className="mx-auto flex w-full flex-col items-center gap-1 border-gold/40">
       <AvatarArt asset={avatarAsset} size={72} />
       <Eyebrow>Awarded to {name}</Eyebrow>
-      <p className="font-serif text-3xl font-bold text-burgundy">{title}</p>
+      <p className="font-display text-3xl font-semibold text-burgundy">{title}</p>
       {detail && <p className="text-ink-soft">{detail}</p>}
     </Card>
   );

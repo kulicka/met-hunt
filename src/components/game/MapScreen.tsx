@@ -78,7 +78,7 @@ export function MapScreen({ focus, from }: Props) {
     <Screen>
       <header className="text-center">
         <Title>Treasure Map</Title>
-        <p className="font-serif text-xl text-ink-soft">{pack.questIds.length} mysteries hidden in The Met</p>
+        <p className="font-display text-xl text-ink-soft">{pack.questIds.length} mysteries hidden in The Met</p>
         {current && (
           <p className="mt-2 text-lg">
             Next mystery: <strong>Gallery {questById(current)!.gallery}</strong>
@@ -87,11 +87,11 @@ export function MapScreen({ focus, from }: Props) {
       </header>
 
       {route === null && current && (
-        <Card className="border-gold">
-          <p className="font-semibold uppercase tracking-widest">Next mystery: Gallery {questById(current)!.gallery}</p>
+        <Card className="border-gold/40">
+          <p className="font-mono text-[13px] font-medium uppercase tracking-[0.14em]">Next mystery: Gallery {questById(current)!.gallery}</p>
           <p className="mt-1 text-lg">Gallery routes can change. Use The Met’s current map or ask a guard for the best way.</p>
           <a
-            className="mt-3 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl border-2 border-ink bg-card px-4 font-semibold"
+            className="mt-3 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-full border border-line bg-card px-4 font-semibold shadow-[0_1px_2px_rgb(13_13_16/0.05)] hover:border-ink/40"
             href={OFFICIAL_MAP_URL}
             target="_blank"
             rel="noopener noreferrer"
@@ -102,7 +102,7 @@ export function MapScreen({ focus, from }: Props) {
       )}
 
       {closedGalleries.length > 0 && (
-        <p className="rounded-xl bg-paper-deep px-4 py-2 text-center">
+        <p className="rounded-2xl bg-paper-deep px-4 py-2 text-center">
           Temporarily closed: Gallery {closedGalleries.join(", ")}
         </p>
       )}
@@ -143,7 +143,7 @@ export function MapScreen({ focus, from }: Props) {
         <Button onClick={() => navigate({ name: "done" })}>SEE MY TREASURES</Button>
       )}
 
-      <details className="rounded-xl border border-line bg-card px-4 py-3">
+      <details className="rounded-3xl border border-line bg-card px-5 py-4">
         <summary className="cursor-pointer font-semibold">Map as a list</summary>
         <ol className="mt-2 flex flex-col gap-1">
           {states.map(({ id, state }) => (
@@ -190,8 +190,8 @@ function MarkerSheet({
       <button type="button" onClick={onClose} className="absolute right-2 top-2 min-h-11 min-w-11 text-xl text-ink-soft" aria-label="Close">
         ×
       </button>
-      <p className="text-sm font-semibold uppercase tracking-widest text-ink-soft">Mystery #{questNumber(id)}</p>
-      <p className="font-serif text-3xl font-bold">Gallery {quest.gallery}</p>
+      <p className="font-mono text-[13px] font-medium uppercase tracking-[0.14em] text-ink-soft">Mystery #{questNumber(id)}</p>
+      <p className="font-display text-3xl font-semibold">Gallery {quest.gallery}</p>
       {state === "found" ? (
         <>
           <p className="mt-1 text-lg">Solved ✓{reveal ? ` You found: ${reveal.hiddenObject}` : ""}</p>
