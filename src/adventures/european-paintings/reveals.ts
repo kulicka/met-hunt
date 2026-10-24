@@ -2,8 +2,10 @@ import type { QuestReveal } from "../types";
 
 // Load with a dynamic import() so answers ship in their own chunk and are only
 // fetched once a treasure is found or grown-up mode opens.
-// TODO: fill metObjectId / metObjectUrl / imageUrl from the Met Open Access
-// dataset and set openAccess only after confirming isPublicDomain.
+// Object ids are from The Met's Open Access data (MetObjects.csv, read 2026-10-24),
+// matched by artist, title and gallery. Quest 3 stays unpinned: two Degas pastels
+// titled "Dancer with a Fan" hang in Gallery 816 (objects 436135 and 436136).
+// TODO: imageUrl, with openAccess only after confirming isPublicDomain.
 export const reveals: QuestReveal[] = [
   {
     id: 1,
@@ -11,6 +13,8 @@ export const reveals: QuestReveal[] = [
     artwork: "Young Lady in 1866",
     year: "1866",
     hiddenObject: "Monocle",
+    metObjectId: 436964,
+    metObjectUrl: "https://www.metmuseum.org/art/collection/search/436964",
     fact: "Manet’s model, Victorine Meurent, was a painter too, and her own paintings were shown in Paris.",
   },
   {
@@ -19,6 +23,8 @@ export const reveals: QuestReveal[] = [
     artwork: "The Collector of Prints",
     year: "1866",
     hiddenObject: "Small Chinese horse sculpture",
+    metObjectId: 436122,
+    metObjectUrl: "https://www.metmuseum.org/art/collection/search/436122",
     fact: "Degas was a passionate art collector himself, just like the man in this painting.",
   },
   {
@@ -34,6 +40,8 @@ export const reveals: QuestReveal[] = [
     artwork: "Madame Thadée Natanson at the Theater",
     year: "1895",
     hiddenObject: "Tiny plaster elephant",
+    metObjectId: 437833,
+    metObjectUrl: "https://www.metmuseum.org/art/collection/search/437833",
     fact: "Toulouse-Lautrec was famous for his bold posters of Paris theaters and dance halls.",
   },
   {
@@ -42,6 +50,8 @@ export const reveals: QuestReveal[] = [
     artwork: "View of Vétheuil",
     year: "1880",
     hiddenObject: "Church tower",
+    metObjectId: 437110,
+    metObjectUrl: "https://www.metmuseum.org/art/collection/search/437110",
     fact: "Monet lived in the village of Vétheuil for about three years and painted it again and again.",
   },
   {
@@ -50,6 +60,8 @@ export const reveals: QuestReveal[] = [
     artwork: "The Manneporte (Étretat)",
     year: "1883",
     hiddenObject: "Two tiny people",
+    metObjectId: 438823,
+    metObjectUrl: "https://www.metmuseum.org/art/collection/search/438823",
     fact: "The Manneporte is a giant natural stone arch on the coast of Normandy, in France.",
   },
   {
@@ -58,6 +70,8 @@ export const reveals: QuestReveal[] = [
     artwork: "The Daughters of Catulle Mendès",
     year: "1888",
     hiddenObject: "Flower in a girl’s hair",
+    metObjectId: 438014,
+    metObjectUrl: "https://www.metmuseum.org/art/collection/search/438014",
     fact: "The three sisters were the daughters of a poet and a composer.",
   },
   {
@@ -66,6 +80,8 @@ export const reveals: QuestReveal[] = [
     artwork: "Still Life with Teapot and Fruit",
     year: "1896",
     hiddenObject: "Small figure in the background",
+    metObjectId: 437999,
+    metObjectUrl: "https://www.metmuseum.org/art/collection/search/437999",
     fact: "Gauguin painted this still life in Tahiti, far from his home in France.",
   },
   {
@@ -73,6 +89,8 @@ export const reveals: QuestReveal[] = [
     artist: "Pierre-Auguste Renoir",
     artwork: "Still Life with Flowers and Prickly Pears",
     hiddenObject: "Elephant-head handles on the vase",
+    metObjectId: 441104,
+    metObjectUrl: "https://www.metmuseum.org/art/collection/search/441104",
     fact: "Prickly pears are the fruit of a cactus.",
   },
   {
@@ -81,6 +99,8 @@ export const reveals: QuestReveal[] = [
     artwork: "Oleanders",
     year: "1888",
     hiddenObject: "Book beside the flowers",
+    metObjectId: 436530,
+    metObjectUrl: "https://www.metmuseum.org/art/collection/search/436530",
     fact: "The yellow book is a novel by Émile Zola, one of Van Gogh’s favorite writers.",
   },
 ];

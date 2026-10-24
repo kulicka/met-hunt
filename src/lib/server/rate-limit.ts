@@ -38,3 +38,7 @@ export const checkRateLimit = (request: Request) => check(request, "verify", PER
 /** Analytics uploads: small batches, sent every 30 seconds at most while playing. */
 export const checkEventsRateLimit = (request: Request) =>
   check(request, "events", { limit: 60, windowMs: 10 * 60_000 }, { limit: 20_000, windowMs: 60 * 60_000 });
+
+/** Typed answers: cheap to check, but limited so the answer can't be found by trying every number. */
+export const checkAnswerRateLimit = (request: Request) =>
+  check(request, "answers", { limit: 40, windowMs: 10 * 60_000 }, { limit: 5_000, windowMs: 60 * 60_000 });

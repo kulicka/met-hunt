@@ -66,7 +66,7 @@ toward `adventure_completed`. The server adds
 | `quest_photo_submitted` | `attempt_number`, `source` (camera, library) | USE THIS PHOTO. No photo or image data. |
 | `quest_verification_result` | `attempt_number`, `result`, `error_kind`, `model_version`, `latency_bucket` | Checker answered or failed. Never the model's output. |
 | `quest_parent_override` | `kind` (after_attempts, without_photo, answer_key), `photo_attempts` | Grown-up confirms a find |
-| `quest_completed` | `method` (ai_verified, parent_confirmed), `hints_used`, `photo_attempts`, `active_ms`, `elapsed_ms`, `timing_complete` | Quest solved |
+| `quest_completed` | `method` (ai_verified, text_verified, parent_confirmed), `hints_used`, `photo_attempts`, `active_ms`, `elapsed_ms`, `timing_complete` | Quest solved |
 | `quest_skipped` | `reason` (closed, user_switched) | Closed-gallery skip, or picking a different mystery on the map |
 | `route_requested` | `from_gallery`, `to_gallery`, `route_graph_version`, `closure_version`, `closures_active` | SHOW ME THE WAY |
 | `route_unavailable` | same + `reason` (no_verified_route, closure_blocking) | No verified open route |

@@ -97,8 +97,8 @@ function Doorway({ g, c, closures }: { g: Geometry; c: GalleryConnection; closur
   );
 }
 
-const MARK: Record<RoomState, string> = { found: "✓", current: "●", upcoming: "○", closed: "closed" };
-const SPOKEN: Record<RoomState, string> = { found: "solved", current: "next mystery", upcoming: "still to discover", closed: "temporarily closed" };
+const MARK: Record<RoomState, string> = { found: "★", current: "●", upcoming: "○", closed: "🔒 closed" };
+const SPOKEN: Record<RoomState, string> = { found: "solved", current: "next mystery", upcoming: "still to discover", closed: "temporarily closed, locked" };
 
 interface Props {
   completed: number[];

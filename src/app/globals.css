@@ -19,6 +19,38 @@
   --line: #e1e1db;
   --glow-a: rgb(255 196 120 / 0.35);
   --glow-b: rgb(140 160 255 / 0.28);
+  /* the main call to action, and the quest card */
+  --action: var(--ink);
+  --action-hover: #25252b;
+  --parchment: var(--card);
+  --parchment-edge: var(--line);
+}
+
+/*
+ * Egyptian Adventure quest screen (Adventure.theme): warm ivory page, parchment card,
+ * dark ink, deep scarlet action, antique gold. Scoped by data-theme so the other
+ * adventures keep the standard look. Contrast: ink-soft on parchment ≥ 5:1, gold ≥ 4.5:1.
+ */
+[data-theme="egyptian"] {
+  --paper: #f8f1e3;
+  --paper-deep: #efe3c9;
+  --card: #fffaf0;
+  --ink: #2b1d12;
+  --ink-soft: #66533f;
+  --burgundy: #b11f2c;
+  --burgundy-deep: #8c1520;
+  --gold: #8a5f12;
+  --gold-soft: #f3dfae;
+  --line: #e4d3ae;
+  --action: #b11f2c;
+  --action-hover: #951a25;
+  --parchment: #fbf1dc;
+  --parchment-edge: #d9c08c;
+  background-color: var(--paper);
+  background-image:
+    radial-gradient(70% 45% at 50% -10%, rgb(255 226 170 / 0.55), transparent 70%),
+    radial-gradient(rgb(138 95 18 / 0.08) 1px, transparent 1.3px);
+  background-size: 100% 100%, 22px 22px;
 }
 
 @theme inline {
@@ -33,6 +65,10 @@
   --color-gold-soft: var(--gold-soft);
   --color-forest: var(--forest);
   --color-line: var(--line);
+  --color-action: var(--action);
+  --color-action-hover: var(--action-hover);
+  --color-parchment: var(--parchment);
+  --color-parchment-edge: var(--parchment-edge);
   --font-display: var(--font-geist), system-ui, sans-serif;
   --font-sans: var(--font-geist), system-ui, sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, monospace;
@@ -74,16 +110,16 @@ body {
 .tmap .room-body { fill: var(--card); stroke: var(--ink); stroke-width: 2; }
 .tmap .room--quiet .room-body { fill: var(--paper-deep); stroke: var(--line); stroke-width: 1.5; }
 .tmap .room--quiet text { fill: #9a9aa2; font-size: 15px; }
-.tmap .room--found .room-body { fill: #e3f3ea; stroke: var(--forest); }
-.tmap .room--current .room-body { fill: #fde9ea; stroke: var(--burgundy); stroke-width: 3; }
+.tmap .room--found .room-body { fill: #fdf3d6; stroke: var(--gold); stroke-width: 2.5; }
+.tmap .room--current .room-body { fill: #fde9ea; stroke: var(--burgundy); stroke-width: 4; }
 .tmap .room--upcoming .room-body { stroke: var(--ink-soft); stroke-dasharray: 5 4; }
 .tmap .door { fill: var(--card); stroke: none; }
 .tmap .num { font-family: var(--font-display); font-weight: 700; letter-spacing: -0.02em; font-size: 24px; fill: var(--ink); }
 .tmap .mark { font-size: 17px; fill: var(--ink-soft); }
-.tmap .room--found .mark { fill: var(--forest); font-weight: 700; }
+.tmap .room--found .mark { fill: #c99a1e; font-size: 22px; paint-order: stroke; stroke: #7a5410; stroke-width: 1px; }
 .tmap .room--current .mark { fill: var(--burgundy); }
 .tmap .badge circle { fill: var(--ink); }
-.tmap .room--found .badge circle { fill: var(--forest); }
+.tmap .room--found .badge circle { fill: var(--gold); }
 .tmap .room--current .badge circle { fill: var(--burgundy); }
 .tmap .badge text { fill: #fff; font-size: 12px; font-weight: 700; }
 .tmap .route path { fill: none; stroke: var(--gold); stroke-width: 3; stroke-dasharray: 2 8; stroke-linecap: round; opacity: 0.8; }
@@ -110,6 +146,11 @@ body {
 .tmap .door--unknown text { font-size: 13px; font-weight: 700; fill: var(--ink-soft); }
 .tmap .door--closed rect { fill: url(#hatch); }
 .tmap .room--blocked .room-body { stroke: var(--burgundy); stroke-opacity: 0.4; }
+/* a mystery whose gallery is closed: hatched, greyed, with a lock */
+.tmap .room--closed .room-body { stroke: var(--ink-soft); stroke-dasharray: 2 4; }
+.tmap .room--closed .num, .tmap .room--closed .mark { fill: var(--ink-soft); }
+.tmap .room--closed .mark { font-size: 13px; }
+.tmap .room--closed .badge circle { fill: #9a9aa2; }
 .tmap .closed-note { font-size: 12px; font-style: italic; }
 .tmap .schematic-label { font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.2em; fill: var(--ink-soft); }
 .tmap .room--quiet-body { fill: var(--paper-deep); stroke: var(--line); stroke-width: 1.5; }

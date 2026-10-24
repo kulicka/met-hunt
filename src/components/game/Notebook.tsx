@@ -46,6 +46,7 @@ function StampSlot({ questId, size = 88 }: { questId: number; size?: number }) {
 
 const CONFIRMED: Record<VerificationMethod, string> = {
   "ai-photo": "Confirmed with a photo",
+  text: "Confirmed from the artwork label",
   "grown-up": "Confirmed by a grown-up",
   manual: "Confirmed by a grown-up",
 };
