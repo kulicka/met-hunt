@@ -7,6 +7,7 @@ import { latencyBucket, type ERROR_KINDS } from "@/lib/analytics/schema";
 import { isGalleryClosed, useClosures } from "@/lib/closures";
 import { useAdventure } from "@/lib/content";
 import { preparePhoto } from "@/lib/photo";
+import { riddleFontSize } from "@/lib/riddle";
 import { completeQuest, getProgress, playQuest, updateProgress, useProgress, type VerificationMethod } from "@/lib/progress";
 import { type VerificationResult, type VerificationStatus } from "@/lib/verification";
 import { GrownUpCheck } from "./GrownUpCheck";
@@ -326,15 +327,17 @@ export function QuestScreen({ id }: { id: number }) {
       <Card className="relative text-center">
         <p className="font-mono text-[13px] font-medium uppercase tracking-[0.14em] text-gold">{bonus ? "Bonus mystery ★" : `Mystery #${n}`}</p>
         {quest.title && <h2 className="mt-2 font-display text-2xl font-semibold text-burgundy">{quest.title}</h2>}
-        <blockquote className="mt-3 font-display text-[1.75rem] font-semibold leading-snug">
-          {quest.riddle.map((line, i) => (
-            <p key={i}>
-              {i === 0 && "“"}
-              {line}
-              {i === quest.riddle.length - 1 && "”"}
-            </p>
-          ))}
-        </blockquote>
+        <div className="@container mt-3">
+          <blockquote className="font-display font-semibold leading-snug text-balance" style={{ fontSize: riddleFontSize(quest.riddle) }}>
+            {quest.riddle.map((line, i) => (
+              <p key={i}>
+                {i === 0 && "“"}
+                {line}
+                {i === quest.riddle.length - 1 && "”"}
+              </p>
+            ))}
+          </blockquote>
+        </div>
       </Card>
 
       <MagnifierHints

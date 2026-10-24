@@ -87,7 +87,7 @@ export function contentFor(adventure: Adventure): AdventureContent {
   return c;
 }
 
-/** The adventure the player chose, or the first one before they have chosen. */
+/** The adventure the player chose. Before they choose, screens only render the picker, so the first one is just a placeholder. */
 export const resolveAdventure = (id: string | undefined): Adventure => adventureById(id) ?? adventures[0];
 
 /** For code outside React (progress store, analytics). */

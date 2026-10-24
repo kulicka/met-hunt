@@ -1,7 +1,7 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
-import { adventureIds, LEGACY_ADVENTURE_ID } from "@/adventures/registry";
+import { adventureIds } from "@/adventures/registry";
 import { avatarById, avatars } from "@/data/avatars";
 import { emptyProfile, parseProfile, type AgeChoice, type PlayerProfile } from "./adventure";
 
@@ -20,7 +20,7 @@ function load() {
   loaded = true;
   try {
     const raw = window.localStorage.getItem(KEY);
-    if (raw) current = parseProfile(JSON.parse(raw), avatarIds, { ids: adventureIds, legacy: LEGACY_ADVENTURE_ID });
+    if (raw) current = parseProfile(JSON.parse(raw), avatarIds, adventureIds);
   } catch {
     // Storage blocked or unreadable: onboarding shows again.
   }

@@ -5,7 +5,7 @@ import { begin, endEarly, freshAdventure, parseAdventure, parseProfile, restart,
 
 const ids = europeanPaintings.quests.map((q) => q.id);
 const avatarIds = avatars.map((a) => a.id);
-const known = { ids: ["european-paintings", "met-egyptian-adventure"], legacy: "european-paintings" };
+const known = ["european-paintings", "met-egyptian-adventure"];
 const titles = europeanPaintings.certificate;
 
 describe("player profile", () => {
@@ -17,7 +17,13 @@ describe("player profile", () => {
   });
 
   it("accepts valid choices and keeps 12+ as a category", () => {
-    expect(parseProfile({ age: "12+", avatarId: "otto", onboardingComplete: true }, avatarIds, known)).toEqual({ age: "12+", avatarId: "otto", adventureId: "european-paintings", onboardingComplete: true });
+    expect(parseProfile({ age: "12+", avatarId: "otto", adventureId: "met-egyptian-adventure", onboardingComplete: true }, avatarIds, known)).toEqual({ age: "12+", avatarId: "otto", adventureId: "met-egyptian-adventure", onboardingComplete: true });
+  });
+
+  it("never assumes an adventure: an old, missing or removed one is left for the player to choose", () => {
+    for (const adventureId of [undefined, "gone", 7]) {
+      expect(parseProfile({ age: 8, avatarId: "otto", adventureId, onboardingComplete: true }, avatarIds, known)).toEqual({ age: 8, avatarId: "otto", adventureId: undefined, onboardingComplete: true });
+    }
   });
 
   it("recovers from missing, corrupt, or partial records", () => {
@@ -25,7 +31,7 @@ describe("player profile", () => {
       expect(parseProfile(raw, avatarIds, known).onboardingComplete).toBe(false);
     }
     // interrupted after the age step
-    expect(parseProfile({ age: 7, onboardingComplete: false }, avatarIds, known)).toEqual({ age: 7, avatarId: undefined, onboardingComplete: false });
+    expect(parseProfile({ age: 7, onboardingComplete: false }, avatarIds, known)).toEqual({ age: 7, avatarId: undefined, adventureId: undefined, onboardingComplete: false });
   });
 });
 

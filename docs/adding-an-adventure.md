@@ -94,12 +94,17 @@ the stop. Each change needs a deploy.
 ## How players' data is kept
 
 - The profile (`met-hidden-treasures:profile:v1`) holds age, explorer and the
-  chosen `adventureId`.
+  chosen `adventureId`. No adventure is ever assumed: a new player picks one
+  right after tapping START THE HUNT, and so does anyone whose saved adventure is
+  missing or was taken down. The picker shows each adventure's saved progress.
+- The grown-ups answer key lists every adventure in the registry, so a new one
+  shows up there automatically.
 - Progress is stored once per adventure, at
   `met-hidden-treasures:adventure:v3:<adventure id>`.
 - Progress saved before adventures existed (`adventure:v2` / `progress:v1`) is
   copied into European Paintings the first time it's read. The old record is
-  left in place.
+  left in place. Those players still choose, and see their hunt on the European
+  Paintings card.
 - Analytics timers and play-through ids are also kept per adventure, and every
   event carries `pack_id`.
 

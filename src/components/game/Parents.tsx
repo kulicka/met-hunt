@@ -6,10 +6,12 @@ import { photoAttempts, trackQuest } from "@/lib/analytics/client";
 import { statusFor, useArtworkStatus, withMetData } from "@/lib/artwork-status";
 import type { ArtworkStatus } from "@/lib/artworks";
 import { isGalleryClosed, useClosures } from "@/lib/closures";
-import type { QuestReveal } from "@/adventures/types";
+import { adventures } from "@/adventures/registry";
+import type { Adventure, QuestReveal } from "@/adventures/types";
 import { GALLERY_CLOSURES_URL, OFFICIAL_MAP_URL } from "@/lib/links";
-import { useAdventure } from "@/lib/content";
-import { completeQuest, useProgress } from "@/lib/progress";
+import { contentFor } from "@/lib/content";
+import { useProfile } from "@/lib/profile";
+import { completeQuest, getProgressFor, useProgress } from "@/lib/progress";
 import { AnalyticsConsentCard } from "./AnalyticsConsent";
 import { HoldButton } from "./HoldButton";
 import { RestartButton } from "./Lifecycle";
@@ -54,9 +56,11 @@ export function ParentsScreen() {
   return <ParentsPanel />;
 }
 
-function ParentsPanel() {
-  const { adventure, allQuests, questIds, isBonus, isFound, nextUnsolved, questNumber, loadReveals } = useAdventure();
-  const progress = useProgress();
+/** One adventure's stops, galleries and answers. Only the one being played can be marked found. */
+function AdventureKey({ adventure, current }: { adventure: Adventure; current: boolean }) {
+  const { allQuests, questIds, isBonus, isFound, nextUnsolved, questNumber, loadReveals } = contentFor(adventure);
+  const activeProgress = useProgress();
+  const progress = current ? activeProgress : getProgressFor(adventure.id);
   const closures = useClosures();
   const artworks = useArtworkStatus();
   const [reveals, setReveals] = useState<QuestReveal[] | null>(null);
@@ -68,81 +72,110 @@ function ParentsPanel() {
   const markFound = (id: number) => {
     if (window.confirm(`Mark ${label(id)} as found?`)) {
       trackQuest("quest_parent_override", id, { kind: "answer_key", photo_attempts: photoAttempts(id) });
-      completeQuest(id, "manual", nextUnsolved(id, [...progress.completedQuests, id], closures));
+      completeQuest(id, "manual", nextUnsolved(id, [...activeProgress.completedQuests, id], closures));
     }
   };
+  const galleries = [...new Set(adventure.quests.map((q) => q.gallery))];
+
+  return (
+    <details open={current} className="group flex flex-col gap-3">
+      <summary className="flex min-h-11 cursor-pointer list-none flex-col gap-0.5 rounded-3xl border border-line bg-card px-4 py-3 [&::-webkit-details-marker]:hidden">
+        <span className="flex items-center gap-2 font-display text-2xl font-semibold">
+          <span aria-hidden>{adventure.emoji}</span> {adventure.title}
+          <span aria-hidden className="ml-auto text-base text-ink-soft transition group-open:rotate-180">▾</span>
+        </span>
+        <span className="text-ink-soft">
+          {adventure.where}
+          {current && " · playing now"}
+        </span>
+        <span className="text-sm text-ink-soft">Stops in galleries {galleries.join(", ")}</span>
+      </summary>
+
+      <div className="mt-3 flex flex-col gap-3">
+        {adventure.launchStatus === "field_test_required" && (
+          <Card className="border-gold/50">
+            <h3 className="font-display text-xl font-semibold">Not yet field-tested</h3>
+            <p className="mt-2">
+              This adventure hasn’t been checked on site yet. Artworks may have moved, small details may be hard to see or
+              photograph, and the walks between galleries haven’t been verified, so the app gives gallery numbers rather than
+              directions. Check today’s closures before you go, and confirm a find yourself whenever the photo check struggles.
+            </p>
+          </Card>
+        )}
+
+        <ol className="flex flex-col gap-3">
+          {allQuests.map((quest) => {
+            const id = quest.id;
+            const found = reveals?.find((x) => x.id === id);
+            const status = statusFor(artworks, adventure.id, id);
+            const r = found && withMetData(found, status);
+            const note = artworkNote(status);
+            const playable = questIds.includes(id) || isBonus(id);
+            const solved = !!progress && isFound(progress, id);
+            const fieldNote = adventure.fieldNotes?.[id];
+            return (
+              <li key={id}>
+                <Card className={`flex flex-col gap-1 ${playable ? "" : "opacity-70"}`}>
+                  <p className="font-mono text-[13px] font-medium uppercase tracking-[0.14em] text-ink-soft">
+                    {isBonus(id) ? "Bonus" : playable ? `#${questNumber(id)}` : "Reserve (not in today’s hunt)"} · Gallery {quest.gallery}
+                    {isGalleryClosed(quest.gallery, closures) && " · temporarily closed"}
+                    {solved && " · found ✓"}
+                  </p>
+                  {quest.title && <p className="font-display text-xl font-semibold">{quest.title}</p>}
+                  {r ? (
+                    <>
+                      <p className="text-lg font-semibold">{r.hiddenObject}</p>
+                      <p>
+                        <em>{r.artwork}</em>
+                        {r.artist && ` — ${r.artist}`}
+                      </p>
+                      {/* For grown-ups to check and preview the artwork before the visit. */}
+                      {r.metObjectUrl ? (
+                        <a className={linkClass} href={r.metObjectUrl} target="_blank" rel="noopener noreferrer">
+                          See this artwork on The Met’s website <ExternalLink aria-hidden size={14} />
+                        </a>
+                      ) : (
+                        <a className={linkClass} href={metSearchUrl(r.artwork)} target="_blank" rel="noopener noreferrer">
+                          Search for it in The Met’s collection <ExternalLink aria-hidden size={14} />
+                        </a>
+                      )}
+                    </>
+                  ) : (
+                    <p className="text-ink-soft">Loading…</p>
+                  )}
+                  {note && <p className="font-semibold text-burgundy">{note}</p>}
+                  {fieldNote && <p className="text-sm text-ink-soft">To check on site: {fieldNote}</p>}
+                  {current && !solved && playable && (
+                    <Button variant="quiet" className="-ml-2 self-start" onClick={() => markFound(id)}>
+                      Mark as found
+                    </Button>
+                  )}
+                </Card>
+              </li>
+            );
+          })}
+        </ol>
+      </div>
+    </details>
+  );
+}
+
+function ParentsPanel() {
+  const profile = useProfile();
+  const progress = useProgress();
+  const closures = useClosures();
+  const artworks = useArtworkStatus();
+  const playing = profile?.adventureId;
 
   return (
     <Screen>
       <Eyebrow>For grown-ups</Eyebrow>
       <Title>Answer key</Title>
-      <p className="-mt-3 text-ink-soft">
-        {adventure.emoji} {adventure.title} · {adventure.where}
-      </p>
+      <p className="-mt-3 text-ink-soft">Every artwork and gallery in the hunt, grouped by adventure. Tap one to open it.</p>
 
-      {adventure.launchStatus === "field_test_required" && (
-        <Card className="border-gold/50">
-          <h2 className="font-display text-2xl font-semibold">Not yet field-tested</h2>
-          <p className="mt-2">
-            This adventure hasn’t been checked on site yet. Artworks may have moved, small details may be hard to see or
-            photograph, and the walks between galleries haven’t been verified, so the app gives gallery numbers rather than
-            directions. Check today’s closures before you go, and confirm a find yourself whenever the photo check struggles.
-          </p>
-        </Card>
-      )}
-
-      <ol className="flex flex-col gap-3">
-        {allQuests.map((quest) => {
-          const id = quest.id;
-          const found = reveals?.find((x) => x.id === id);
-          const status = statusFor(artworks, adventure.id, id);
-          const r = found && withMetData(found, status);
-          const note = artworkNote(status);
-          const playable = questIds.includes(id) || isBonus(id);
-          const solved = isFound(progress, id);
-          const fieldNote = adventure.fieldNotes?.[id];
-          return (
-            <li key={id}>
-              <Card className={`flex flex-col gap-1 ${playable ? "" : "opacity-70"}`}>
-                <p className="font-mono text-[13px] font-medium uppercase tracking-[0.14em] text-ink-soft">
-                  {isBonus(id) ? "Bonus" : playable ? `#${questNumber(id)}` : "Reserve (not in today’s hunt)"} · Gallery {quest.gallery}
-                  {isGalleryClosed(quest.gallery, closures) && " · temporarily closed"}
-                  {solved && " · found ✓"}
-                </p>
-                {quest.title && <p className="font-display text-xl font-semibold">{quest.title}</p>}
-                {r ? (
-                  <>
-                    <p className="text-lg font-semibold">{r.hiddenObject}</p>
-                    <p>
-                      <em>{r.artwork}</em>
-                      {r.artist && ` — ${r.artist}`}
-                    </p>
-                    {/* For grown-ups to check and preview the artwork before the visit. */}
-                    {r.metObjectUrl ? (
-                      <a className={linkClass} href={r.metObjectUrl} target="_blank" rel="noopener noreferrer">
-                        See this artwork on The Met’s website <ExternalLink aria-hidden size={14} />
-                      </a>
-                    ) : (
-                      <a className={linkClass} href={metSearchUrl(r.artwork)} target="_blank" rel="noopener noreferrer">
-                        Search for it in The Met’s collection <ExternalLink aria-hidden size={14} />
-                      </a>
-                    )}
-                  </>
-                ) : (
-                  <p className="text-ink-soft">Loading…</p>
-                )}
-                {note && <p className="font-semibold text-burgundy">{note}</p>}
-                {fieldNote && <p className="text-sm text-ink-soft">To check on site: {fieldNote}</p>}
-                {!solved && playable && (
-                  <Button variant="quiet" className="-ml-2 self-start" onClick={() => markFound(id)}>
-                    Mark as found
-                  </Button>
-                )}
-              </Card>
-            </li>
-          );
-        })}
-      </ol>
+      {adventures.map((a) => (
+        <AdventureKey key={a.id} adventure={a} current={a.id === playing} />
+      ))}
 
       {artworks.checkedAt && (
         <p className="text-sm text-ink-soft">
@@ -189,7 +222,7 @@ function ParentsPanel() {
         </a>
       </div>
 
-      <RestartButton />
+      {playing && <RestartButton />}
       <Button onClick={() => navigate(progress.status === "in_progress" ? { name: "quest", id: progress.currentQuest } : { name: "start" })}>
         Back to the hunt
       </Button>

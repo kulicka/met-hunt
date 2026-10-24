@@ -226,12 +226,15 @@ describe("progress store", () => {
     return { progress: await import("@/lib/progress"), profile: await import("@/lib/profile") };
   };
 
-  it("moves a hunt saved before adventures existed into European Paintings, losing nothing", async () => {
+  it("keeps a hunt saved before adventures existed in European Paintings, losing nothing", async () => {
     const old = { status: "in_progress", currentQuest: 3, completedQuests: [1, 2], hintsUsed: { 3: 1 }, attempts: {}, verificationMethod: { 1: "ai-photo", 2: "manual" } };
     store.set("met-hidden-treasures:adventure:v2", JSON.stringify(old));
     store.set("met-hidden-treasures:profile:v1", JSON.stringify({ age: 8, avatarId: "fig", onboardingComplete: true }));
     const { progress, profile } = await fresh();
-    expect(profile.getProfile()).toMatchObject({ adventureId: "european-paintings", onboardingComplete: true });
+    // They still choose; their old hunt shows up on the European Paintings card.
+    expect(profile.getProfile()).toMatchObject({ adventureId: undefined, onboardingComplete: true });
+    expect(progress.getProgressFor("european-paintings")).toMatchObject({ status: "in_progress", currentQuest: 3, completedQuests: [1, 2], hintsUsed: { 3: 1 } });
+    profile.setAdventure("european-paintings");
     expect(progress.getProgress()).toMatchObject({ status: "in_progress", currentQuest: 3, completedQuests: [1, 2], hintsUsed: { 3: 1 } });
     expect(JSON.parse(store.get(progress.progressKey("european-paintings"))!)).toMatchObject({ completedQuests: [1, 2] });
     expect(store.has("met-hidden-treasures:adventure:v2")).toBe(true); // the old record is left alone
@@ -252,10 +255,10 @@ describe("progress store", () => {
     expect(progress.getProgressFor("met-egyptian-adventure")).toMatchObject({ completedQuests: [111] });
   });
 
-  it("sends a new player through the picker, and a removed adventure back to it", async () => {
+  it("sends a player whose adventure was removed back to the picker, keeping their explorer", async () => {
     store.set("met-hidden-treasures:profile:v1", JSON.stringify({ age: 8, avatarId: "fig", adventureId: "gone", onboardingComplete: true }));
     const { profile } = await fresh();
-    expect(profile.getProfile()).toMatchObject({ adventureId: undefined, onboardingComplete: false });
+    expect(profile.getProfile()).toMatchObject({ avatarId: "fig", adventureId: undefined, onboardingComplete: true });
   });
 });
 
