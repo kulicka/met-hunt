@@ -12,7 +12,7 @@ import { type VerificationResult, type VerificationStatus } from "@/lib/verifica
 import { GrownUpCheck } from "./GrownUpCheck";
 import { MagnifierHints } from "./MagnifierHints";
 import { warmStamps } from "./Notebook";
-import { EgyptianScenery, MysteryCard, TextArtworkVerificationForm, type TextCheck } from "./QuestParts";
+import { MysteryCard, TextArtworkVerificationForm, type TextCheck } from "./QuestParts";
 import { navigate } from "./router";
 import { Button, Card, Eyebrow, ProgressDots, Screen } from "./ui";
 
@@ -391,7 +391,6 @@ export function QuestScreen({ id }: { id: number }) {
             <ProgressDots completed={progress.completedQuests} current={id} />
           </div>
         )}
-        {egyptian && <EgyptianScenery className="-mb-1 mt-1 max-h-12" />}
       </header>
 
       {closed && !solved && !bonus && (

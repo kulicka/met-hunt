@@ -6,32 +6,6 @@ import { Button } from "./ui";
 
 // Pieces of the quest screen (QuestScreen.tsx holds the flow and state).
 
-/**
- * Line art for the Egyptian quest screen: dunes, pyramids, palms, a sun, a magnifier.
- * Purely decorative and hidden from screen readers. It must never picture an
- * answer, so there are no scarabs (111, 126), ankhs (122), cats (117, 125),
- * lions (124), vultures (114), eyes or stars (112), mirrors (116) or crowns (115).
- */
-export function EgyptianScenery({ className = "" }: { className?: string }) {
-  return (
-    <svg aria-hidden focusable="false" viewBox="0 0 320 64" className={`block h-auto w-full text-gold ${className}`} fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="262" cy="18" r="9" opacity="0.55" />
-      <path d="M0 56 C 40 46, 80 50, 120 55 S 220 44, 320 54" opacity="0.6" />
-      <path d="M0 62 C 60 56, 140 60, 200 61 S 280 57, 320 60" opacity="0.35" />
-      <path d="M150 54 L 182 20 L 214 54" opacity="0.75" />
-      <path d="M182 20 L 190 54" opacity="0.4" />
-      <path d="M204 54 L 226 32 L 248 54" opacity="0.6" />
-      <path d="M226 32 L 231 54" opacity="0.35" />
-      {/* palm */}
-      <path d="M58 56 C 60 44, 59 34, 62 24" opacity="0.7" />
-      <path d="M62 24 C 54 20, 46 22, 42 28 M62 24 C 70 18, 79 20, 83 26 M62 24 C 58 16, 52 14, 46 15 M62 24 C 67 15, 74 13, 79 15" opacity="0.7" />
-      {/* magnifier */}
-      <circle cx="292" cy="44" r="6" opacity="0.7" />
-      <path d="M296.5 48.5 L 302 54" opacity="0.7" />
-    </svg>
-  );
-}
-
 /** Small corner flourish for the parchment card, kept clear of the riddle. */
 function Corner({ className }: { className: string }) {
   return (
