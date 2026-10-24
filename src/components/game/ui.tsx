@@ -76,6 +76,58 @@ export function ProgressDots({ completed, current }: { completed: number[]; curr
   );
 }
 
+/** A cheer under the trail, by how much of the hunt is done. */
+export function trailCheer(solved: number, total: number) {
+  if (solved === 0) return "Your adventure begins!";
+  if (solved === total - 1) return "Last one!";
+  if (solved * 2 >= total) return "Over halfway!";
+  return "Keep exploring!";
+}
+
+/**
+ * The quest screen's progress: one stop per mystery on a line, the current one numbered.
+ * Like ProgressDots, state shows by shape and text, not color alone.
+ */
+export function TrailProgress({ completed, current }: { completed: number[]; current: number }) {
+  const { questIds } = useAdventure();
+  const solved = completed.length;
+  const at = questIds.indexOf(current);
+  return (
+    <div className="flex flex-col gap-1.5">
+      <div className="relative">
+        <span aria-hidden className="absolute left-3 right-3 top-1/2 h-0.5 -translate-y-1/2 bg-ink-soft/25" />
+        <span aria-hidden className="absolute left-3 top-1/2 h-0.5 -translate-y-1/2 bg-burgundy" style={{ width: `calc((100% - 1.5rem) * ${Math.max(at, 0) / Math.max(questIds.length - 1, 1)})` }} />
+        <ol className="relative flex items-center justify-between" aria-label={`Mystery ${at + 1} of ${questIds.length}. ${solved} solved.`}>
+          {questIds.map((id, i) => {
+            const state = completed.includes(id) ? "found" : id === current ? "current" : i < at ? "skipped" : "upcoming";
+            const label = { found: "solved", current: "current mystery", skipped: "skipped for now", upcoming: "not yet solved" }[state];
+            return (
+              <li key={id} aria-label={`Mystery ${i + 1}: ${label}`} className="flex h-8 w-6 items-center justify-center">
+                {state === "found" && (
+                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-ink text-[11px] font-bold text-white">✓</span>
+                )}
+                {state === "current" && (
+                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-burgundy text-sm font-bold text-white ring-4 ring-burgundy/20">{i + 1}</span>
+                )}
+                {state === "skipped" && (
+                  <span className="flex h-5 w-5 items-center justify-center rounded-full border-[1.5px] border-dashed border-ink-soft bg-paper text-[10px] font-bold leading-none text-ink-soft">↺</span>
+                )}
+                {state === "upcoming" && <span className="h-4 w-4 rounded-full border-[1.5px] border-ink-soft/60 bg-paper min-[360px]:h-5 min-[360px]:w-5" />}
+              </li>
+            );
+          })}
+        </ol>
+      </div>
+      <p aria-hidden className="flex justify-between gap-2 font-mono text-[12px] font-semibold uppercase tracking-[0.14em] text-ink-soft">
+        <span>
+          {at + 1} of {questIds.length}
+        </span>
+        <span>{trailCheer(solved, questIds.length)}</span>
+      </p>
+    </div>
+  );
+}
+
 export function Card({ children, className = "" }: { children: ReactNode; className?: string }) {
   return (
     <div className={`rounded-3xl border border-line bg-card p-6 shadow-[0_1px_2px_rgb(13_13_16/0.04),0_16px_40px_-24px_rgb(13_13_16/0.25)] ${className}`}>

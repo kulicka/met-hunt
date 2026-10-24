@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
-import { Search } from "lucide-react";
+import { ChevronDown, ChevronRight, Lightbulb } from "lucide-react";
 
 // Two progressive hints per quest behind a magnifying glass. Revealed hints are
 // saved (hintsUsed), stay readable on every visit, and never affect rewards.
@@ -31,17 +31,18 @@ export function MagnifierHints({ hints, used, onReveal }: { hints: [string, stri
         onClick={press}
         aria-controls={panelId}
         aria-expanded={done ? open : undefined}
-        className="flex min-h-14 w-full items-center justify-center gap-3 rounded-full border border-gold/50 bg-card/80 px-4 text-base font-semibold tracking-[0.01em] text-ink shadow-[0_1px_2px_rgb(13_13_16/0.05)] hover:border-gold active:scale-[0.98] transition focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-burgundy"
+        className="flex min-h-16 w-full items-center gap-3 rounded-[1.75rem] border border-gold/50 bg-card/85 px-4 py-2 text-left text-base font-semibold tracking-[0.01em] text-ink shadow-[0_1px_2px_rgb(13_13_16/0.05)] hover:border-gold active:scale-[0.98] transition focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-burgundy"
       >
-        <span aria-hidden className="flex h-9 w-9 items-center justify-center rounded-full bg-gold-soft text-gold">
-          <Search size={22} strokeWidth={2.5} />
+        <span aria-hidden className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[var(--badge)] text-ink">
+          <Lightbulb size={22} strokeWidth={2.2} />
         </span>
-        {done ? (open ? "Hide my clues" : "See my clues again") : (
-          <span className="flex flex-col items-start leading-tight">
+        {done ? <span className="flex-1">{open ? "Hide my clues" : "See my clues again"}</span> : (
+          <span className="flex flex-1 flex-col items-start leading-tight">
             <span>Need a clue?</span>
             <span className="text-sm font-normal text-ink-soft">Hint {shown + 1} of {total}</span>
           </span>
         )}
+        {done && open ? <ChevronDown aria-hidden size={22} className="shrink-0 text-ink-soft" /> : <ChevronRight aria-hidden size={22} className="shrink-0 text-ink-soft" />}
       </button>
 
       <div id={panelId} aria-live="polite" hidden={!open || shown === 0}>

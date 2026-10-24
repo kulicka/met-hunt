@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { BookOpen, Map as MapIcon, Menu } from "lucide-react";
+import { BookOpen, ChevronDown, Map as MapIcon, Menu } from "lucide-react";
 import { restartConfirmed } from "@/lib/analytics/client";
 import { useAdventure } from "@/lib/content";
 import { useAvatar, useProfile } from "@/lib/profile";
@@ -96,21 +96,25 @@ export function GameBar({ setup = false }: { setup?: boolean }) {
   const item = "flex min-h-11 w-full items-center rounded-2xl px-3 text-left text-lg hover:bg-paper";
   return (
     <>
-      <div className="mx-auto w-full max-w-md px-4 pt-3 print:hidden">
-      <div className="flex items-center justify-between rounded-full border border-line bg-card/80 py-1 pl-1.5 pr-1 shadow-[0_1px_2px_rgb(13_13_16/0.04)] backdrop-blur-md">
+      {/* A flat bar across the top of the page, with the content kept to the game's column. */}
+      <div className="w-full border-b border-line bg-card/70 backdrop-blur-md print:hidden">
+      <div className="mx-auto flex w-full max-w-md items-center justify-between py-1.5 pl-3 pr-2">
         {profile?.avatarId && profile.onboardingComplete ? (
           // Tapping the explorer opens the explorer picker; DONE there comes back here, progress untouched.
           <button
             type="button"
-            className="flex min-h-11 min-w-0 items-center gap-2 rounded-full pr-3 text-left text-ink hover:bg-paper aria-[current=page]:bg-paper"
+            className="flex min-h-12 min-w-0 items-center gap-2 rounded-xl py-1 pl-1 pr-2 text-left text-ink hover:bg-paper aria-[current=page]:bg-paper"
             aria-label={`Explorer: ${avatar.displayName}. Change explorer`}
             aria-current={route.name === "explorer" ? "page" : undefined}
             onClick={() => {
               if (route.name !== "explorer") navigate({ name: "explorer" });
             }}
           >
-            <AvatarArt asset={avatar.imageAsset} size={34} />
-            <span className="truncate text-sm font-semibold">{avatar.displayName}</span>
+            <span className="rounded-full ring-2 ring-gold/60 ring-offset-1 ring-offset-card">
+              <AvatarArt asset={avatar.imageAsset} size={38} />
+            </span>
+            <span className="truncate text-base font-semibold">{avatar.displayName}</span>
+            <ChevronDown aria-hidden size={16} strokeWidth={2.5} className="shrink-0 text-ink-soft" />
           </button>
         ) : profile?.avatarId ? (
           <div className="flex min-w-0 items-center gap-2 text-ink">
@@ -123,33 +127,33 @@ export function GameBar({ setup = false }: { setup?: boolean }) {
         <div className="flex shrink-0 items-center">
         {!setup && <button
           type="button"
-          className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-full px-2.5 text-ink-soft hover:bg-paper hover:text-ink aria-[current=page]:bg-paper aria-[current=page]:text-ink"
+          className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-xl px-2.5 text-ink hover:bg-paper aria-[current=page]:bg-paper"
           aria-label={`Detective Notebook, ${progress.completedQuests.length} treasures`}
           aria-current={route.name === "collection" ? "page" : undefined}
           onClick={() => navigate({ name: "collection" })}
         >
-          <BookOpen aria-hidden size={20} />
-          <span className="ml-1 text-sm font-semibold">{progress.completedQuests.length}</span>
+          <BookOpen aria-hidden size={22} />
+          <span className="ml-1 text-base font-semibold">{progress.completedQuests.length}</span>
         </button>}
         {/* Always one tap away. The map only reads progress, so the mystery in play stays the same. */}
         {mapReady && <button
           type="button"
-          className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-full text-ink-soft hover:bg-paper hover:text-ink aria-[current=page]:bg-paper aria-[current=page]:text-ink"
+          className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-xl text-ink hover:bg-paper aria-[current=page]:bg-paper"
           aria-label={hasRoutes ? "Treasure Map" : "Gallery list"}
           aria-current={route.name === "map" ? "page" : undefined}
           onClick={() => {
             if (route.name !== "map") navigate({ name: "map", focus: route.name === "quest" ? route.id : undefined });
           }}
         >
-          <MapIcon aria-hidden size={20} />
+          <MapIcon aria-hidden size={22} />
         </button>}
         <button
           type="button"
-          className="inline-flex min-h-11 min-w-11 items-center justify-center gap-1.5 rounded-full bg-ink px-4 text-sm max-[359px]:px-3 font-semibold text-white hover:bg-ink/85"
+          className="inline-flex min-h-11 min-w-11 items-center justify-center gap-1.5 rounded-xl px-3 text-base font-semibold text-ink hover:bg-paper max-[359px]:px-2"
           aria-haspopup="dialog"
           onClick={() => setSheet("menu")}
         >
-          <Menu aria-hidden size={18} /> <span className="max-[359px]:sr-only">Menu</span>
+          <Menu aria-hidden size={22} /> <span className="max-[359px]:sr-only">Menu</span>
         </button>
         </div>
       </div>

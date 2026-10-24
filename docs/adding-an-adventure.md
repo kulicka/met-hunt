@@ -44,9 +44,14 @@ Follow these rules:
   title. With no accession number and no alias, the game says honestly that it
   can't check typed answers there, and offers the photo or a grown-up.
 - **`theme`** is optional. `"egyptian"` gives every screen of that adventure its
-  warm ivory page, scarlet buttons, parchment cards and the dunes-and-pyramids
-  line art along the bottom of each page (`--scenery` in globals.css); leave it out for the standard look. Onboarding and the first
-  adventure picker always use the standard look.
+  warm ivory page, scarlet buttons and desert scenery along the bottom of each
+  page (`--scenery` in globals.css), and the quest screen a torn papyrus mystery
+  card. `"paintings"` gives linen walls, museum-blue buttons, gallery scenery and
+  a gilded-frame mystery card. Both use hand-lettered type (Mali) and an
+  easy-reading riddle face (Andika) on the quest screen. Leave it out for the
+  standard look. Onboarding and the first adventure picker always use the
+  standard look. Card art lives in `src/components/game/Storybook.tsx`; it is
+  hand-built SVG and must never picture an answer of that adventure.
 - **`contentPackVersion`** must be unique across all adventures, so analytics can
   separate them by version alone.
 - **`launchStatus: "field_test_required"`** stays on until someone has checked

@@ -99,10 +99,12 @@ export interface Adventure {
   /** An emoji for the picker card. */
   emoji: string;
   /**
-   * Look of the quest screen: "egyptian" is warm parchment with sand-dune and palm
-   * line art. Left out: the app's standard look. Decoration never pictures an answer.
+   * The adventure's look, set on every screen while it is in play. "egyptian": warm
+   * parchment, a torn papyrus mystery card and desert scenery. "paintings": linen walls,
+   * a gilded-frame mystery card and gallery scenery. Left out: the app's standard look.
+   * Decoration never pictures an answer.
    */
-  theme?: "egyptian";
+  theme?: "egyptian" | "paintings";
   /**
    * "field_test_required" until someone has walked every route and checked every
    * target on site. The picker and the grown-ups area say so.
