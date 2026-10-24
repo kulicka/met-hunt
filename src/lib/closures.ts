@@ -4,7 +4,9 @@ import { useEffect, useSyncExternalStore } from "react";
 import { bundledClosures, type ClosureList, type ClosureOverride } from "@/data/closures";
 
 // Latest closure list: bundled copy, then the last one seen on this phone, then
-// a fresh one from the server whenever there is signal.
+// a fresh one from the server whenever there is signal. Starting or restarting a
+// hunt asks again (recheckClosures), so the server rereads The Met's page if its
+// copy is more than a few minutes old.
 
 const KEY = "met-hidden-treasures:closures:v1";
 let current: ClosureList = bundledClosures;
@@ -26,11 +28,11 @@ function load() {
   }
 }
 
-async function refresh() {
-  if (fetched) return;
+async function refresh(fresh = false) {
+  if (fetched && !fresh) return;
   fetched = true;
   try {
-    const res = await fetch("/api/closures", { cache: "no-store" });
+    const res = await fetch(fresh ? "/api/closures?fresh=1" : "/api/closures", { cache: "no-store" });
     if (!res.ok) return;
     current = (await res.json()) as ClosureList;
     try {
@@ -54,12 +56,31 @@ const snapshot = () => {
   return current;
 };
 
-export function useClosures(): ClosureOverride[] {
+/** Asks the server for a new check of The Met's closures page; called when a hunt starts or restarts. */
+let lastRecheck = 0;
+export const recheckClosures = () => {
+  // Restart then the picker both ask; one request covers both.
+  if (Date.now() - lastRecheck < 30_000) return;
+  lastRecheck = Date.now();
+  refresh(true);
+};
+
+export function useClosureList(): ClosureList {
   const list = useSyncExternalStore(subscribe, snapshot, () => bundledClosures);
   useEffect(() => {
     refresh();
   }, []);
-  return list.closures;
+  return list;
+}
+
+export const useClosures = (): ClosureOverride[] => useClosureList().closures;
+
+/** "Oct 24, 2026, 3:40 PM" for a full timestamp, "Oct 23, 2026" for a date-only one. */
+export function formatCheckedAt(checkedAt: string): string | null {
+  const dateOnly = /^\d{4}-\d{2}-\d{2}$/.test(checkedAt);
+  const d = new Date(dateOnly ? `${checkedAt}T12:00:00` : checkedAt);
+  if (Number.isNaN(d.getTime())) return null;
+  return dateOnly ? d.toLocaleDateString([], { dateStyle: "medium" }) : d.toLocaleString([], { dateStyle: "medium", timeStyle: "short" });
 }
 
 /** Which closure list is in use, as a short token for analytics (its checkedAt date). */

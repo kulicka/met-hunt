@@ -5,7 +5,8 @@ import { ExternalLink } from "lucide-react";
 import { photoAttempts, trackQuest } from "@/lib/analytics/client";
 import { statusFor, useArtworkStatus, withMetData } from "@/lib/artwork-status";
 import type { ArtworkStatus } from "@/lib/artworks";
-import { isGalleryClosed, useClosures } from "@/lib/closures";
+import { isGalleryClosed, useClosureList, useClosures } from "@/lib/closures";
+import { ClosureCheckNote } from "./ClosureCheckNote";
 import { adventures } from "@/adventures/registry";
 import type { Adventure, QuestReveal } from "@/adventures/types";
 import { GALLERY_CLOSURES_URL, OFFICIAL_MAP_URL } from "@/lib/links";
@@ -101,7 +102,8 @@ function AdventureKey({ adventure, current }: { adventure: Adventure; current: b
               {adventure.map
                 ? "The map and directions are traced from The Met’s floor plan but haven’t been walked yet, and some walks show no directions until they are."
                 : "The walks between galleries haven’t been verified, so the app gives gallery numbers rather than directions."}{" "}
-              Check today’s closures before you go, and confirm a find yourself whenever the photo check struggles.
+              Gallery closures are checked automatically, so closed rooms are marked on the map. Confirm a find yourself
+              whenever the photo check struggles.
             </p>
           </Card>
         )}
@@ -166,7 +168,8 @@ function AdventureKey({ adventure, current }: { adventure: Adventure; current: b
 function ParentsPanel() {
   const profile = useProfile();
   const progress = useProgress();
-  const closures = useClosures();
+  const closureList = useClosureList();
+  const closures = closureList.closures;
   const artworks = useArtworkStatus();
   const playing = profile?.adventureId;
 
@@ -188,16 +191,19 @@ function ParentsPanel() {
         </p>
       )}
 
-      {closures.length > 0 && (
-        <Card>
-          <h2 className="font-display text-2xl font-semibold">Closed galleries</h2>
-          <p className="mt-2">
-            The Met lists Gallery {closures.map((c) => c.galleryId ?? c.connectionId).join(", ")} as temporarily closed.
-            Mysteries in a closed gallery can be skipped without penalty, and the map won’t send anyone through a closed
-            room. If no open route is known, the map suggests The Met’s official map or asking a guard.
-          </p>
-        </Card>
-      )}
+      <Card>
+        <h2 className="font-display text-2xl font-semibold">Closed galleries</h2>
+        <p className="mt-2">
+          {closures.length > 0
+            ? `The Met lists Gallery ${closures.map((c) => c.galleryId ?? c.connectionId).join(", ")} as temporarily closed. `
+            : "No galleries are listed as closed right now. "}
+          Mysteries in a closed gallery can be skipped without penalty, and the map won’t send anyone through a closed
+          room. If no open route is known, the map suggests The Met’s official map or asking a guard.
+        </p>
+        <p className="mt-2 text-sm text-ink-soft">
+          <ClosureCheckNote list={closureList} />
+        </p>
+      </Card>
 
       <Card>
         <h2 className="font-display text-2xl font-semibold">Photos and privacy</h2>
@@ -221,7 +227,7 @@ function ParentsPanel() {
           The Met’s official map <ExternalLink aria-hidden size={14} />
         </a>
         <a className={linkClass} href={GALLERY_CLOSURES_URL} target="_blank" rel="noopener noreferrer">
-          Today’s gallery closures <ExternalLink aria-hidden size={14} />
+          The Met’s gallery closures page <ExternalLink aria-hidden size={14} />
         </a>
       </div>
 

@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from "vitest";
-import { expandGalleries, liveClosures, parseClosuresPage, refreshClosures, resetClosuresSync } from "@/lib/server/met-closures";
+import { expandGalleries, liveClosures, parseClosuresPage, refreshClosures, resetClosuresSync, wantsRecheck } from "@/lib/server/met-closures";
 
 // Shaped like The Met's page as read on 2026-10-24 (headings, "View on map" links, entities).
 const PAGE = `<html><head><script>var x = "Gallery 101";</script><style>.a{}</style></head><body>
@@ -47,5 +47,18 @@ describe("closures page", () => {
     const down = (async () => new Response("", { status: 503 })) as unknown as typeof fetch;
     await refreshClosures(down);
     expect(liveClosures()?.closures.some((c) => c.galleryId === "118")).toBe(true);
+  });
+
+  it("marks a list read from the page as checked automatically", () => {
+    expect(parseClosuresPage(PAGE, "2026-10-24T00:00:00Z")!.source).toBe("met-page");
+  });
+
+  it("rechecks for a starting hunt only when the last read is old and not just tried", async () => {
+    expect(wantsRecheck()).toBe(true); // never read yet
+    await refreshClosures((async () => new Response(PAGE)) as unknown as typeof fetch);
+    expect(wantsRecheck()).toBe(false); // just read
+    resetClosuresSync();
+    await refreshClosures((async () => new Response("", { status: 503 })) as unknown as typeof fetch);
+    expect(wantsRecheck()).toBe(false); // just tried and failed: don't hammer the page
   });
 });

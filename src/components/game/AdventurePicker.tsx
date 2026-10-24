@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { adventures, MORE_COMING_SOON } from "@/adventures/registry";
+import { recheckClosures } from "@/lib/closures";
 import { setAdventure, useProfile } from "@/lib/profile";
 import { getProgress, getProgressFor, playQuest, useProgress } from "@/lib/progress";
 import { navigate } from "./router";
@@ -77,6 +78,7 @@ export function AdventurePickerScreen({ start = false }: { start?: boolean }) {
   const go = () => {
     if (!choice) return;
     setAdventure(choice);
+    recheckClosures();
     const p = getProgress();
     // Switching to a hunt already under way shows its welcome-back screen. Anything
     // else (they tapped START THE HUNT, restarted, or picked one not begun yet) opens
