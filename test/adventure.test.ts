@@ -11,7 +11,9 @@ const titles = europeanPaintings.certificate;
 describe("player profile", () => {
   it("has a fixed roster with names and descriptions, and no name field", () => {
     expect(avatars.length).toBeGreaterThanOrEqual(6);
-    expect(avatars.length).toBeLessThanOrEqual(8);
+    expect(avatars.length).toBeLessThanOrEqual(10);
+    expect(avatars.filter((a) => a.featured).map((a) => a.id)).toEqual(["koti", "mustard"]);
+    expect(avatars[0].id).toBe("scout");
     for (const a of avatars) expect(a.displayName && a.description && a.imageAsset).toBeTruthy();
     expect(Object.keys(parseProfile({ age: 8, avatarId: "fig", onboardingComplete: true, name: "Sam" }, avatarIds, known))).not.toContain("name");
   });
