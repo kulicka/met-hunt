@@ -1,6 +1,7 @@
 import type { BonusQuest, QuestPublic } from "../types";
 
-// Egyptian Adventure launch edition, content version 1.0.0-draft (docs/egyptian-adventure-spec.md, section 3).
+// Egyptian Adventure launch edition (docs/egyptian-adventure-spec.md, section 3), plus
+// the four Daily Life stops in Galleries 105–110 (docs/egyptian-four-new-quests-spec.md).
 // riddle lines are editorially locked: spelling, punctuation, apostrophes and line
 // breaks exactly as in the spec. Gallery 111 has four lines on purpose. Hints are
 // draft copy and may be edited (with a hintSetVersion bump) without touching riddles.
@@ -8,6 +9,35 @@ import type { BonusQuest, QuestPublic } from "../types";
 // are the analytics keys in versions.ts.
 
 export const stops: Record<number, QuestPublic> = {
+  // Daily Life stops: off until checked on site (EXPANDED_ROUTE in index.ts).
+  105: {
+    id: 105,
+    gallery: "105",
+    title: "The Flour-Covered Hands",
+    riddle: ["My hands are white, but there's no snow,", "I'm making something you all know!"],
+    hints: ["Look for someone preparing food.", "Find a tiny wooden workshop full of busy workers, and look at the hands of the ones making bread."],
+  },
+  107: {
+    id: 107,
+    gallery: "107",
+    title: "The Ancient Shopping List",
+    riddle: ["No carts, no stores, no checkout line,", "I counted grain in ancient time!"],
+    hints: ["Find a message written on papyrus.", "Look for torn pieces of papyrus covered in rows of ancient writing that kept track of grain."],
+  },
+  108: {
+    id: 108,
+    gallery: "108",
+    title: "The Cows Crossing the Water",
+    riddle: ["We have four hooves, but here's the twist,", "We're walking where the fish exist!"],
+    hints: ["Look carefully at a carved scene with animals.", "Find the stone carving where a herd is being led through water."],
+  },
+  110: {
+    id: 110,
+    gallery: "110",
+    title: "The Girl with a Secret Braid",
+    riddle: ["I'm just a child from long ago,", "One special braid I have to show!"],
+    hints: ["Look at the child's hairstyle.", "Find a small statue of a girl with one braid hanging down the side of her head."],
+  },
   111: {
     id: 111,
     gallery: "111",

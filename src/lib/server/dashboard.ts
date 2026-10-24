@@ -100,7 +100,7 @@ export function renderDashboard(f: Filters, d: Awaited<ReturnType<typeof loadDas
   const exportQs = new URLSearchParams({ from: f.from, to: f.to, ...(f.content ? { content: f.content } : {}) }).toString();
   const sections = [
     `<section><h2>Overview</h2><p class="note">Adventures that sent a start event in the window, by content version. Adventures already running when analytics was turned on aren't counted as starts.</p>${table(
-      ["Content version", "Consented adventures", "Starts", "Completed all 10", "Ended early", "Restarted", "Still open", "Median quests completed"],
+      ["Content version", "Consented adventures", "Starts", "Completed all", "Ended early", "Restarted", "Still open", "Median quests completed"],
       d.overview.map((r) => [esc(r.content_pack_version), esc(r.consented_adventures), esc(r.starts), rate(r.completions, r.starts), rate(r.ended_early, r.starts), rate(r.restarted, r.starts), esc(r.still_open), esc(r.median_quests_completed ?? "—")]),
     )}</section>`,
     `<section><h2>Funnel</h2><p class="note">Adventures started in the window, by quests completed so far (later events of those adventures included). "Still open" may finish later.</p>${table(
@@ -138,7 +138,7 @@ export function renderDashboard(f: Filters, d: Awaited<ReturnType<typeof loadDas
       d.exits.map((r) => [esc(r.current_quest_id), esc(r.completed_count), esc(r.adventures)]),
     )}</section>`,
     `<section><h2>Age groups</h2><p class="note">Groups with fewer than ${d.minCohort} adventures are hidden.</p>${table(
-      ["Age group", "Adventures", "Completed all 10", "Median quests completed"],
+      ["Age group", "Adventures", "Completed all", "Median quests completed"],
       d.ages.map((r) => (r.suppressed ? [esc(r.age_bucket), `fewer than ${d.minCohort}`, "hidden", "hidden"] : [esc(r.age_bucket), esc(r.adventures), rate(r.completed, r.adventures), esc(r.median_quests_completed)])),
     )}</section>`,
   ];

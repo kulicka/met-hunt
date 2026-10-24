@@ -19,6 +19,7 @@ To publish a change (only after the owner approves any riddle edit):
 | 2026.10.22-1 | 2026-10-22 | European Paintings: first published set: 10 quests, riddles `r1`, hints `h1`, artworks `a1` (spec v2.0) | Alex |
 | 2026.10.24-1 | 2026-10-24 | European Paintings quest 3: artwork pinned to Degas's “Dancer with a Fan” 29.100.557 (object 436136), hidden detail “Open folding fan”; the gallery's other “Dancer with a Fan” (29.100.188) also counts. Artworks `a2` for q03. | Alex |
 | 1.0.0-draft | 2026-10-24 | Egyptian Adventure: 10 stops, Gallery 117 bonus, Gallery 126 reserve, riddles `r1`, draft hints `h1`, artworks `a1` (Egyptian spec v1.0 draft). Field test required. | Alex |
+| 1.1.0-draft | 2026-10-24 | Egyptian Adventure: four Daily Life stops added (Galleries 105, 107, 108, 110; riddles `r1`, draft hints `h1`, artworks `a1`; docs/egyptian-four-new-quests-spec.md). Off until checked on site (`EXPANDED_ROUTE` in `src/adventures/egyptian/index.ts`); the live 10 stops are unchanged. | Alex |
 
 The original Egyptian master collection (`src/adventures/egyptian/master.ts`) is an
 archive and never changes; a test fails if it does.

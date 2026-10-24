@@ -4,7 +4,7 @@ import type { QuestVersion } from "../types";
 // Keys are the spec's stable stop ids. Every stop has a row, including the bonus and
 // the reserve, so a stop can be swapped in without a new key.
 
-export const CONTENT_PACK_VERSION = "1.0.0-draft";
+export const CONTENT_PACK_VERSION = "1.1.0-draft";
 
 const v = (questId: number, key: string, galleryId: number, riddleFingerprint: string, hintsFingerprint: string): QuestVersion => ({
   questId,
@@ -20,6 +20,10 @@ const v = (questId: number, key: string, galleryId: number, riddleFingerprint: s
 });
 
 export const questVersions: QuestVersion[] = [
+  v(105, "egy-105", 105, "387c83f7", "97d764e8"),
+  v(107, "egy-107", 107, "f442d62a", "30bccd26"),
+  v(108, "egy-108", 108, "f5c1f31d", "9b701e01"),
+  v(110, "egy-110", 110, "cd246487", "3d16dc30"),
   v(111, "egy-111", 111, "f07e1e55", "3a81543e"),
   v(112, "egy-112", 112, "fcbd55f1", "72ea6131"),
   v(114, "egy-114", 114, "0814b94c", "a79fa6dc"),
