@@ -22,7 +22,7 @@ export const avatars: Avatar[] = [
   { id: "remy", displayName: "Remy", description: "A playful raccoon who finds the unexpected.", imageAsset: "remy" },
   // Newer explorers stay at the end so avatars[0] (the fallback) never changes.
   { id: "koti", displayName: "Koti", description: "A curious girl who can’t wait to see what’s around the next corner.", imageAsset: "koti", featured: true },
-  { id: "mustard", displayName: "Mustard", description: "A little puppy who climbs every step to explore.", imageAsset: "mustard", featured: true },
+  { id: "mustard", displayName: "Mustard", description: "A little white puppy who climbs every step, map in paw.", imageAsset: "mustard", featured: true },
 ];
 
 export const avatarById = (id?: string) => avatars.find((a) => a.id === id) ?? avatars[0];
