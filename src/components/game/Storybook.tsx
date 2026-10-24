@@ -6,8 +6,9 @@ import type { Adventure } from "@/adventures/types";
 
 // The illustrated ("storybook") pieces of the quest screen. All art is hand-built SVG.
 // Decoration must never picture an answer: no scarabs, ankhs, birds, cats, lions,
-// cobras, eyes, stars, crowns or mirrors for the Egyptian Adventure, and no fans, flowers,
-// books, vases, horses, elephants, people, church towers or monocles for European Paintings.
+// cobras, eyes, stars, crowns, mirrors, bread, cattle, water or braids for the
+// Egyptian Adventure, and no fans, flowers, books, vases, horses, elephants, people,
+// church towers or monocles for European Paintings.
 
 export type Theme = Adventure["theme"];
 
@@ -89,8 +90,9 @@ function PapyrusSheet() {
 }
 
 /**
- * Hieroglyph-style letters down the papyrus's left margin: sun, water, reed leaf,
- * bread loaf, twisted flax, lotus. Sounds and plants only, never an answer.
+ * Hieroglyph-style letters down the papyrus's left margin: sun, house, reed leaf,
+ * stool, twisted flax, lotus. Sounds and plants only, never an answer (no water or
+ * bread since the Daily Life stops: cattle wade through water, bakers make bread).
  */
 function GlyphStrip() {
   return (
@@ -99,16 +101,15 @@ function GlyphStrip() {
       <circle cx="14" cy="14" r="7" />
       <circle cx="14" cy="14" r="2" fill="currentColor" stroke="none" />
       <path d="M2 34 H 26" opacity="0.5" />
-      {/* water */}
-      <path d="M3 48 l3 -3 l3 3 l3 -3 l3 3 l3 -3 l3 3 l3 -3" />
-      <path d="M3 56 l3 -3 l3 3 l3 -3 l3 3 l3 -3 l3 3 l3 -3" />
+      {/* house plan */}
+      <path d="M5 60 V 44 H 23 V 60 H 16" />
       <path d="M2 70 H 26" opacity="0.5" />
       {/* reed leaf */}
       <path d="M12 104 C 8 94, 9 84, 16 76 C 18 86, 17 96, 12 104 Z" />
       <path d="M12 104 V 108" />
       <path d="M2 118 H 26" opacity="0.5" />
-      {/* bread loaf */}
-      <path d="M5 138 C 6 128, 22 128, 23 138 Z" />
+      {/* stool */}
+      <path d="M8 128 H 20 V 140 H 8 Z" />
       <path d="M2 150 H 26" opacity="0.5" />
       {/* twisted flax */}
       <path d="M14 160 C 6 166, 22 172, 14 178 C 6 184, 22 190, 14 196" />

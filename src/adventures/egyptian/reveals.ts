@@ -6,6 +6,34 @@ import type { QuestReveal } from "../types";
 
 export const reveals: QuestReveal[] = [
   {
+    id: 105,
+    artwork: "Model Bakery and Brewery",
+    hiddenObject: "White flour painted on a baker's hands",
+    metObjectId: 544258,
+    metObjectUrl: "https://www.metmuseum.org/art/collection/search/544258",
+  },
+  {
+    id: 107,
+    artwork: "Heqanakht Papyrus Fragments",
+    hiddenObject: "Ancient writing recording grain and household accounts",
+    metObjectId: 545452,
+    metObjectUrl: "https://www.metmuseum.org/art/collection/search/545452",
+  },
+  {
+    id: 108,
+    artwork: "Relief of Fowl and Herds Crossing Water",
+    hiddenObject: "Cattle being led through water in a carved relief",
+    metObjectId: 546098,
+    metObjectUrl: "https://www.metmuseum.org/art/collection/search/546098",
+  },
+  {
+    id: 110,
+    artwork: "Statuette of Reniseneb",
+    hiddenObject: "A child's distinctive side braid",
+    metObjectId: 329884,
+    metObjectUrl: "https://www.metmuseum.org/art/collection/search/329884",
+  },
+  {
     id: 111,
     artwork: "Scarab ring of Sithathoryunet",
     hiddenObject: "Tiny scarab beetle on a royal ring, with red and blue decoration",

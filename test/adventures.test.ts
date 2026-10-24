@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { egyptian, routeLegs } from "@/adventures/egyptian";
+import { buildEgyptian, egyptian, EXPANDED_ROUTE, routeLegs } from "@/adventures/egyptian";
 import { egyptianOriginalMaster, EGYPTIAN_MASTER_ID } from "@/adventures/egyptian/master";
 import { reveals as egyptianReveals } from "@/adventures/egyptian/reveals";
 import { europeanPaintings } from "@/adventures/european-paintings";
@@ -100,8 +100,10 @@ describe("Egyptian Adventure (spec v1.0 draft)", () => {
       ["Secrets of the Pharaohs", 4],
     ]);
     expect(egyptian.bonus!.map((b) => [b.id, b.gallery, b.atQuest])).toEqual([[1171, "117", 117]]);
-    expect(egyptian.otherQuests!.map((q) => q.gallery)).toEqual(["126"]);
+    // The four Daily Life stops wait with the reserve until checked on site.
+    expect(egyptian.otherQuests!.map((q) => q.gallery)).toEqual(["105", "107", "108", "110", "126"]);
     expect(c.questById(126)).toBeUndefined(); // reserve: not playable until swapped in
+    expect(c.questById(105)).toBeUndefined();
   });
 
   it("never plays closed Galleries 118–120 or the unconfirmed 113 baboon", () => {
@@ -170,6 +172,83 @@ describe("Egyptian Adventure (spec v1.0 draft)", () => {
   });
 });
 
+describe("Egyptian Daily Life stops (four new quests spec, 2026-10-24)", () => {
+  const { adventure: expanded, routeLegs: expandedLegs } = buildEgyptian(true);
+  const c = contentFor(expanded);
+  const NEW = [105, 107, 108, 110];
+
+  it("stays off in the live hunt until checked on site", () => {
+    expect(EXPANDED_ROUTE).toBe(false);
+    expect(egyptian.quests).toHaveLength(10);
+    expect(egyptian.where).toBe("Floor 1 · Egyptian Art, Galleries 111–125");
+    expect(egyptian.description).toContain("collect ten discoveries!");
+  });
+
+  it("adds them first, in gallery order, as their own chapter, leaving the rest as it was", () => {
+    expect(c.questOrder).toEqual(["105", "107", "108", "110", "111", "112", "114", "115", "116", "117", "122", "123", "124", "125"]);
+    expect(expanded.chapters!.map((ch) => [ch.id, ch.questIds.length])).toEqual([
+      ["daily-life", 4],
+      ["royal-treasures", 6],
+      ["pharaoh-secrets", 4],
+    ]);
+    expect(expanded.quests.slice(4)).toEqual(egyptian.quests);
+    expect(expanded.bonus).toEqual(egyptian.bonus);
+    expect(expanded.otherQuests!.map((q) => q.gallery)).toEqual(["126"]);
+    expect(expanded.where).toBe("Floor 1 · Egyptian Art, Galleries 105–125");
+    expect(expanded.description).toContain("collect fourteen discoveries!");
+  });
+
+  it("shows the approved riddles exactly, two lines each", () => {
+    expect(NEW.map((id) => c.questById(id)!.riddle)).toEqual([
+      ["My hands are white, but there's no snow,", "I'm making something you all know!"],
+      ["No carts, no stores, no checkout line,", "I counted grain in ancient time!"],
+      ["We have four hooves, but here's the twist,", "We're walking where the fish exist!"],
+      ["I'm just a child from long ago,", "One special braid I have to show!"],
+    ]);
+    expect(NEW.map((id) => c.questById(id)!.hints[0])).toEqual([
+      "Look for someone preparing food.",
+      "Find a message written on papyrus.",
+      "Look carefully at a carved scene with animals.",
+      "Look at the child's hairstyle.",
+    ]);
+  });
+
+  it("links each to the Met object, gallery and hidden detail in the spec", async () => {
+    const reveals = await expanded.loadReveals();
+    const want = { 105: [544258, "White flour"], 107: [545452, "grain"], 108: [546098, "Cattle"], 110: [329884, "side braid"] } as const;
+    for (const id of NEW) {
+      const r = reveals.find((x) => x.id === id)!;
+      expect(r.metObjectId).toBe(want[id as keyof typeof want][0]);
+      expect(r.hiddenObject).toContain(want[id as keyof typeof want][1]);
+      expect(c.versionOf(id)).toMatchObject({ key: `egy-${id}`, galleryId: id, riddleVersion: "r1" });
+    }
+  });
+
+  it("gives no directions for the new walks until they are walked", () => {
+    for (const [from, to] of [["105", "107"], ["107", "108"], ["108", "110"], ["110", "111"], ["117", "122"]]) {
+      expect(c.findRoute(from, to, []), `${from} → ${to}`).toBeNull();
+    }
+    // Each is a single doorway on The Met's map, so directions come back once released.
+    expect(contentFor({ ...expanded, heldRoutes: [] }).findRoute("108", "110", [])?.path).toEqual(["108", "110"]);
+    expect(expandedLegs.slice(0, 4).every((l) => !l.routeVerified)).toBe(true);
+  });
+
+  it("completes on all fourteen, and keeps finds made before the switch either way", () => {
+    const ids = c.questIds;
+    let a = begin(freshAdventure(ids[0]));
+    for (const id of ids) a = solve(a, id, "ai-photo", null, ids);
+    expect(a.status).toBe("completed");
+    expect(certificateText(a, ids.length, "Cleo", expanded.certificate)).toMatchObject({ kind: "full", countLine: "14/14 treasures discovered" });
+
+    const live = contentFor(egyptian);
+    const saved = { status: "in_progress", currentQuest: 112, completedQuests: [111], bonusFound: [1171] };
+    const grown = parseAdventure(saved, c.questIds, c.extraIds);
+    expect(grown).toMatchObject({ status: "in_progress", completedQuests: [111], bonusFound: [1171] });
+    const shrunk = parseAdventure({ ...grown, completedQuests: [105, 111] }, live.questIds, live.extraIds);
+    expect(shrunk).toMatchObject({ completedQuests: [111], retiredFinds: [105] });
+  });
+});
+
 describe("analytics across adventures", () => {
   const base = {
     event_id: "00000000-0000-4000-8000-000000000001",
@@ -178,7 +257,7 @@ describe("analytics across adventures", () => {
     adventure_id: "11111111-1111-4111-8111-111111111111",
     session_id: "22222222-2222-4222-8222-222222222222",
     app_version: "0.1.0",
-    content_pack_version: "1.0.0-draft",
+    content_pack_version: "1.1.0-draft",
   };
   const quest = (packId: string | undefined, key: string, gallery: number) => ({
     ...base,

@@ -25,6 +25,40 @@ const cat = (spots: boolean) => (
 );
 
 const emblems: Record<number, React.ReactElement> = {
+  // floury hands kneading a loaf
+  105: (
+    <g {...s}>
+      <path d="M28 66 Q50 54 72 66 Q72 76 50 76 Q28 76 28 66 Z" fill={GOLD} fillOpacity={0.45} />
+      <path d="M30 58 Q30 44 38 42 Q44 42 44 50 L44 62 M56 62 L56 50 Q56 42 62 42 Q70 44 70 58" fill="#fbf8f1" />
+      <path d="M34 46 L34 40 M40 44 L40 36 M60 44 L60 36 M66 46 L66 40" />
+    </g>
+  ),
+  // papyrus sheet with rows of grain tallies
+  107: (
+    <g {...s}>
+      <path d="M28 30 L72 30 L70 72 L30 72 Z" fill="#efe6d2" />
+      <path d="M36 40 L64 40 M36 50 L58 50 M36 60 L62 60" stroke={BURG} strokeWidth={2} />
+      {[38, 42, 46, 50].map((x) => <path key={x} d={`M${x} 64 L${x} 68`} strokeWidth={2} />)}
+    </g>
+  ),
+  // cow wading through water
+  108: (
+    <g {...s}>
+      <path d="M28 54 Q30 42 46 42 L64 42 Q70 38 74 42 L74 50 Q70 52 66 50 L64 56 Z" fill={GOLD} fillOpacity={0.45} />
+      <path d="M70 40 Q72 34 78 34 M66 40 Q64 34 60 34" />
+      <path d="M22 60 Q28 56 34 60 Q40 64 46 60 Q52 56 58 60 Q64 64 70 60 Q76 56 80 60" stroke={LAPIS} />
+      <path d="M26 70 Q32 66 38 70 Q44 74 50 70 Q56 66 62 70 Q68 74 74 70" stroke={LAPIS} />
+    </g>
+  ),
+  // a child's head with a side braid
+  110: (
+    <g {...s}>
+      <circle cx={48} cy={46} r={14} fill={GOLD} fillOpacity={0.35} />
+      <path d="M36 40 Q40 28 54 30 Q62 34 62 44" fill={INK} fillOpacity={0.8} />
+      <path d="M60 46 Q64 52 60 58 Q64 64 60 70 Q64 74 62 78" strokeWidth={4} />
+      <path d="M40 66 Q48 62 56 66 L58 78 L38 78 Z" />
+    </g>
+  ),
   // scarab ring
   111: (
     <g>

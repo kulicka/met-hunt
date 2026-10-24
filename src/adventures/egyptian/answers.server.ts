@@ -9,6 +9,44 @@ import type { QuestArtworkAnswer } from "@/lib/answer-match";
 
 export const answers: QuestArtworkAnswer[] = [
   {
+    questId: 105,
+    metCollectionId: "544258",
+    accessionNumbers: ["20.3.12"],
+    canonicalTitle: "Model Bakery and Brewery from the Tomb of Meketre",
+    // The Met also lists the figures on their own (Gallery 105, “20.3.12-BAKERS”); they are the bakers whose hands the riddle means.
+    acceptedTitles: ["Model Bakery and Brewery", "Bakers and Brewers from Meketre's Model Bakery and Brewery"],
+    titleUnique: true,
+    nearbyTitles: ["Model of a Granary with Scribes", "Model of a Slaughter House", "Model Cattle stable from the tomb of Meketre", "Model of a procession of offering bearers"],
+  },
+  {
+    questId: 107,
+    metCollectionId: "545452",
+    accessionNumbers: ["22.3.523a–f"],
+    canonicalTitle: "Heqanakht Papyrus Fragments",
+    acceptedTitles: [],
+    titleUnique: true,
+    // Heqanakht's letters and accounts are listed in Gallery 107 too; Accounts VI and VII also record grain.
+    nearbyTitles: ["Heqanakht Letter I", "Heqanahkt Letter II", "Heqanakht Letter V", "Heqanakht Account VI", "Heqanakht Account VII", "Papyrus fragment", "Meketre papyrus"],
+    curatorReview: "Gallery 107 also lists Heqanakht's letters and his grain accounts (Accounts VI and VII). Only the fragments 22.3.523a–f count; check on site that they are the papyrus children will find.",
+  },
+  {
+    questId: 108,
+    metCollectionId: "546098",
+    accessionNumbers: ["15.3.1164"],
+    canonicalTitle: "Relief block depicting plucking and roasting fowl and herds crossing water",
+    acceptedTitles: ["Relief of Fowl and Herds Crossing Water"],
+    titleUnique: true,
+  },
+  {
+    questId: 110,
+    metCollectionId: "329884",
+    accessionNumbers: ["2021.41.106"],
+    canonicalTitle: "Statuette of Reniseneb",
+    acceptedTitles: [],
+    titleUnique: true,
+    nearbyTitles: ["Stela of Reniseneb", "Statuette of Lady Kemtet", "Statuette of Lady Dedetamun", "Statuette of the Steward Senbi"],
+  },
+  {
     questId: 111,
     metCollectionId: "545530",
     accessionNumbers: ["16.1.24"],

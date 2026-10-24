@@ -6,6 +6,34 @@ import type { VerificationTarget } from "../types";
 
 export const verificationTargets: VerificationTarget[] = [
   {
+    questId: 105,
+    artwork: "Model Bakery and Brewery",
+    hiddenObject: "White flour painted on a baker's hands",
+    verificationDescription:
+      "Verify that the submitted museum photograph plausibly shows the Egyptian artwork “Model Bakery and Brewery” (The Met object 544258) and that this detail is visible: White flour painted on a baker's hands. Other wooden tomb models from Meketre stand nearby (a granary, a slaughterhouse, boats); only the bakery and brewery counts.",
+  },
+  {
+    questId: 107,
+    artwork: "Heqanakht Papyrus Fragments",
+    hiddenObject: "Ancient writing recording grain and household accounts",
+    verificationDescription:
+      "Verify that the submitted museum photograph plausibly shows the Egyptian artwork “Heqanakht Papyrus Fragments” (The Met object 545452) and that this detail is visible: Ancient writing recording grain and household accounts. Several other Heqanakht letters and accounts are shown in the same gallery; the photo must show these fragments, not just any papyrus or a label.",
+  },
+  {
+    questId: 108,
+    artwork: "Relief of Fowl and Herds Crossing Water",
+    hiddenObject: "Cattle being led through water in a carved relief",
+    verificationDescription:
+      "Verify that the submitted museum photograph plausibly shows the Egyptian artwork “Relief of Fowl and Herds Crossing Water” (The Met object 546098) and that this detail is visible: Cattle being led through water in a carved relief.",
+  },
+  {
+    questId: 110,
+    artwork: "Statuette of Reniseneb",
+    hiddenObject: "A child's distinctive side braid",
+    verificationDescription:
+      "Verify that the submitted museum photograph plausibly shows the Egyptian artwork “Statuette of Reniseneb” (The Met object 329884) and that this detail is visible: A child's distinctive side braid. A stela of the same person is in the same gallery; only the small statue of the girl counts.",
+  },
+  {
     questId: 111,
     artwork: "Scarab ring of Sithathoryunet",
     hiddenObject: "Tiny scarab beetle on a royal ring, with red and blue decoration",

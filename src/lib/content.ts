@@ -83,11 +83,12 @@ function build(adventure: Adventure) {
 
 export type AdventureContent = ReturnType<typeof build>;
 
-const cache = new Map<string, AdventureContent>();
+// Keyed by the object, not the id: tests build other lineups of the same adventure.
+const cache = new WeakMap<Adventure, AdventureContent>();
 
 export function contentFor(adventure: Adventure): AdventureContent {
-  let c = cache.get(adventure.id);
-  if (!c) cache.set(adventure.id, (c = build(adventure)));
+  let c = cache.get(adventure);
+  if (!c) cache.set(adventure, (c = build(adventure)));
   return c;
 }
 

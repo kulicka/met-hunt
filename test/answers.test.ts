@@ -128,6 +128,32 @@ describe("typed answers: titles", () => {
   });
 });
 
+describe("typed answers: Egyptian Daily Life stops", () => {
+  it("accepts the accession numbers from The Met's data, never the collection ids", () => {
+    expect(check(EGY, 105, "20.3.12")).toBe("match");
+    expect(check(EGY, 107, "22.3.523a–f")).toBe("match");
+    expect(check(EGY, 107, "22.3.523 c")).toBe("match");
+    expect(check(EGY, 108, "15.3.1164")).toBe("match");
+    expect(check(EGY, 110, "2021.41.106")).toBe("match");
+    for (const [q, id] of [[105, "544258"], [107, "545452"], [108, "546098"], [110, "329884"]] as const) expect(check(EGY, q, id)).toBe("no_match");
+    expect(check(EGY, 107, "22.3.521")).toBe("no_match"); // Heqanakht Account VI, same gallery
+  });
+
+  it("accepts the Met titles and the spec's shorter names", () => {
+    expect(check(EGY, 105, "model bakery and brewery")).toBe("match");
+    expect(check(EGY, 105, "Model Bakery and Brewery from the Tomb of Meketre")).toBe("match");
+    expect(check(EGY, 107, "heqanakht papyrus fragments")).toBe("match");
+    expect(check(EGY, 108, "Relief of Fowl and Herds Crossing Water")).toBe("match");
+    expect(check(EGY, 110, "statuette of reniseneb")).toBe("match");
+  });
+
+  it("does not land on look-alikes in the same gallery", () => {
+    expect(check(EGY, 105, "Model of a Granary with Scribes")).toBe("no_match");
+    expect(check(EGY, 107, "Heqanakht Account VI")).toBe("no_match");
+    expect(check(EGY, 110, "Stela of Reniseneb")).toBe("no_match");
+  });
+});
+
 describe("answer data", () => {
   it("covers every stop that has a photo check, with parseable numbers", () => {
     for (const s of serverAdventures) {
