@@ -8,8 +8,13 @@ export type Change =
   | { type: "adventure_resumed" }
   | { type: "adventure_ended_early" }
   | { type: "adventure_completed" }
-  | { type: "quest_completed"; questId: number; method: "ai_verified" | "parent_confirmed"; hintsUsed: number }
+  | { type: "quest_completed"; questId: number; method: CompletionMethod; hintsUsed: number }
   | { type: "quest_hint_opened"; questId: number; level: 1 | 2 };
+
+export type CompletionMethod = "ai_verified" | "text_verified" | "parent_confirmed";
+
+const completionMethod = (m: AdventureState["verificationMethod"][number] | undefined): CompletionMethod =>
+  m === "ai-photo" ? "ai_verified" : m === "text" ? "text_verified" : "parent_confirmed";
 
 export function changes(prev: AdventureState, next: AdventureState): Change[] {
   const out: Change[] = [];
@@ -28,14 +33,14 @@ export function changes(prev: AdventureState, next: AdventureState): Change[] {
 
   for (const id of next.completedQuests) {
     if (prev.completedQuests.includes(id)) continue;
-    const method = next.verificationMethod[id] === "ai-photo" ? "ai_verified" : "parent_confirmed";
+    const method = completionMethod(next.verificationMethod[id]);
     out.push({ type: "quest_completed", questId: id, method, hintsUsed: next.hintsUsed[id] ?? 0 });
   }
 
   // Bonus finds are quests too (their own stable keys), but never count toward completion.
   for (const id of next.bonusFound ?? []) {
     if (prev.bonusFound?.includes(id)) continue;
-    const method = next.verificationMethod[id] === "ai-photo" ? "ai_verified" : "parent_confirmed";
+    const method = completionMethod(next.verificationMethod[id]);
     out.push({ type: "quest_completed", questId: id, method, hintsUsed: next.hintsUsed[id] ?? 0 });
   }
 

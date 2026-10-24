@@ -16,6 +16,7 @@ import { ParentsScreen } from "./Parents";
 import { QuestScreen } from "./QuestScreen";
 import { parseRoute, useHash, type Route } from "./router";
 import { useProfile } from "@/lib/profile";
+import { useAdventure } from "@/lib/content";
 
 
 function screenFor(route: Route) {
@@ -54,6 +55,7 @@ export function Game() {
   const hash = useHash();
   const profile = useProfile();
   const reduce = useReducedMotion();
+  const { adventure } = useAdventure();
   useEffect(startAnalytics, []);
   if (hash === null || profile === null) return null; // server render: progress lives on the phone only
   const route = parseRoute(hash);
@@ -86,6 +88,9 @@ export function Game() {
         animate={{ opacity: 1, y: 0 }}
         exit={reduce ? undefined : { opacity: 0 }}
         transition={{ duration: 0.18 }}
+        // An adventure's own look (e.g. Egyptian parchment) is for its quest screen only.
+        data-theme={route.name === "quest" ? adventure.theme : undefined}
+        className="min-h-dvh"
       >
         <GameBar setup={!profile.onboardingComplete || !profile.adventureId} />
         {screenFor(route)}

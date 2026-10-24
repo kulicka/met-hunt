@@ -4,7 +4,8 @@
 
 export type AdventureStatus = "not_started" | "in_progress" | "ended_early" | "completed";
 export type AgeChoice = 5 | 6 | 7 | 8 | 9 | 10 | 11 | "12+";
-export type VerificationMethod = "ai-photo" | "grown-up" | "manual";
+/** How a find was confirmed. "text": the artwork's name or accession number was typed and matched. Every method earns the same credit. */
+export type VerificationMethod = "ai-photo" | "text" | "grown-up" | "manual";
 
 export const AGE_CHOICES: AgeChoice[] = [5, 6, 7, 8, 9, 10, 11, "12+"];
 
@@ -57,7 +58,7 @@ export const freshAdventure = (firstQuest: number): AdventureState => ({
 });
 
 const STATUSES: AdventureStatus[] = ["not_started", "in_progress", "ended_early", "completed"];
-const METHODS: VerificationMethod[] = ["ai-photo", "grown-up", "manual"];
+const METHODS: VerificationMethod[] = ["ai-photo", "text", "grown-up", "manual"];
 
 const isObject = (v: unknown): v is Record<string, unknown> => typeof v === "object" && v !== null && !Array.isArray(v);
 const isTime = (v: unknown): v is string => typeof v === "string" && !Number.isNaN(Date.parse(v));
@@ -153,7 +154,9 @@ export function solve(
   nextQuest: number | null,
   questIds: number[],
 ): AdventureState {
-  const completedQuests = a.completedQuests.includes(id) ? a.completedQuests : [...a.completedQuests, id];
+  // Solving twice (a second tab, a late reply) changes nothing: one find, one award, the first method.
+  if (a.completedQuests.includes(id)) return a;
+  const completedQuests = [...a.completedQuests, id];
   const all = questIds.every((q) => completedQuests.includes(q));
   const started = begin(a);
   return {

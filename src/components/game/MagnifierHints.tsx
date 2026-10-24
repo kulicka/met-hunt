@@ -31,14 +31,14 @@ export function MagnifierHints({ hints, used, onReveal }: { hints: [string, stri
         onClick={press}
         aria-controls={panelId}
         aria-expanded={done ? open : undefined}
-        className="flex min-h-14 w-full items-center justify-center gap-3 rounded-full border border-gold/50 bg-card px-4 text-base font-semibold tracking-[0.01em] text-ink shadow-[0_1px_2px_rgb(13_13_16/0.05)] hover:border-gold active:scale-[0.98] transition focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-burgundy"
+        className="flex min-h-14 w-full items-center justify-center gap-3 rounded-full border border-gold/50 bg-card/80 px-4 text-base font-semibold tracking-[0.01em] text-ink shadow-[0_1px_2px_rgb(13_13_16/0.05)] hover:border-gold active:scale-[0.98] transition focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-burgundy"
       >
         <span aria-hidden className="flex h-9 w-9 items-center justify-center rounded-full bg-gold-soft text-gold">
           <Search size={22} strokeWidth={2.5} />
         </span>
-        {done ? (open ? "HIDE HINTS" : "REVIEW HINTS") : (
+        {done ? (open ? "Hide my clues" : "See my clues again") : (
           <span className="flex flex-col items-start leading-tight">
-            <span>GET A HINT</span>
+            <span>Need a clue?</span>
             <span className="text-sm font-normal text-ink-soft">Hint {shown + 1} of {total}</span>
           </span>
         )}

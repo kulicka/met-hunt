@@ -7,7 +7,7 @@ type Variant = "primary" | "secondary" | "quiet";
 
 const variants: Record<Variant, string> = {
   primary:
-    "bg-ink text-white shadow-[inset_0_1px_0_rgb(255_255_255/0.14),0_8px_20px_-10px_rgb(13_13_16/0.6)] hover:bg-[#25252b] active:scale-[0.98]",
+    "bg-action text-white shadow-[inset_0_1px_0_rgb(255_255_255/0.14),0_8px_20px_-10px_rgb(13_13_16/0.6)] hover:bg-action-hover active:scale-[0.98]",
   secondary: "border border-line bg-card text-ink shadow-[0_1px_2px_rgb(13_13_16/0.05)] hover:border-ink/40 active:scale-[0.98]",
   quiet: "text-ink-soft underline underline-offset-4 decoration-ink/20 hover:text-ink hover:decoration-ink/60",
 };
@@ -44,22 +44,29 @@ export function Title({ children, className = "" }: { children: ReactNode; class
   return <h1 className={`font-display text-4xl font-semibold leading-[1.05] text-ink ${className}`}>{children}</h1>;
 }
 
-/** One position per mystery. State is shown by shape and text, not color alone. */
+/**
+ * One position per mystery. State is shown by shape and text, not color alone.
+ * With `current`, an unsolved mystery earlier in the hunt shows as skipped (it comes round again).
+ */
 export function ProgressDots({ completed, current }: { completed: number[]; current?: number }) {
   const { questIds } = useAdventure();
   const solved = completed.length;
+  const at = current == null ? -1 : questIds.indexOf(current);
   return (
     <div className="flex flex-col gap-1">
       <ol className="flex flex-wrap gap-1 min-[360px]:gap-1.5" aria-label={`${solved} of ${questIds.length} mysteries solved`}>
         {questIds.map((id, i) => {
-          const state = completed.includes(id) ? "found" : id === current ? "current" : "upcoming";
-          const label = { found: "solved", current: "current mystery", upcoming: "not yet solved" }[state];
+          const state = completed.includes(id) ? "found" : id === current ? "current" : i < at ? "skipped" : "upcoming";
+          const label = { found: "solved", current: "current mystery", skipped: "skipped for now", upcoming: "not yet solved" }[state];
           return (
             <li key={id} aria-label={`Mystery ${i + 1}: ${label}`} className="flex h-6 w-6 items-center justify-center">
               {state === "found" && (
                 <span className="flex h-5 w-5 items-center justify-center rounded-full bg-ink text-xs font-bold text-white">✓</span>
               )}
               {state === "current" && <span className="h-4 w-4 rounded-full bg-burgundy ring-4 ring-burgundy/20" />}
+              {state === "skipped" && (
+                <span className="flex h-4 w-4 items-center justify-center rounded-full border-[1.5px] border-dashed border-ink-soft text-[9px] font-bold leading-none text-ink-soft">↺</span>
+              )}
               {state === "upcoming" && <span className="h-3 w-3 rounded-full border-[1.5px] border-ink-soft/70" />}
             </li>
           );

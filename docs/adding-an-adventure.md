@@ -24,6 +24,7 @@ in each file:
 | `quests.ts` | Gallery, optional title, riddle lines (locked text, any number of lines), two hints | yes |
 | `reveals.ts` | Artwork, optional artist, the hidden detail, fact, and Met object id and URL | only after a find, or in grown-up mode |
 | `verification.server.ts` | What the photo checker looks for at each stop | never |
+| `answers.server.ts` | Typed answers for "Continue without a photo": the Met title, accepted aliases, accession numbers from The Met's own data (never guessed), and look-alike titles in the same gallery | never |
 | `versions.ts` | One row per stop, holding a stable key, version tokens and fingerprints | yes |
 | `Stamps.tsx` | One notebook stamp per stop (an original SVG) | only after a find |
 | `index.ts` | The `Adventure` object: id, title, where, lineup, chapters, map, certificate titles, `launchStatus` | yes |
@@ -37,6 +38,13 @@ Follow these rules:
 - **Quest ids** are numbers and only need to be unique within the adventure. Using
   the gallery number works well (Egyptian does this). Never reuse an id for a
   different artwork.
+- **`answers.server.ts`** needs a row for every stop. `metCollectionId` is the
+  id in the collection URL and is never accepted; only the accession number on
+  the label is. Set `titleUnique: false` when another object nearby shares the
+  title. With no accession number and no alias, the game says honestly that it
+  can't check typed answers there, and offers the photo or a grown-up.
+- **`theme`** is optional. `"egyptian"` gives the quest screen its parchment look;
+  leave it out for the standard look.
 - **`contentPackVersion`** must be unique across all adventures, so analytics can
   separate them by version alone.
 - **`launchStatus: "field_test_required"`** stays on until someone has checked

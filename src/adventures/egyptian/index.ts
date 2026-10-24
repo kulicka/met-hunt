@@ -68,6 +68,7 @@ export const egyptian: Adventure = {
   description:
     "Travel through ancient Egypt as a treasure detective. Decode riddles, find tiny secrets hidden in real artworks, and collect ten discoveries!",
   emoji: "🏺",
+  theme: "egyptian",
   launchStatus: "field_test_required",
   quests,
   chapters,

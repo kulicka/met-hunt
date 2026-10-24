@@ -94,7 +94,7 @@ const Events = z.discriminatedUnion("event_name", [
     photo_attempts: count,
   }),
   quest("quest_completed", {
-    method: z.enum(["ai_verified", "parent_confirmed"]),
+    method: z.enum(["ai_verified", "text_verified", "parent_confirmed"]),
     hints_used: z.int().min(0).max(2),
     photo_attempts: count,
     active_ms: ms.nullable(),

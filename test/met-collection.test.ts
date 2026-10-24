@@ -3,7 +3,8 @@ import { europeanPaintings } from "@/adventures/european-paintings";
 import { reveals } from "@/adventures/european-paintings/reveals";
 import { checkArtwork, isMatch, isStale, normalize } from "@/lib/server/met-collection";
 
-const monet = reveals.find((r) => r.id === 5)!; // View of Vétheuil, quest gallery 818
+// View of Vétheuil, quest gallery 818. Its real object id is pinned; leave it out to test the title search.
+const monet = { ...reveals.find((r) => r.id === 5)!, metObjectId: undefined, metObjectUrl: undefined };
 
 type Obj = { objectID: number; title: string; artistDisplayName: string; GalleryNumber?: string; isPublicDomain?: boolean; primaryImageSmall?: string; objectURL?: string };
 

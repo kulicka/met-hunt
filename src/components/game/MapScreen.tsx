@@ -75,10 +75,10 @@ export function MapScreen({ focus, from }: Props) {
 
   const states = questIds.map((id) => ({ id, state: roomState(adv, id, progress.completedQuests, closures, current) }));
   const stateText: Record<RoomState, string> = {
-    found: "✓ Found",
+    found: "★ Found",
     current: "● Next mystery",
     upcoming: "○ Still to discover",
-    closed: "Temporarily closed",
+    closed: "🔒 Temporarily closed",
   };
 
   return (
@@ -130,10 +130,10 @@ export function MapScreen({ focus, from }: Props) {
           <p className="-mt-2 text-center text-sm text-ink-soft">Pinch or double-tap to zoom. Drag to look around.</p>
 
           <ul className="flex flex-wrap justify-center gap-x-4 gap-y-1 text-sm" aria-label="Map key">
-            <li>✓ Found</li>
-            <li>● Current destination</li>
+            <li><span aria-hidden className="text-[#c99a1e]">★</span> Found</li>
+            <li><span aria-hidden className="text-burgundy">●</span> Current mystery</li>
             <li>○ Still to discover</li>
-            <li>▨ Temporarily closed</li>
+            <li>🔒 Temporarily closed</li>
             <li>? Doorway not yet confirmed</li>
           </ul>
         </>
@@ -242,7 +242,7 @@ function MarkerSheet({
       <p className="font-display text-3xl font-semibold">Gallery {quest.gallery}</p>
       {state === "found" ? (
         <>
-          <p className="mt-1 text-lg">Solved ✓{reveal ? ` You found: ${reveal.hiddenObject}` : ""}</p>
+          <p className="mt-1 text-lg">Solved ★{reveal ? ` You found: ${reveal.hiddenObject}` : ""}</p>
           <Button variant="quiet" className="-ml-2" onClick={() => navigate({ name: "collection" })}>
             See it in my treasures
           </Button>

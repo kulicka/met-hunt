@@ -1,27 +1,32 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Camera, ImageUp, Map as MapIcon } from "lucide-react";
+import { Camera, ImageUp, PenLine } from "lucide-react";
 import { photoAttempts, photoSubmitted, questViewed, trackQuest } from "@/lib/analytics/client";
 import { latencyBucket, type ERROR_KINDS } from "@/lib/analytics/schema";
 import { isGalleryClosed, useClosures } from "@/lib/closures";
 import { useAdventure } from "@/lib/content";
 import { preparePhoto } from "@/lib/photo";
-import { riddleFontSize } from "@/lib/riddle";
 import { completeQuest, getProgress, playQuest, updateProgress, useProgress, type VerificationMethod } from "@/lib/progress";
 import { type VerificationResult, type VerificationStatus } from "@/lib/verification";
 import { GrownUpCheck } from "./GrownUpCheck";
 import { MagnifierHints } from "./MagnifierHints";
 import { warmStamps } from "./Notebook";
+import { EgyptianScenery, MysteryCard, TextArtworkVerificationForm, type TextCheck } from "./QuestParts";
 import { navigate } from "./router";
 import { Button, Card, Eyebrow, ProgressDots, Screen } from "./ui";
 
 const GROWN_UP_AFTER = 2;
 const REQUEST_TIMEOUT_MS = 35_000;
+const ANSWER_TIMEOUT_MS = 15_000;
 const MODEL_TOKEN = /^[A-Za-z0-9._-]{1,40}$/;
 
 type Phase =
   | { kind: "clue" }
+  /** I FOUND IT!: take a photo or choose one. */
+  | { kind: "photo" }
+  /** Continue without a photo: type the artwork's name or number. */
+  | { kind: "text" }
   | { kind: "preview" }
   | { kind: "checking" }
   | { kind: "result"; status: Exclude<VerificationStatus, "verified"> }
@@ -30,12 +35,15 @@ type Phase =
   | { kind: "grownup" };
 
 export function QuestScreen({ id }: { id: number }) {
-  const { adventure, questById, questNumber, questIds, nextUnsolved, loadReveals, isBonus, bonusAt, chapterOf, hasRoutes } = useAdventure();
+  const { adventure, questById, questNumber, questIds, nextUnsolved, loadReveals, isBonus, bonusAt, chapterOf } = useAdventure();
   const quest = questById(id);
   const bonus = isBonus(id);
   const progress = useProgress();
   const closures = useClosures();
   const [phase, setPhase] = useState<Phase>({ kind: "clue" });
+  // Kept while this mystery is open, so Back and a miss never lose what was typed.
+  const [draft, setDraft] = useState("");
+  const [textCheck, setTextCheck] = useState<TextCheck>("idle");
   const photo = useRef<{ blob: Blob; url: string; source: "camera" | "library" } | null>(null);
   const camera = useRef<HTMLInputElement>(null);
   const library = useRef<HTMLInputElement>(null);
@@ -149,6 +157,32 @@ export function QuestScreen({ id }: { id: number }) {
     setPhase({ kind: "result", status: result.status });
   }
 
+  // Same credit as a photo once the server says the name or number matches.
+  async function checkText() {
+    const answer = draft.trim();
+    if (!answer) return setTextCheck("blank");
+    setTextCheck("checking");
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), ANSWER_TIMEOUT_MS);
+    try {
+      const response = await fetch("/api/check-answer", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ adventure: adventure.id, quest: id, answer }),
+        signal: controller.signal,
+      });
+      if (!response.ok) return setTextCheck("error");
+      const { result } = (await response.json()) as { result?: string };
+      if (result === "match") return finish("text");
+      setTextCheck(result === "unchecked" ? "unchecked" : result === "no_match" ? "no_match" : "error");
+    } catch {
+      // Offline or timed out: nothing is counted, and the answer stays in the box.
+      setTextCheck("error");
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
   const inputs = (
     <>
       <input ref={camera} type="file" accept="image/*" capture="environment" className="hidden" onChange={onFile} tabIndex={-1} aria-hidden />
@@ -188,6 +222,46 @@ export function QuestScreen({ id }: { id: number }) {
     );
   }
 
+  if (phase.kind === "text") {
+    return (
+      <Screen>
+        <TextArtworkVerificationForm
+          gallery={quest.gallery}
+          draft={draft}
+          onDraft={(v) => {
+            setDraft(v);
+            if (textCheck !== "checking" && textCheck !== "idle") setTextCheck("idle");
+          }}
+          status={textCheck}
+          onCheck={checkText}
+          onBack={() => setPhase({ kind: "clue" })}
+          onGrownUp={() => setPhase({ kind: "grownup" })}
+        />
+      </Screen>
+    );
+  }
+
+  if (phase.kind === "photo") {
+    return (
+      <Screen>
+        {inputs}
+        <Eyebrow>Gallery {quest.gallery}</Eyebrow>
+        <h1 className="font-display text-[2rem] font-semibold leading-[1.1]">Show us your discovery!</h1>
+        <p className="text-lg text-ink-soft">Photograph the artwork, not other visitors. Zoom with your camera if the treasure is tiny.</p>
+        <Button onClick={() => pick(camera.current)}>
+          <Camera aria-hidden size={22} /> Take a photo
+        </Button>
+        <Button variant="secondary" onClick={() => pick(library.current)}>
+          <ImageUp aria-hidden size={20} /> Choose from library
+        </Button>
+        <Button variant="secondary" onClick={() => setPhase({ kind: "text" })}>
+          <PenLine aria-hidden size={20} /> Type the name or number
+        </Button>
+        {backToClue}
+      </Screen>
+    );
+  }
+
   if (phase.kind === "preview" && photo.current) {
     return (
       <Screen>
@@ -195,7 +269,7 @@ export function QuestScreen({ id }: { id: number }) {
         <h1 className="text-center font-display text-3xl font-semibold">Is this your treasure?</h1>
         {/* eslint-disable-next-line @next/next/no-img-element -- local object URL, never uploaded anywhere else */}
         <img src={photo.current.url} alt="Your photo" className="max-h-[55dvh] w-full rounded-2xl border border-line object-contain" />
-        <Button onClick={verify}>USE THIS PHOTO</Button>
+        <Button onClick={verify}>Check my discovery</Button>
         <Button variant="secondary" onClick={() => pick(photo.current?.source === "library" ? library.current : camera.current)}>
           {photo.current.source === "library" ? "CHOOSE ANOTHER" : "RETAKE"}
         </Button>
@@ -297,24 +371,27 @@ export function QuestScreen({ id }: { id: number }) {
   }
 
   // Clue
+  const egyptian = adventure.theme === "egyptian";
+  const eyebrow = bonus
+    ? "Bonus mystery · doesn’t count toward the hunt"
+    : [adventure.title, chapter?.title].filter(Boolean).join(" · ");
   return (
-    <Screen>
+    <Screen className="gap-4">
       {inputs}
-      <header className="flex flex-col gap-2">
-        <Eyebrow>
-          {bonus ? "Bonus mystery · doesn’t count toward the hunt" : `Quest ${n} of ${questIds.length}${chapter ? ` · ${chapter.title}` : ""}`}
-        </Eyebrow>
-        <p className="whitespace-nowrap font-display text-[2.6rem] font-semibold leading-tight min-[360px]:text-5xl" aria-label={`Gallery ${quest.gallery}`}>
-          <span aria-hidden>📍 </span>Gallery {quest.gallery}
-        </p>
-        {!bonus && <ProgressDots completed={progress.completedQuests} current={id} />}
-        <button
-          type="button"
-          className="flex min-h-11 items-center gap-2 self-start rounded-full border border-line bg-card px-4 text-base font-semibold text-ink shadow-[0_1px_2px_rgb(13_13_16/0.05)] transition hover:border-ink/40"
-          onClick={() => navigate({ name: "map", focus: id })}
-        >
-          <MapIcon aria-hidden size={20} /> {hasRoutes ? "Show on Treasure Map" : "See all galleries"}
-        </button>
+      <header className="flex flex-col gap-1.5">
+        <Eyebrow>{eyebrow}</Eyebrow>
+        <h1 className="whitespace-nowrap font-display text-[2.6rem] font-semibold leading-tight min-[360px]:text-5xl">
+          <span aria-hidden className="text-burgundy">📍 </span>Gallery {quest.gallery}
+        </h1>
+        {!bonus && (
+          <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
+            <p className="font-semibold">
+              Quest {n} of {questIds.length}
+            </p>
+            <ProgressDots completed={progress.completedQuests} current={id} />
+          </div>
+        )}
+        {egyptian && <EgyptianScenery className="-mb-1 mt-1 max-h-12" />}
       </header>
 
       {closed && !solved && !bonus && (
@@ -345,22 +422,13 @@ export function QuestScreen({ id }: { id: number }) {
         </Card>
       )}
 
-      <Card className="relative text-center">
-        <p className="font-mono text-[13px] font-medium uppercase tracking-[0.14em] text-gold">{bonus ? "Bonus mystery ★" : `Mystery #${n}`}</p>
-        {/* The mystery's name gives the answer away, so it stays hidden until the find. */}
-        {solved && quest.title && <h2 className="mt-2 font-display text-2xl font-semibold text-burgundy">{quest.title}</h2>}
-        <div className="@container mt-3">
-          <blockquote className="font-display font-semibold leading-snug text-balance" style={{ fontSize: riddleFontSize(quest.riddle) }}>
-            {quest.riddle.map((line, i) => (
-              <p key={i}>
-                {i === 0 && "“"}
-                {line}
-                {i === quest.riddle.length - 1 && "”"}
-              </p>
-            ))}
-          </blockquote>
-        </div>
-      </Card>
+      <MysteryCard
+        badge={bonus ? "Bonus mystery ★" : `Mystery #${n}`}
+        // The mystery's name gives the answer away, so it stays hidden until the find.
+        title={solved ? quest.title : undefined}
+        riddle={quest.riddle}
+        decorated={egyptian}
+      />
 
       <MagnifierHints
         hints={quest.hints}
@@ -378,17 +446,15 @@ export function QuestScreen({ id }: { id: number }) {
         <Button onClick={() => navigate({ name: "found", id })}>SEE MY TREASURE</Button>
       ) : (
         <>
-          <Button onClick={() => pick(camera.current)}>
-            <Camera aria-hidden size={22} /> I FOUND IT — TAKE A PHOTO
+          <Button className="min-h-16 text-lg tracking-[0.04em] min-[360px]:text-lg" onClick={() => setPhase({ kind: "photo" })}>
+            <Camera aria-hidden size={24} /> I FOUND IT!
           </Button>
-          <Button variant="secondary" onClick={() => pick(library.current)}>
-            <ImageUp aria-hidden size={20} /> Choose a photo
-          </Button>
-          <p className="text-center text-sm text-ink-soft">
-            Photograph the artwork — not other visitors. 📷 Zoom with your camera if the treasure is tiny.
-          </p>
-          <Button variant="quiet" className="mx-auto" onClick={() => setPhase({ kind: "grownup" })}>
-            Continue without a photo
+          {/* As easy to find as the photo, but quieter: typing the label's name or number earns the same credit. */}
+          <Button variant="secondary" className="!min-h-16 flex-col !gap-0 py-2 leading-tight" onClick={() => setPhase({ kind: "text" })}>
+            <span className="inline-flex items-center gap-2">
+              <PenLine aria-hidden size={20} /> Continue without a photo
+            </span>
+            <span className="text-sm font-normal text-ink-soft">Enter the artwork name or number instead</span>
           </Button>
           {skipTo != null && (
             <Button
@@ -401,7 +467,7 @@ export function QuestScreen({ id }: { id: number }) {
                 navigate({ name: "next", from: id });
               }}
             >
-              Stuck? Skip this one for now
+              Can’t find it? Skip for now
             </Button>
           )}
         </>
