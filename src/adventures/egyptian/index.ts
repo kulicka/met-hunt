@@ -16,12 +16,13 @@ import { CONTENT_PACK_VERSION, questVersions } from "./versions";
 
 /**
  * The four Daily Life stops in Galleries 105, 107, 108 and 110
- * (docs/egyptian-four-new-quests-spec.md). Off until someone confirms on site that
- * each object is on view and its detail can be seen (field notes). Turning this on
- * puts them first, in gallery order, for a 14-stop hunt. If one turns out to be off
- * view, add it to DISABLED rather than swapping in something else.
+ * (docs/egyptian-four-new-quests-spec.md), first in gallery order, for a 14-stop
+ * hunt. Switched on by Alex on 2026-10-24 before the on-site check: the field notes
+ * still list what to confirm, and the walks between them get no directions yet. If
+ * an object turns out to be off view, add it to DISABLED rather than swapping in
+ * something else.
  */
-export const EXPANDED_ROUTE = false;
+export const EXPANDED_ROUTE = true;
 
 const DAILY_LIFE = { id: "daily-life", title: "Daily Life by the Nile", stops: [105, 107, 108, 110] };
 

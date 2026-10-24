@@ -110,7 +110,7 @@ The Egyptian `index.ts` has three switches near the top:
 - `SUBSTITUTIONS` swaps a stop for a reserve, e.g. `{ 125: 126 }`.
 - `DISABLED` gives a shortened hunt.
 - `EXPANDED_ROUTE` adds the four Daily Life stops (Galleries 105–110) as a first
-  chapter. It stays off until each object and walk is checked on site.
+  chapter. It is on (Alex, 2026-10-24); their walks stay held until walked on site.
 
 Completion is recalculated from whatever is left. Saved progress is never lost:
 finds in a stop that leaves the lineup move to `retiredFinds` and return with
@@ -135,7 +135,4 @@ the stop. Each change needs a deploy.
 
 ## Known gaps
 
-- The analytics funnel's top step (`analytics_funnel` in db/analytics.sql) says
-  "all 10". That is true for both adventures today, but turning on the Egyptian
-  Daily Life stops makes a 14-stop hunt; generalize it before then.
 - There is no admin screen for lineup changes. They are code edits plus a deploy.

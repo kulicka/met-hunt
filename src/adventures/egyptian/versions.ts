@@ -4,7 +4,7 @@ import type { QuestVersion } from "../types";
 // Keys are the spec's stable stop ids. Every stop has a row, including the bonus and
 // the reserve, so a stop can be swapped in without a new key.
 
-export const CONTENT_PACK_VERSION = "1.1.0-draft";
+export const CONTENT_PACK_VERSION = "1.2.0-draft";
 
 const v = (questId: number, key: string, galleryId: number, riddleFingerprint: string, hintsFingerprint: string): QuestVersion => ({
   questId,
