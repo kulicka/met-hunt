@@ -15,7 +15,7 @@ import { completeQuest, getProgressFor, useProgress } from "@/lib/progress";
 import { AnalyticsConsentCard } from "./AnalyticsConsent";
 import { HoldButton } from "./HoldButton";
 import { RestartButton } from "./Lifecycle";
-import { navigate } from "./router";
+import { goBack, navigate } from "./router";
 import { Button, Card, Eyebrow, Screen, Title } from "./ui";
 
 /** Until an object is pinned (or the startup check finds it), a collection search is the best link we have. */
@@ -47,7 +47,7 @@ export function ParentsScreen() {
         <HoldButton seconds={3} onComplete={() => setOpen(true)}>
           Hold to open
         </HoldButton>
-        <Button variant="quiet" className="mx-auto" onClick={() => history.back()}>
+        <Button variant="quiet" className="mx-auto" onClick={goBack}>
           Go back
         </Button>
       </Screen>

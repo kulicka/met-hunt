@@ -17,7 +17,7 @@ export function Button({
   className = "",
   ...props
 }: ButtonHTMLAttributes<HTMLButtonElement> & { variant?: Variant }) {
-  const size = variant === "quiet" ? "min-h-11 px-2 text-base" : "min-h-14 w-full px-6 text-base font-semibold tracking-[0.01em]";
+  const size = variant === "quiet" ? "min-h-11 px-2 text-base" : "min-h-14 w-full px-4 text-[15px] font-semibold tracking-[0.01em] min-[360px]:px-6 min-[360px]:text-base";
   return (
     <button
       type="button"
@@ -50,7 +50,7 @@ export function ProgressDots({ completed, current }: { completed: number[]; curr
   const solved = completed.length;
   return (
     <div className="flex flex-col gap-1">
-      <ol className="flex flex-wrap gap-1.5" aria-label={`${solved} of ${questIds.length} mysteries solved`}>
+      <ol className="flex flex-wrap gap-1 min-[360px]:gap-1.5" aria-label={`${solved} of ${questIds.length} mysteries solved`}>
         {questIds.map((id, i) => {
           const state = completed.includes(id) ? "found" : id === current ? "current" : "upcoming";
           const label = { found: "solved", current: "current mystery", upcoming: "not yet solved" }[state];

@@ -195,7 +195,7 @@ export function NextScreen({ from }: { from: number }) {
         </Card>
       )}
       <h1 className="font-display text-4xl font-semibold">Your next mystery</h1>
-      <p className="font-display text-6xl font-semibold">Gallery {questById(next)!.gallery}</p>
+      <p className="whitespace-nowrap font-display text-5xl font-semibold min-[360px]:text-6xl">Gallery {questById(next)!.gallery}</p>
       {hasRoutes ? (
         <Button onClick={() => navigate({ name: "map", focus: next, from })}>
           <MapIcon aria-hidden size={22} /> SHOW ME THE WAY

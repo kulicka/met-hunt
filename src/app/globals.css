@@ -90,7 +90,7 @@ body {
 .tmap .route-leg { fill: none; stroke: var(--burgundy); stroke-width: 5; stroke-dasharray: 3 10; stroke-linecap: round; animation: march 1.2s linear infinite; }
 .tmap .pulse { fill: none; stroke: var(--burgundy); stroke-width: 3; transform-box: fill-box; transform-origin: center; animation: pulse 2.4s ease-out infinite; }
 .tmap text { text-anchor: middle; pointer-events: none; }
-.tmap [data-gallery] { cursor: pointer; }
+.tmap .room[role="button"] { cursor: pointer; }
 
 @keyframes pulse {
   0% { transform: scale(1); opacity: 0.8; }

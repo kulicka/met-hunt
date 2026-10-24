@@ -32,7 +32,7 @@ export function FinalScreen() {
     // Not finished yet; send them to what is left.
     return (
       <Screen className="text-center">
-        <Title>Almost there!</Title>
+        <Title>{remaining.length <= 2 ? "Almost there!" : "Keep going!"}</Title>
         <p className="text-lg">
           {remaining.length} {remaining.length === 1 ? "mystery is" : "mysteries are"} still waiting.
         </p>
@@ -59,7 +59,10 @@ export function FinalScreen() {
         <Button variant="secondary" onClick={() => navigate({ name: "collection" })}>
           OPEN MY NOTEBOOK
         </Button>
-        <RestartButton label="START A NEW ADVENTURE" />
+        <Button variant="secondary" onClick={() => navigate({ name: "adventures" })}>
+          TRY ANOTHER ADVENTURE
+        </Button>
+        <RestartButton label="START OVER FROM MYSTERY 1" variant="quiet" />
       </Screen>
     );
   }

@@ -39,7 +39,7 @@ export function StartScreen() {
     case "completed":
       heading = `Hello again, ${avatar.displayName}!`;
       copy = `You found all ${total} Hidden Treasures. Ready for another hunt?`;
-      primary = null;
+      primary = { label: "TRY ANOTHER ADVENTURE", onClick: () => navigate({ name: "adventures" }) };
       break;
     default:
       heading = `Ready for another adventure, ${avatar.displayName}?`;
@@ -72,7 +72,7 @@ export function StartScreen() {
             OPEN MY NOTEBOOK
           </Button>
         )}
-        {finished && <RestartButton label="START A NEW ADVENTURE" />}
+        {finished && <RestartButton label="START OVER FROM MYSTERY 1" />}
         {!finished && (
           <Button variant="secondary" onClick={() => navigate({ name: "how" })}>
             How to Play
@@ -80,7 +80,7 @@ export function StartScreen() {
         )}
       </div>
       <div className="mt-4 flex flex-wrap justify-center gap-x-4">
-        {!fresh && (
+        {!fresh && progress.status !== "completed" && (
           <Button variant="quiet" onClick={() => navigate({ name: "adventures" })}>
             Switch Adventure
           </Button>
@@ -117,6 +117,13 @@ const rules = [
 
 export function HowToPlay() {
   const progress = useProgress();
+  const letsGo = () => {
+    // A new hunt always begins by choosing the adventure, as from START THE HUNT.
+    if (progress.status === "not_started") return navigate({ name: "adventures", start: true });
+    if (progress.status === "completed") return navigate({ name: "start" });
+    startAdventure();
+    navigate({ name: "quest", id: progress.currentQuest });
+  };
   return (
     <Screen>
       <Title>How to Play</Title>
@@ -137,14 +144,7 @@ export function HowToPlay() {
           ))}
         </ul>
       </Card>
-      <Button
-        onClick={() => {
-          startAdventure();
-          navigate({ name: "quest", id: progress.currentQuest });
-        }}
-      >
-        LET’S GO
-      </Button>
+      <Button onClick={letsGo}>{progress.status === "completed" ? "BACK" : "LET’S GO"}</Button>
     </Screen>
   );
 }

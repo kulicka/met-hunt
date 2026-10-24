@@ -154,6 +154,19 @@ export function QuestScreen({ id }: { id: number }) {
     </>
   );
 
+  const backToClue = (
+    <Button
+      variant="quiet"
+      className="mx-auto"
+      onClick={() => {
+        discardPhoto();
+        setPhase({ kind: "clue" });
+      }}
+    >
+      Back to my clue
+    </Button>
+  );
+
   const grownUpOffer = attempts >= GROWN_UP_AFTER && (
     <Button variant="secondary" onClick={() => setPhase({ kind: "grownup" })}>
       ASK A GROWN-UP
@@ -181,9 +194,10 @@ export function QuestScreen({ id }: { id: number }) {
         {/* eslint-disable-next-line @next/next/no-img-element -- local object URL, never uploaded anywhere else */}
         <img src={photo.current.url} alt="Your photo" className="max-h-[55dvh] w-full rounded-2xl border border-line object-contain" />
         <Button onClick={verify}>USE THIS PHOTO</Button>
-        <Button variant="secondary" onClick={() => pick(camera.current)}>
-          RETAKE
+        <Button variant="secondary" onClick={() => pick(photo.current?.source === "library" ? library.current : camera.current)}>
+          {photo.current.source === "library" ? "CHOOSE ANOTHER" : "RETAKE"}
         </Button>
+        {backToClue}
       </Screen>
     );
   }
@@ -246,6 +260,15 @@ export function QuestScreen({ id }: { id: number }) {
           {grownUpOffer}
         </>
       );
+    } else if (phase.status === "invalid_image") {
+      body = (
+        <>
+          <h1 className="font-display text-4xl font-semibold">That photo didn’t come through.</h1>
+          <p className="text-lg">Let’s try taking another one.</p>
+          {tryAgain}
+          {grownUpOffer}
+        </>
+      );
     } else {
       body = (
         <>
@@ -266,6 +289,7 @@ export function QuestScreen({ id }: { id: number }) {
         {inputs}
         <Eyebrow>Gallery {quest.gallery}</Eyebrow>
         {body}
+        {phase.kind === "result" && phase.status === "not_found" ? null : backToClue}
       </Screen>
     );
   }
@@ -275,15 +299,10 @@ export function QuestScreen({ id }: { id: number }) {
     <Screen>
       {inputs}
       <header className="flex flex-col gap-2">
-        <div className="flex items-baseline justify-between">
-          <Eyebrow>
-            {bonus ? "Bonus mystery · doesn’t count toward the hunt" : `Quest ${n} of ${questIds.length}${chapter ? ` · ${chapter.title}` : ""}`}
-          </Eyebrow>
-          <button type="button" className="min-h-11 text-sm text-ink-soft underline decoration-ink/20 underline-offset-4 hover:text-ink" onClick={() => navigate({ name: "collection" })}>
-            My notebook
-          </button>
-        </div>
-        <p className="font-display text-5xl font-semibold" aria-label={`Gallery ${quest.gallery}`}>
+        <Eyebrow>
+          {bonus ? "Bonus mystery · doesn’t count toward the hunt" : `Quest ${n} of ${questIds.length}${chapter ? ` · ${chapter.title}` : ""}`}
+        </Eyebrow>
+        <p className="whitespace-nowrap font-display text-[2.6rem] font-semibold leading-tight min-[360px]:text-5xl" aria-label={`Gallery ${quest.gallery}`}>
           <span aria-hidden>📍 </span>Gallery {quest.gallery}
         </p>
         {!bonus && <ProgressDots completed={progress.completedQuests} current={id} />}
@@ -346,16 +365,6 @@ export function QuestScreen({ id }: { id: number }) {
         onReveal={() => updateProgress((p) => ({ ...p, hintsUsed: { ...p.hintsUsed, [id]: Math.min((p.hintsUsed[id] ?? 0) + 1, 2) } }))}
       />
 
-      {extras.map((b) => (
-        <Card key={b.id} className="border-gold/50">
-          <p className="font-semibold">★ A bonus mystery hides in this gallery too!</p>
-          <p className="mt-1 text-ink-soft">It’s extra: you don’t need it to finish the hunt.</p>
-          <Button variant="secondary" className="mt-3" onClick={() => navigate({ name: "quest", id: b.id })}>
-            TRY THE BONUS MYSTERY
-          </Button>
-        </Card>
-      ))}
-
       {bonus && !solved && (
         <Button variant="quiet" className="mx-auto" onClick={() => navigate({ name: "quest", id: progress.currentQuest })}>
           Skip the bonus — back to my mystery
@@ -380,6 +389,15 @@ export function QuestScreen({ id }: { id: number }) {
           </Button>
         </>
       )}
+      {extras.map((b) => (
+        <Card key={b.id} className="border-gold/50">
+          <p className="font-semibold">★ A bonus mystery hides in this gallery too!</p>
+          <p className="mt-1 text-ink-soft">It’s extra: you don’t need it to finish the hunt.</p>
+          <Button variant="secondary" className="mt-3" onClick={() => navigate({ name: "quest", id: b.id })}>
+            TRY THE BONUS MYSTERY
+          </Button>
+        </Card>
+      ))}
     </Screen>
   );
 }

@@ -85,6 +85,12 @@ export function navigate(route: Route, { replace = false } = {}) {
   window.scrollTo(0, 0);
 }
 
+/** history.back(), or the start screen when this page was opened directly. */
+export function goBack() {
+  if (history.length > 1) history.back();
+  else navigate({ name: "start" }, { replace: true });
+}
+
 function subscribe(listener: () => void) {
   window.addEventListener("hashchange", listener);
   return () => window.removeEventListener("hashchange", listener);
