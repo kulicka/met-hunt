@@ -1,5 +1,5 @@
-import { galleryConnections, galleryNodes, type GalleryConnection } from "@/data/maps/met-floor2-european-paintings";
 import type { ClosureOverride } from "@/data/closures";
+import type { FloorMap, GalleryConnection } from "@/data/maps/types";
 
 export interface Route {
   /** Galleries walked through, start and end included. */
@@ -8,10 +8,18 @@ export interface Route {
   edges: GalleryConnection[];
 }
 
-const centers = new Map(galleryNodes.map((n) => [n.id, { x: n.x + n.w / 2, y: n.y + n.h / 2 }]));
+type Graph = Pick<FloorMap, "nodes" | "connections">;
+type Centers = Map<string, { x: number; y: number }>;
+
+const centersByMap = new WeakMap<Graph["nodes"], Centers>();
+function centersOf(nodes: Graph["nodes"]): Centers {
+  let c = centersByMap.get(nodes);
+  if (!c) centersByMap.set(nodes, (c = new Map(nodes.map((n) => [n.id, { x: n.x + n.w / 2, y: n.y + n.h / 2 }]))));
+  return c;
+}
 
 /** Walking cost of a doorway: room middle to the doorway to the next room's middle. 1 when positions are unknown. */
-function cost(from: string, to: string, edge: GalleryConnection) {
+function cost(centers: Centers, from: string, to: string, edge: GalleryConnection) {
   const a = centers.get(from), b = centers.get(to);
   if (!edge.at || !a || !b) return 1;
   return Math.hypot(edge.at.x - a.x, edge.at.y - a.y) + Math.hypot(b.x - edge.at.x, b.y - edge.at.y);
@@ -23,22 +31,18 @@ function cost(from: string, to: string, edge: GalleryConnection) {
  * "Shortest" is walking distance on the schematic when doorway positions are known.
  * Returns null when no verified route exists; callers show the official-map fallback.
  */
-export function findRoute(
-  from: string,
-  to: string,
-  closures: ClosureOverride[],
-  connections: GalleryConnection[] = galleryConnections,
-): Route | null {
+export function findRoute(from: string, to: string, closures: ClosureOverride[], map: Graph): Route | null {
+  const centers = centersOf(map.nodes);
   const closedGalleries = new Set(closures.filter((c) => c.galleryId && c.status === "closed").map((c) => String(c.galleryId)));
   const closedEdges = new Set(closures.filter((c) => c.connectionId && c.status === "closed").map((c) => c.connectionId));
   if (closedGalleries.has(from) || closedGalleries.has(to)) return null;
 
-  const usable = connections.filter(
+  const usable = map.connections.filter(
     (c) => c.verified && !closedEdges.has(c.id) && !closedGalleries.has(c.from) && !closedGalleries.has(c.to),
   );
   const adjacency = new Map<string, { next: string; edge: GalleryConnection; w: number }[]>();
   const link = (a: string, b: string, e: GalleryConnection) =>
-    adjacency.set(a, [...(adjacency.get(a) ?? []), { next: b, edge: e, w: cost(a, b, e) }]);
+    adjacency.set(a, [...(adjacency.get(a) ?? []), { next: b, edge: e, w: cost(centers, a, b, e) }]);
   for (const c of usable) {
     link(c.from, c.to, c);
     if (c.bidirectional) link(c.to, c.from, c);

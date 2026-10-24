@@ -1,29 +1,31 @@
 import { describe, expect, it } from "vitest";
 import { avatars } from "@/data/avatars";
-import { hiddenTreasuresPack } from "@/data/hidden-treasures/pack";
+import { europeanPaintings } from "@/adventures/european-paintings";
 import { begin, endEarly, freshAdventure, parseAdventure, parseProfile, restart, solve } from "@/lib/adventure";
 
-const ids = hiddenTreasuresPack.questIds;
+const ids = europeanPaintings.quests.map((q) => q.id);
 const avatarIds = avatars.map((a) => a.id);
+const known = { ids: ["european-paintings", "met-egyptian-adventure"], legacy: "european-paintings" };
+const titles = europeanPaintings.certificate;
 
 describe("player profile", () => {
   it("has a fixed roster with names and descriptions, and no name field", () => {
     expect(avatars.length).toBeGreaterThanOrEqual(6);
     expect(avatars.length).toBeLessThanOrEqual(8);
     for (const a of avatars) expect(a.displayName && a.description && a.imageAsset).toBeTruthy();
-    expect(Object.keys(parseProfile({ age: 8, avatarId: "fig", onboardingComplete: true, name: "Sam" }, avatarIds))).not.toContain("name");
+    expect(Object.keys(parseProfile({ age: 8, avatarId: "fig", onboardingComplete: true, name: "Sam" }, avatarIds, known))).not.toContain("name");
   });
 
   it("accepts valid choices and keeps 12+ as a category", () => {
-    expect(parseProfile({ age: "12+", avatarId: "otto", onboardingComplete: true }, avatarIds)).toEqual({ age: "12+", avatarId: "otto", onboardingComplete: true });
+    expect(parseProfile({ age: "12+", avatarId: "otto", onboardingComplete: true }, avatarIds, known)).toEqual({ age: "12+", avatarId: "otto", adventureId: "european-paintings", onboardingComplete: true });
   });
 
   it("recovers from missing, corrupt, or partial records", () => {
     for (const raw of [null, "x", 42, [], { age: 99, avatarId: "pikachu", onboardingComplete: true }]) {
-      expect(parseProfile(raw, avatarIds).onboardingComplete).toBe(false);
+      expect(parseProfile(raw, avatarIds, known).onboardingComplete).toBe(false);
     }
     // interrupted after the age step
-    expect(parseProfile({ age: 7, onboardingComplete: false }, avatarIds)).toEqual({ age: 7, avatarId: undefined, onboardingComplete: false });
+    expect(parseProfile({ age: 7, onboardingComplete: false }, avatarIds, known)).toEqual({ age: 7, avatarId: undefined, onboardingComplete: false });
   });
 });
 
@@ -94,23 +96,23 @@ describe("certificate wording", async () => {
   const base = { completedQuests: [] as number[] };
 
   it("gives the top title only for all ten", () => {
-    const full = certificateText({ status: "completed", completedQuests: ids, completedAt: "2026-10-22T20:00:00Z" }, 10, "Fig");
+    const full = certificateText({ status: "completed", completedQuests: ids, completedAt: "2026-10-22T20:00:00Z" }, 10, "Fig", titles);
     expect(full).toMatchObject({ kind: "full", title: "LEGENDARY ART DETECTIVE", countLine: "10/10 treasures discovered", date: "2026-10-22T20:00:00Z" });
     expect(full.statement).toBe("This certifies that Fig discovered all 10 hidden treasures at The Met.");
-    const nine = certificateText({ status: "ended_early", completedQuests: ids.slice(0, 9) }, 10, "Fig");
+    const nine = certificateText({ status: "ended_early", completedQuests: ids.slice(0, 9) }, 10, "Fig", titles);
     expect(nine.kind).toBe("explorer");
     expect(nine.title).not.toMatch(/LEGENDARY/);
   });
 
   it("uses truthful partial wording, including zero", () => {
-    expect(certificateText({ ...base, status: "ended_early", completedQuests: [1, 2, 3, 4, 5, 6] }, 10, "Otto").statement).toBe(
+    expect(certificateText({ ...base, status: "ended_early", completedQuests: [1, 2, 3, 4, 5, 6] }, 10, "Otto", titles).statement).toBe(
       "Otto discovered 6 hidden treasures during a museum adventure.",
     );
-    expect(certificateText({ ...base, status: "ended_early", completedQuests: [1] }, 10, "Otto").statement).toContain("1 hidden treasure during");
-    const zero = certificateText({ ...base, status: "ended_early" }, 10, "Pip");
+    expect(certificateText({ ...base, status: "ended_early", completedQuests: [1] }, 10, "Otto", titles).statement).toContain("1 hidden treasure during");
+    const zero = certificateText({ ...base, status: "ended_early" }, 10, "Pip", titles);
     expect(zero.statement).toBe("Pip began a museum adventure.");
     expect(zero.countLine).toBeUndefined();
-    expect(certificateText({ ...base, status: "in_progress", completedQuests: [1, 2] }, 10, "Pip").statement).toContain("so far");
+    expect(certificateText({ ...base, status: "in_progress", completedQuests: [1, 2] }, 10, "Pip", titles).statement).toContain("so far");
   });
 });
 

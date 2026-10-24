@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { questVersions } from "@/data/hidden-treasures/versions";
+import { adventures, LEGACY_ADVENTURE_ID } from "@/adventures/registry";
 
 // The event allowlist (analytics spec, sections 4, 5 and 12), shared by the
 // browser and the ingestion endpoint. Every object is strict: an unexpected
@@ -13,7 +13,8 @@ const token = z.string().regex(/^[A-Za-z0-9._-]{1,40}$/);
 const count = z.int().min(0).max(1000);
 const ms = z.int().min(0).max(7 * 24 * 3600_000);
 const gallery = z.int().min(100).max(999);
-const questKey = z.enum(questVersions.map((q) => q.key) as [string, ...string[]]);
+const questKey = z.enum([...new Set(adventures.flatMap((a) => a.versions.quests.map((q) => q.key)))] as [string, ...string[]]);
+const packId = z.enum(adventures.map((a) => a.id) as [string, ...string[]]);
 
 export const AGE_BUCKETS = ["5-7", "8-10", "11+", "unknown"] as const;
 export const LATENCY_BUCKETS = ["lt2s", "2-5s", "5-10s", "10-20s", "gte20s"] as const;
@@ -28,6 +29,8 @@ const envelope = {
   adventure_id: uuid,
   session_id: uuid,
   app_version: token,
+  /** Which adventure. Missing on events queued before there was a choice: those are the first adventure. */
+  pack_id: packId.optional(),
   content_pack_version: token,
 };
 
@@ -55,7 +58,7 @@ const routeProps = {
   closures_active: count,
 };
 
-export const AnalyticsEvent = z.discriminatedUnion("event_name", [
+const Events = z.discriminatedUnion("event_name", [
   plain("app_opened", { has_returning_adventure: z.boolean() }),
   // Only "granted" is ever sent: after a withdrawal nothing more leaves the phone.
   plain("analytics_consent_changed", { consent: z.enum(["granted", "withdrawn"]) }),
@@ -105,6 +108,15 @@ export const AnalyticsEvent = z.discriminatedUnion("event_name", [
   plain("map_opened", { source: z.enum(["quest", "found", "menu"]) }),
   plain("app_error", { code: z.enum(ERROR_CODES), component: z.enum(["global", "verify"]) }),
 ]);
+
+const keysByPack = new Map(adventures.map((a) => [a.id, new Set(a.versions.quests.map((q) => q.key))]));
+
+/** Every event, with quest keys checked against the adventure they claim to belong to. */
+export const AnalyticsEvent = Events.superRefine((e, ctx) => {
+  const keys = keysByPack.get(e.pack_id ?? LEGACY_ADVENTURE_ID);
+  const quest = "quest_id" in e ? e.quest_id : e.event_name === "adventure_ended_early" ? e.properties.current_quest_id : null;
+  if (quest && !keys?.has(quest)) ctx.addIssue({ code: "custom", message: "quest not in this adventure", path: ["quest_id"] });
+});
 
 export type AnalyticsEvent = z.infer<typeof AnalyticsEvent>;
 export type AnalyticsEventName = AnalyticsEvent["event_name"];

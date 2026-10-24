@@ -1,6 +1,6 @@
 "use client";
 
-import { pack } from "@/lib/content";
+import { useAdventure } from "@/lib/content";
 import { useAvatar } from "@/lib/profile";
 import { startAdventure, useProgress } from "@/lib/progress";
 import { AvatarArt } from "./AvatarArt";
@@ -11,8 +11,9 @@ import { Button, Card, Eyebrow, ProgressDots, Screen, Title } from "./ui";
 export function StartScreen() {
   const progress = useProgress();
   const avatar = useAvatar();
+  const { adventure, questIds } = useAdventure();
   const count = progress.completedQuests.length;
-  const total = pack.questIds.length;
+  const total = questIds.length;
 
   const go = () => {
     startAdventure();
@@ -48,10 +49,18 @@ export function StartScreen() {
   return (
     <Screen className="min-h-dvh justify-center text-center">
       <AvatarArt asset={avatar.imageAsset} size={112} className="mx-auto" />
-      <Eyebrow>The Met · Hidden Treasures</Eyebrow>
+      <Eyebrow>
+        The Met · {adventure.title}
+      </Eyebrow>
       <Title className="text-4xl">{heading}</Title>
       <p className="text-lg leading-relaxed">{copy}</p>
       {finished && <ProgressDots completed={progress.completedQuests} />}
+      {adventure.launchStatus === "field_test_required" && (
+        <p className="rounded-2xl bg-paper-deep px-4 py-2 text-base">
+          This adventure is new and still being tested at the museum. If a room is closed or hard to find, skip that mystery or
+          ask a guard.
+        </p>
+      )}
       <div className="mt-2 flex flex-col gap-3">
         {primary && <Button onClick={primary.onClick}>{primary.label}</Button>}
         {finished && (
@@ -67,6 +76,9 @@ export function StartScreen() {
         )}
       </div>
       <div className="mt-4 flex flex-wrap justify-center gap-x-4">
+        <Button variant="quiet" onClick={() => navigate({ name: "adventures" })}>
+          Switch Adventure
+        </Button>
         <Button variant="quiet" onClick={() => navigate({ name: "explorer" })}>
           Change Explorer
         </Button>

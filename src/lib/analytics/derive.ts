@@ -32,6 +32,13 @@ export function changes(prev: AdventureState, next: AdventureState): Change[] {
     out.push({ type: "quest_completed", questId: id, method, hintsUsed: next.hintsUsed[id] ?? 0 });
   }
 
+  // Bonus finds are quests too (their own stable keys), but never count toward completion.
+  for (const id of next.bonusFound ?? []) {
+    if (prev.bonusFound?.includes(id)) continue;
+    const method = next.verificationMethod[id] === "ai-photo" ? "ai_verified" : "parent_confirmed";
+    out.push({ type: "quest_completed", questId: id, method, hintsUsed: next.hintsUsed[id] ?? 0 });
+  }
+
   if (prev.status !== "completed" && next.status === "completed") out.push({ type: "adventure_completed" });
   return out;
 }

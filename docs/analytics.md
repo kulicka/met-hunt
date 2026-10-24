@@ -41,10 +41,14 @@ and phones delete their queued events the next time they reach the server.
 Every event: `event_id` (random UUID), `event_name`, `schema_version`,
 `occurred_at` (UTC, phone clock), `adventure_id` (random, new for every new
 adventure), `session_id` (random, per visit), `app_version`,
+`pack_id` (which adventure, e.g. `european-paintings`; events queued before
+adventures existed have none and are stored as `european-paintings`),
 `content_pack_version`. Quest events add `quest_id`, `gallery_id`, `artwork_id`,
 `hidden_detail_id`, `riddle_version`, `hint_set_version`,
 `artwork_assignment_version` from
-[`versions.ts`](../src/data/hidden-treasures/versions.ts). The server adds
+the adventure's `versions.ts` (e.g. [European Paintings](../src/adventures/european-paintings/versions.ts)).
+A bonus mystery is reported as `quest_completed` with its own key and never counts
+toward `adventure_completed`. The server adds
 `received_at` and `is_test`.
 
 | Event | Properties | Sent when |

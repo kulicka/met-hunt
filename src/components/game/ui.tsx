@@ -1,7 +1,7 @@
 "use client";
 
 import type { ButtonHTMLAttributes, ReactNode } from "react";
-import { pack } from "@/lib/content";
+import { useAdventure } from "@/lib/content";
 
 type Variant = "primary" | "secondary" | "quiet";
 
@@ -44,13 +44,14 @@ export function Title({ children, className = "" }: { children: ReactNode; class
   return <h1 className={`font-display text-4xl font-semibold leading-[1.05] text-ink ${className}`}>{children}</h1>;
 }
 
-/** Ten-position progress indicator. State is shown by shape and text, not color alone. */
+/** One position per mystery. State is shown by shape and text, not color alone. */
 export function ProgressDots({ completed, current }: { completed: number[]; current?: number }) {
+  const { questIds } = useAdventure();
   const solved = completed.length;
   return (
     <div className="flex flex-col gap-1">
-      <ol className="flex gap-1.5" aria-label={`${solved} of ${pack.questIds.length} mysteries solved`}>
-        {pack.questIds.map((id, i) => {
+      <ol className="flex flex-wrap gap-1.5" aria-label={`${solved} of ${questIds.length} mysteries solved`}>
+        {questIds.map((id, i) => {
           const state = completed.includes(id) ? "found" : id === current ? "current" : "upcoming";
           const label = { found: "solved", current: "current mystery", upcoming: "not yet solved" }[state];
           return (

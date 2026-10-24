@@ -1,5 +1,5 @@
 {
-  "checkedAt": "2026-10-22",
+  "checkedAt": "2026-10-23",
   "sourceUrl": "https://www.metmuseum.org/de/plan-your-visit/gallery-closures",
   "closures": [
     {
@@ -13,6 +13,24 @@
       "status": "closed",
       "note": "Partial closure listed under 19th and Early 20th Century European Paintings and Sculpture (page last updated October 20).",
       "sourceUrl": "https://www.metmuseum.org/de/plan-your-visit/gallery-closures"
+    },
+    {
+      "galleryId": "118",
+      "status": "closed",
+      "note": "Listed closed on The Met's gallery closures page as checked for the Egyptian Adventure spec on 2026-10-23.",
+      "sourceUrl": "https://www.metmuseum.org/plan-your-visit/gallery-closures"
+    },
+    {
+      "galleryId": "119",
+      "status": "closed",
+      "note": "Listed closed on The Met's gallery closures page as checked for the Egyptian Adventure spec on 2026-10-23.",
+      "sourceUrl": "https://www.metmuseum.org/plan-your-visit/gallery-closures"
+    },
+    {
+      "galleryId": "120",
+      "status": "closed",
+      "note": "Listed closed on The Met's gallery closures page as checked for the Egyptian Adventure spec on 2026-10-23.",
+      "sourceUrl": "https://www.metmuseum.org/plan-your-visit/gallery-closures"
     }
   ]
 }

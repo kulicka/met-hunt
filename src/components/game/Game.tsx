@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { startAnalytics } from "@/lib/analytics/client";
+import { AdventurePickerScreen } from "./AdventurePicker";
 import { CertificateScreen } from "./Certificate";
 import { FinalScreen } from "./Collection";
 import { FoundScreen, NextScreen } from "./FoundScreens";
@@ -46,6 +47,8 @@ function screenFor(route: Route) {
       return <EntryScreen id={route.id} fresh={route.fresh} />;
     case "certificate":
       return <CertificateScreen />;
+    case "adventures":
+      return <AdventurePickerScreen />;
   }
 }
 

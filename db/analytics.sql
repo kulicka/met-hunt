@@ -42,7 +42,7 @@ create table if not exists analytics_admin_audit (
 );
 
 -- Immutable record of published content versions (spec section 7). Rows are
--- added by the server at start from src/data/hidden-treasures/versions.ts.
+-- added by the server at start from each adventure's versions.ts (src/adventures/*/versions.ts).
 create table if not exists analytics_content_versions (
   content_pack_version        text not null,
   quest_id                    text not null,
@@ -57,6 +57,15 @@ create table if not exists analytics_content_versions (
   first_seen                  timestamptz not null default now(),
   primary key (content_pack_version, quest_id)
 );
+
+-- Which adventure (src/adventures/registry.ts) an event or content version
+-- belongs to. Added when adventures became pluggable; everything recorded
+-- before that was the first adventure, European Paintings. Content pack
+-- versions are unique across adventures, so the p_content filter below also
+-- picks out one adventure.
+alter table analytics_events add column if not exists pack_id text not null default 'european-paintings';
+alter table analytics_content_versions add column if not exists pack_id text not null default 'european-paintings';
+create index if not exists analytics_events_pack on analytics_events (pack_id, occurred_at);
 
 -- Events in a window, test events excluded.
 create or replace function analytics_window(p_from timestamptz, p_to timestamptz, p_content text default null)

@@ -3,7 +3,7 @@
 import { useRef, useState } from "react";
 import { Download, Printer } from "lucide-react";
 import { certificateText } from "@/lib/certificate";
-import { pack } from "@/lib/content";
+import { useAdventure } from "@/lib/content";
 import { useAvatar } from "@/lib/profile";
 import { useProgress } from "@/lib/progress";
 import { AvatarMedallion } from "./AvatarArt";
@@ -70,8 +70,10 @@ function Seal({ x, y }: { x: number; y: number }) {
 export function CertificateArt({ svgRef }: { svgRef?: React.Ref<SVGSVGElement> }) {
   const progress = useProgress();
   const avatar = useAvatar();
-  const total = pack.questIds.length;
-  const c = certificateText(progress, total, avatar.displayName);
+  const { adventure, questIds } = useAdventure();
+  const total = questIds.length;
+  const c = certificateText(progress, total, avatar.displayName, adventure.certificate);
+  const stars = progress.bonusFound?.length ?? 0;
   const statement = wrap(c.statement, 34);
   const date = new Date(c.date).toLocaleDateString([], { year: "numeric", month: "long", day: "numeric" });
   const full = c.kind === "full";
@@ -101,7 +103,10 @@ export function CertificateArt({ svgRef }: { svgRef?: React.Ref<SVGSVGElement> }
       <text x={W / 2} y={100} textAnchor="middle" fontFamily={SANS} fontSize={17} letterSpacing={5} fill={SOFT} fontWeight={600}>
         THE MET: HIDDEN TREASURES
       </text>
-      <line x1={200} y1={118} x2={400} y2={118} stroke={GOLD} strokeWidth={1.5} />
+      {/* Which adventure, now that there is more than one. */}
+      <text x={W / 2} y={126} textAnchor="middle" fontFamily={SERIF} fontSize={18} fontStyle="italic" fill={SOFT}>
+        {adventure.title}
+      </text>
 
       <svg x={W / 2 - 80} y={140} width={160} height={160} viewBox="0 0 120 120">
         <AvatarMedallion asset={avatar.imageAsset} idPrefix="cert" />
@@ -123,6 +128,11 @@ export function CertificateArt({ svgRef }: { svgRef?: React.Ref<SVGSVGElement> }
       {c.countLine && (
         <text x={W / 2} y={countY} textAnchor="middle" fontFamily={SANS} fontSize={20} fontWeight={700} letterSpacing={1} fill={GOLD}>
           {c.countLine.toUpperCase()}
+        </text>
+      )}
+      {stars > 0 && (
+        <text x={W / 2} y={countY + 30} textAnchor="middle" fontFamily={SANS} fontSize={16} fontWeight={600} fill={GOLD}>
+          ★ PLUS {stars} BONUS {stars === 1 ? "STAR" : "STARS"}
         </text>
       )}
 
@@ -172,6 +182,7 @@ async function toPng(svg: SVGSVGElement): Promise<Blob> {
 export function CertificateScreen() {
   const progress = useProgress();
   const svg = useRef<SVGSVGElement>(null);
+  const { adventure } = useAdventure();
   const [saveState, setSaveState] = useState<"idle" | "working" | "failed">("idle");
   const canPrint = typeof window !== "undefined" && typeof window.print === "function";
 
@@ -180,7 +191,7 @@ export function CertificateScreen() {
     setSaveState("working");
     try {
       const blob = await toPng(svg.current);
-      const file = new File([blob], "hidden-treasures-certificate.png", { type: "image/png" });
+      const file = new File([blob], `hidden-treasures-${adventure.id}-certificate.png`, { type: "image/png" });
       // Phones: the share sheet offers "Save Image" / Photos. Elsewhere: a download.
       if (navigator.canShare?.({ files: [file] }) && matchMedia("(pointer: coarse)").matches) {
         await navigator.share({ files: [file], title: "Hidden Treasures certificate" });
