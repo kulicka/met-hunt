@@ -65,14 +65,14 @@ export function AdventureList({ value, onPick }: { value?: string; onPick: (id: 
 }
 
 /**
- * Right after START THE HUNT for a new player (nothing is preselected), and from
- * the menu or start screen to switch adventures mid-visit.
+ * Right after START THE HUNT, whenever a new hunt begins (nothing is preselected),
+ * and from the menu or start screen to switch adventures mid-visit.
  */
-export function AdventurePickerScreen() {
+export function AdventurePickerScreen({ start = false }: { start?: boolean }) {
   const profile = useProfile();
-  const [choice, setChoice] = useState(profile?.adventureId);
+  const firstTime = start || !profile?.adventureId;
+  const [choice, setChoice] = useState(firstTime ? undefined : profile?.adventureId);
   if (!profile) return null;
-  const firstTime = !profile.adventureId;
 
   const go = () => {
     if (!choice) return;
