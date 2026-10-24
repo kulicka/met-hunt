@@ -70,6 +70,8 @@ describe("event allowlist", () => {
   it("accepts well-formed events", () => {
     expect(AnalyticsEvent.safeParse(event()).success).toBe(true);
     expect(AnalyticsEvent.safeParse(questEvent("quest_hint_opened", { hint_level: 2 })).success).toBe(true);
+    expect(AnalyticsEvent.safeParse(questEvent("quest_rated", { question: "fun", answer: 3, after: "found" })).success).toBe(true);
+    expect(AnalyticsEvent.safeParse(questEvent("quest_rated", { question: "difficulty", answer: 1, after: "skipped" })).success).toBe(true);
     expect(
       AnalyticsEvent.safeParse(
         questEvent("quest_verification_result", { attempt_number: 1, result: "uncertain", error_kind: "none", model_version: "claude-opus-5-5", latency_bucket: "5-10s" }),
@@ -86,6 +88,10 @@ describe("event allowlist", () => {
       event({ adventure_id: "kid-123" }),
       event({ app_version: "1.0 <script>" }),
       questEvent("quest_hint_opened", { hint_level: 3 }),
+      // ratings are pictures 1-3 only: no other scale, no comment
+      questEvent("quest_rated", { question: "fun", answer: 5, after: "found" }),
+      questEvent("quest_rated", { question: "fun", answer: 2, after: "found", comment: "too hard" }),
+      questEvent("quest_rated", { question: "riddle", answer: 2, after: "found" }),
       questEvent("quest_viewed", { already_solved: false, avatar: "fig" }),
       { ...questEvent("quest_viewed", { already_solved: false }), quest_id: "Young Lady in 1866" },
       questEvent("quest_photo_submitted", { attempt_number: 1, source: "camera", image: "data:image/jpeg;base64,..." }),
