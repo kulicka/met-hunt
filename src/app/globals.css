@@ -19,6 +19,7 @@
   --line: #e1e1db;
   --glow-a: rgb(255 196 120 / 0.35);
   --glow-b: rgb(140 160 255 / 0.28);
+  --dots: rgb(13 13 16 / 0.09);
   /* the main call to action, and the quest card */
   --action: var(--ink);
   --action-hover: #25252b;
@@ -27,9 +28,10 @@
 }
 
 /*
- * Egyptian Adventure quest screen (Adventure.theme): warm ivory page, parchment card,
- * dark ink, deep scarlet action, antique gold. Scoped by data-theme so the other
- * adventures keep the standard look. Contrast: ink-soft on parchment ≥ 5:1, gold ≥ 4.5:1.
+ * Egyptian Adventure (Adventure.theme): warm ivory page, parchment card, dark ink,
+ * deep scarlet action, antique gold. Set on <html> for every screen of that adventure
+ * (Game.tsx), so the page, menu and dialogs all match; the other adventures keep the
+ * standard look. Contrast: ink-soft on parchment ≥ 5:1, gold ≥ 4.5:1.
  */
 [data-theme="egyptian"] {
   --paper: #f8f1e3;
@@ -46,11 +48,9 @@
   --action-hover: #951a25;
   --parchment: #fbf1dc;
   --parchment-edge: #d9c08c;
-  background-color: var(--paper);
-  background-image:
-    radial-gradient(70% 45% at 50% -10%, rgb(255 226 170 / 0.55), transparent 70%),
-    radial-gradient(rgb(138 95 18 / 0.08) 1px, transparent 1.3px);
-  background-size: 100% 100%, 22px 22px;
+  --glow-a: rgb(255 226 170 / 0.55);
+  --glow-b: rgb(255 214 150 / 0.3);
+  --dots: rgb(138 95 18 / 0.08);
 }
 
 @theme inline {
@@ -76,6 +76,8 @@
 
 html {
   -webkit-text-size-adjust: 100%;
+  /* what shows past the page edges when a phone overscrolls */
+  background-color: var(--paper);
 }
 
 body {
@@ -84,7 +86,7 @@ body {
   background-image:
     radial-gradient(60% 40% at 15% -5%, var(--glow-a), transparent 70%),
     radial-gradient(55% 35% at 95% 0%, var(--glow-b), transparent 70%),
-    radial-gradient(rgb(13 13 16 / 0.09) 1px, transparent 1.3px);
+    radial-gradient(var(--dots) 1px, transparent 1.3px);
   background-size: 100% 100%, 100% 100%, 20px 20px;
   background-repeat: no-repeat, no-repeat, repeat;
   background-attachment: fixed;

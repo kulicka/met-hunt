@@ -131,7 +131,7 @@ export function GameBar({ setup = false }: { setup?: boolean }) {
         </button>}
         <button
           type="button"
-          className="inline-flex min-h-11 min-w-11 items-center justify-center gap-1.5 rounded-full bg-ink px-4 text-sm max-[359px]:px-3 font-semibold text-white hover:bg-[#25252b]"
+          className="inline-flex min-h-11 min-w-11 items-center justify-center gap-1.5 rounded-full bg-ink px-4 text-sm max-[359px]:px-3 font-semibold text-white hover:bg-ink/85"
           aria-haspopup="dialog"
           onClick={() => setSheet("menu")}
         >
