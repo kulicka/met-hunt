@@ -19,6 +19,15 @@ import { useProfile } from "@/lib/profile";
 import { useAdventure } from "@/lib/content";
 
 
+function applyTheme(theme: string | undefined) {
+  const root = document.documentElement;
+  if (theme) root.dataset.theme = theme;
+  else delete root.dataset.theme;
+  // Match the phone's browser bar to the page.
+  const paper = getComputedStyle(root).getPropertyValue("--paper").trim();
+  if (paper) document.querySelector('meta[name="theme-color"]')?.setAttribute("content", paper);
+}
+
 function screenFor(route: Route) {
   switch (route.name) {
     case "start":
@@ -57,6 +66,10 @@ export function Game() {
   const reduce = useReducedMotion();
   const { adventure } = useAdventure();
   useEffect(startAnalytics, []);
+  // The adventure being played sets the look of every screen (page, menu, dialogs), not
+  // only its quest screen. Before an adventure is picked, everything uses the standard look.
+  const theme = profile?.onboardingComplete && profile.adventureId ? adventure.theme : undefined;
+  useEffect(() => applyTheme(theme), [theme]);
   if (hash === null || profile === null) return null; // server render: progress lives on the phone only
   const route = parseRoute(hash);
   // First launch (or interrupted onboarding): age and explorer come first. Grown-ups can still open their page.
@@ -88,8 +101,6 @@ export function Game() {
         animate={{ opacity: 1, y: 0 }}
         exit={reduce ? undefined : { opacity: 0 }}
         transition={{ duration: 0.18 }}
-        // An adventure's own look (e.g. Egyptian parchment) is for its quest screen only.
-        data-theme={route.name === "quest" ? adventure.theme : undefined}
         className="min-h-dvh"
       >
         <GameBar setup={!profile.onboardingComplete || !profile.adventureId} />
