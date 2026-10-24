@@ -1,63 +1,54 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { riddleFontSize } from "@/lib/riddle";
+import { riddleFontSize, STORY_CHAR_EM } from "@/lib/riddle";
+import { BrushBadge, CardArt, type Theme } from "./Storybook";
 import { Button } from "./ui";
 
 // Pieces of the quest screen (QuestScreen.tsx holds the flow and state).
 
-/** Small corner flourish for the parchment card, kept clear of the riddle. */
-function Corner({ className }: { className: string }) {
-  return (
-    <svg aria-hidden focusable="false" viewBox="0 0 24 24" className={`pointer-events-none absolute h-5 w-5 text-gold/70 ${className}`} fill="none" stroke="currentColor" strokeWidth="1.5">
-      <path d="M2 14 V2 H14" />
-      <path d="M6 10 V6 H10" />
-    </svg>
-  );
-}
-
-/** The parchment card: badge, the mystery's name once found, and the exact saved riddle. */
+/** The mystery card: badge, the mystery's name once found, and the exact saved riddle. */
 export function MysteryCard({
   badge,
   title,
   riddle,
-  decorated,
+  theme,
 }: {
   badge: string;
   /** Only after the find: the name gives the answer away. */
   title?: string;
   riddle: string[];
-  decorated: boolean;
+  /** The adventure's look: a torn papyrus sheet, a gilded frame, or the plain card. */
+  theme: Theme;
 }) {
+  const plain = !theme;
+  const pad = theme === "egyptian" ? "pl-9 pr-4 pb-9 pt-7" : theme === "paintings" ? "px-6 pb-9 pt-8" : "px-6 pb-7 pt-6";
   return (
     <section
       aria-label="Your riddle"
-      className={`relative rounded-3xl border bg-parchment px-6 pb-7 pt-6 text-center shadow-[0_1px_2px_rgb(43_29_18/0.05),0_18px_40px_-26px_rgb(43_29_18/0.45)] ${decorated ? "border-parchment-edge" : "border-line"}`}
+      className={`relative text-center ${pad} ${plain ? "rounded-3xl border border-line bg-parchment shadow-[0_1px_2px_rgb(43_29_18/0.05),0_18px_40px_-26px_rgb(43_29_18/0.45)]" : theme === "paintings" ? "bg-parchment" : ""}`}
     >
-      {decorated && (
-        <>
-          <span aria-hidden className="pointer-events-none absolute inset-1.5 rounded-[1.25rem] border border-parchment-edge/70" />
-          <Corner className="left-3 top-3" />
-          <Corner className="right-3 top-3 rotate-90" />
-          <Corner className="bottom-3 right-3 rotate-180" />
-          <Corner className="bottom-3 left-3 -rotate-90" />
-        </>
-      )}
-      <p className="inline-flex items-center rounded-full border border-gold/40 bg-gold-soft/50 px-3 py-1 font-mono text-[12px] font-semibold uppercase tracking-[0.16em] text-gold">
-        {badge}
-      </p>
-      {title && <h2 className="mt-3 font-display text-2xl font-semibold text-burgundy">{title}</h2>}
-      <div className="@container mt-4">
-        {/* Riddles are editorially locked: lines exactly as saved, with their own line breaks. */}
-        <blockquote className="font-display font-semibold leading-[1.45] text-balance text-ink" style={{ fontSize: riddleFontSize(riddle) }}>
-          {riddle.map((line, i) => (
-            <p key={i}>
-              {i === 0 && "“"}
-              {line}
-              {i === riddle.length - 1 && "”"}
-            </p>
-          ))}
-        </blockquote>
+      <CardArt theme={theme} />
+      <div className="relative">
+        <BrushBadge>{badge}</BrushBadge>
+        {title && (
+          <>
+            <h2 className="mt-3 text-balance font-hand text-[2rem] font-bold leading-[1.1] text-burgundy">{title}</h2>
+            <span aria-hidden className="mx-auto mt-2 block h-1 w-20 rounded-full bg-[var(--badge)]" />
+          </>
+        )}
+        <div className="@container mt-4">
+          {/* Riddles are editorially locked: lines exactly as saved, with their own line breaks. */}
+          <blockquote className="font-story leading-[1.45] text-balance text-ink" style={{ fontSize: riddleFontSize(riddle, plain ? undefined : STORY_CHAR_EM) }}>
+            {riddle.map((line, i) => (
+              <p key={i}>
+                {i === 0 && "“"}
+                {line}
+                {i === riddle.length - 1 && "”"}
+              </p>
+            ))}
+          </blockquote>
+        </div>
       </div>
     </section>
   );

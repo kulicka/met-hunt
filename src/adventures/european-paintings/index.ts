@@ -11,6 +11,7 @@ export const europeanPaintings: Adventure = {
   where: "Floor 2 · Galleries 810–825",
   description: "10 galleries. 10 mysteries. Can you find them all?",
   emoji: "🖼️",
+  theme: "paintings",
   launchStatus: "ready",
   quests,
   map: floor2EuropeanPaintings,

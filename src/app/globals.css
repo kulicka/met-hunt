@@ -27,6 +27,12 @@
   --action-hover: #25252b;
   --parchment: var(--card);
   --parchment-edge: var(--line);
+  /* the mystery badge and the clue light bulb */
+  --badge: var(--gold-soft);
+  /* storybook type on the quest screen; the standard look keeps Geist */
+  --hand: var(--font-geist);
+  --story: var(--font-geist);
+  --story-weight: 600;
 }
 
 /*
@@ -54,11 +60,46 @@
   --glow-b: rgb(255 214 150 / 0.3);
   --dots: rgb(138 95 18 / 0.08);
   /*
-   * Line art along the bottom of every page: dunes, pyramids, a palm, a sun. It must never
+   * Scenery along the bottom of every page: dunes, pyramids, palms, reeds, a column, a sun. It must never
    * picture an answer, so no scarabs (111, 126), ankhs (122), cats (117, 125), lions (124),
    * vultures (114), eyes or stars (112), mirrors (116) or crowns (115).
    */
-  --scenery: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 320 64' fill='none' stroke='%238a5f12' stroke-width='1.2' stroke-linecap='round' stroke-linejoin='round' opacity='0.5'%3E%3Ccircle cx='262' cy='18' r='9' opacity='0.55'/%3E%3Cpath d='M0 56 C 40 46, 80 50, 120 55 S 220 44, 320 54' opacity='0.6'/%3E%3Cpath d='M0 62 C 60 56, 140 60, 200 61 S 280 57, 320 60' opacity='0.35'/%3E%3Cpath d='M150 54 L 182 20 L 214 54' opacity='0.75'/%3E%3Cpath d='M182 20 L 190 54' opacity='0.4'/%3E%3Cpath d='M204 54 L 226 32 L 248 54' opacity='0.6'/%3E%3Cpath d='M226 32 L 231 54' opacity='0.35'/%3E%3Cpath d='M58 56 C 60 44, 59 34, 62 24' opacity='0.7'/%3E%3Cpath d='M62 24 C 54 20, 46 22, 42 28 M62 24 C 70 18, 79 20, 83 26 M62 24 C 58 16, 52 14, 46 15 M62 24 C 67 15, 74 13, 79 15' opacity='0.7'/%3E%3C/svg%3E");
+  --scenery: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 110'%3E%3Cpath d='M0 84 C 60 70, 120 74, 190 82 S 320 70, 400 78 V 110 H 0 Z' fill='%23efe0bd'/%3E%3Ccircle cx='318' cy='26' r='13' fill='%23f4e3b6'/%3E%3Cpath d='M190 86 L 236 34 L 282 86 Z' fill='%23ead6a6'/%3E%3Cpath d='M236 34 L 282 86 L 244 86 Z' fill='%23dcc08a'/%3E%3Cpath d='M268 86 L 292 58 L 316 86 Z' fill='%23e6cf9c'/%3E%3Cpath d='M292 58 L 316 86 L 297 86 Z' fill='%23d6b97f'/%3E%3Cg stroke='%23b8955a' stroke-linecap='round' fill='none'%3E%3Cpath d='M42 98 C 44 82, 42 66, 47 50' stroke-width='3.2'/%3E%3Cpath d='M47 50 C 36 44, 26 46, 20 54 M47 50 C 58 42, 70 44, 76 52 M47 50 C 42 38, 33 35, 25 37 M47 50 C 54 37, 63 34, 71 36 M47 50 C 47 40, 49 33, 53 29' stroke-width='2.6'/%3E%3Cpath d='M362 96 C 363 84, 362 74, 365 64' stroke-width='2.6'/%3E%3Cpath d='M365 64 C 357 59, 350 60, 345 66 M365 64 C 373 58, 382 60, 386 66 M365 64 C 362 55, 356 53, 350 54 M365 64 C 370 55, 377 53, 382 55' stroke-width='2.2'/%3E%3C/g%3E%3Cg stroke='%23c3a46a' stroke-width='1.6' stroke-linecap='round' fill='none'%3E%3Cpath d='M96 100 C 95 90, 97 80, 94 70 M104 100 C 104 88, 106 78, 108 66 M112 100 C 113 92, 112 84, 116 76'/%3E%3Cpath d='M94 70 l -5 -6 M94 70 l 0 -8 M94 70 l 5 -6 M108 66 l -5 -6 M108 66 l 0 -8 M108 66 l 5 -6 M116 76 l -4 -5 M116 76 l 1 -7 M116 76 l 5 -4'/%3E%3C/g%3E%3Cg fill='%23ead9b2' stroke='%23b8955a' stroke-width='1.4'%3E%3Cpath d='M384 100 V 52 H 396 V 100 Z'/%3E%3Cpath d='M380 52 C 380 44, 384 40, 390 40 C 396 40, 400 44, 400 52 Z'/%3E%3C/g%3E%3Cpath d='M0 100 C 80 92, 160 98, 240 96 S 340 92, 400 98 V 110 H 0 Z' fill='%23e6d2a4'/%3E%3C/svg%3E");
+  --badge: #f2c64f;
+  --hand: var(--font-mali);
+  --story: var(--font-andika);
+  --story-weight: 400;
+}
+
+/*
+ * European Paintings (Adventure.theme "paintings"): a museum gallery. Linen walls,
+ * gilded frames, museum-blue action. Contrast: ink-soft on parchment ≥ 5:1, white on
+ * action ≥ 7:1. Scenery never pictures an answer: no fans, flowers, books, vases,
+ * horses, elephants, people, church towers or monocles.
+ */
+[data-theme="paintings"] {
+  --paper: #f4efe6;
+  --paper-deep: #e9e1d2;
+  --card: #fffdf8;
+  --ink: #1e1b24;
+  --ink-soft: #57525e;
+  --burgundy: #b3262f;
+  --burgundy-deep: #8e1c24;
+  --gold: #85600f;
+  --gold-soft: #f1e2b5;
+  --line: #e0d6c3;
+  --action: #234f9e;
+  --action-hover: #1b3f80;
+  --parchment: #fdf8ee;
+  --parchment-edge: #c9a85a;
+  --glow-a: rgb(255 228 180 / 0.5);
+  --glow-b: rgb(170 190 255 / 0.25);
+  --dots: rgb(30 27 36 / 0.07);
+  --badge: #f2cf6b;
+  --hand: var(--font-mali);
+  --story: var(--font-andika);
+  --story-weight: 400;
+  --scenery: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 110'%3E%3Cpath d='M0 92 H 400 V 110 H 0 Z' fill='%23e7ddc9'/%3E%3Cpath d='M0 92 H 400' stroke='%23cdbfa5' stroke-width='1.5'/%3E%3Cg fill='%23f6eedc' stroke='%23c79a3a'%3E%3Crect x='34' y='26' width='54' height='40' rx='2' stroke-width='4'/%3E%3Crect x='108' y='18' width='38' height='50' rx='2' stroke-width='3.5'/%3E%3Crect x='300' y='22' width='62' height='44' rx='2' stroke-width='4'/%3E%3C/g%3E%3Cg stroke='%23a78a5c' stroke-width='2.4' stroke-linecap='round' fill='none'%3E%3Cpath d='M214 92 L 230 40 M246 92 L 230 40 M230 40 V 96'/%3E%3Cpath d='M214 78 H 246'/%3E%3C/g%3E%3Crect x='212' y='44' width='36' height='30' rx='1.5' fill='%23fbf6ea' stroke='%23a78a5c' stroke-width='2'/%3E%3Cg fill='%23e2cfa6' stroke='%23a78a5c' stroke-width='1.6'%3E%3Crect x='150' y='80' width='52' height='6' rx='2'/%3E%3Cpath d='M156 86 V 94 M196 86 V 94' stroke-width='2.4'/%3E%3C/g%3E%3Cg fill='%23ece2cc' stroke='%23b8a37c' stroke-width='1.4'%3E%3Cpath d='M8 92 V 30 H 20 V 92 Z'/%3E%3Cpath d='M4 30 H 24 V 24 H 4 Z'/%3E%3Cpath d='M380 92 V 30 H 392 V 92 Z'/%3E%3Cpath d='M376 30 H 396 V 24 H 376 Z'/%3E%3C/g%3E%3Cg stroke='%237f9a6a' stroke-width='2' stroke-linecap='round' fill='none'%3E%3Cpath d='M276 92 C 276 80, 272 72, 266 66 M276 92 C 278 80, 284 72, 290 68 M276 92 V 70'/%3E%3C/g%3E%3Cpath d='M268 92 L 270 82 H 282 L 284 92 Z' fill='%23c9a46a' stroke='%23a78a5c' stroke-width='1.2'/%3E%3C/svg%3E");
 }
 
 @theme inline {
@@ -80,6 +121,8 @@
   --font-display: var(--font-geist), system-ui, sans-serif;
   --font-sans: var(--font-geist), system-ui, sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+  --font-hand: var(--hand), system-ui, sans-serif;
+  --font-story: var(--story), system-ui, sans-serif;
 }
 
 html {
@@ -107,7 +150,7 @@ body {
 }
 
 /* room under each page for the scenery, so it never runs behind text or buttons */
-[data-theme="egyptian"] body {
+[data-theme] body {
   padding-bottom: min(20vw, 128px);
 }
 
@@ -115,6 +158,9 @@ body {
   /* big type sits tight; tracking-* utilities still override */
   .font-display {
     letter-spacing: -0.03em;
+  }
+  .font-story {
+    font-weight: var(--story-weight);
   }
 }
 

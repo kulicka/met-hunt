@@ -14,7 +14,8 @@ import { MagnifierHints } from "./MagnifierHints";
 import { warmStamps } from "./Notebook";
 import { MysteryCard, TextArtworkVerificationForm, type TextCheck } from "./QuestParts";
 import { navigate } from "./router";
-import { Button, Card, Eyebrow, ProgressDots, Screen } from "./ui";
+import { FoundItButton, HeaderArt, MapPin, NoPhotoButton, SkipButton } from "./Storybook";
+import { Button, Card, Eyebrow, Screen, TrailProgress } from "./ui";
 
 const GROWN_UP_AFTER = 2;
 const REQUEST_TIMEOUT_MS = 35_000;
@@ -35,7 +36,7 @@ type Phase =
   | { kind: "grownup" };
 
 export function QuestScreen({ id }: { id: number }) {
-  const { adventure, questById, questNumber, questIds, nextUnsolved, loadReveals, isBonus, bonusAt, chapterOf } = useAdventure();
+  const { adventure, questById, questNumber, nextUnsolved, loadReveals, isBonus, bonusAt, chapterOf } = useAdventure();
   const quest = questById(id);
   const bonus = isBonus(id);
   const progress = useProgress();
@@ -371,26 +372,21 @@ export function QuestScreen({ id }: { id: number }) {
   }
 
   // Clue
-  const egyptian = adventure.theme === "egyptian";
+  const theme = adventure.theme;
   const eyebrow = bonus
     ? "Bonus mystery · doesn’t count toward the hunt"
     : [adventure.title, chapter?.title].filter(Boolean).join(" · ");
   return (
     <Screen className="gap-4">
       {inputs}
-      <header className="flex flex-col gap-1.5">
+      <header className="relative isolate flex flex-col gap-1.5">
+        <HeaderArt theme={theme} />
         <Eyebrow>{eyebrow}</Eyebrow>
-        <h1 className="whitespace-nowrap font-display text-[2.6rem] font-semibold leading-tight min-[360px]:text-5xl">
-          <span aria-hidden className="text-burgundy">📍 </span>Gallery {quest.gallery}
+        <h1 className="flex items-center gap-2 whitespace-nowrap font-display text-[2.6rem] font-bold leading-tight min-[360px]:text-5xl">
+          <MapPin />
+          Gallery {quest.gallery}
         </h1>
-        {!bonus && (
-          <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
-            <p className="font-semibold">
-              Quest {n} of {questIds.length}
-            </p>
-            <ProgressDots completed={progress.completedQuests} current={id} />
-          </div>
-        )}
+        {!bonus && <TrailProgress completed={progress.completedQuests} current={id} />}
       </header>
 
       {closed && !solved && !bonus && (
@@ -426,7 +422,7 @@ export function QuestScreen({ id }: { id: number }) {
         // The mystery's name gives the answer away, so it stays hidden until the find.
         title={solved ? quest.title : undefined}
         riddle={quest.riddle}
-        decorated={egyptian}
+        theme={theme}
       />
 
       <MagnifierHints
@@ -445,29 +441,17 @@ export function QuestScreen({ id }: { id: number }) {
         <Button onClick={() => navigate({ name: "found", id })}>SEE MY TREASURE</Button>
       ) : (
         <>
-          <Button className="min-h-16 text-lg tracking-[0.04em] min-[360px]:text-lg" onClick={() => setPhase({ kind: "photo" })}>
-            <Camera aria-hidden size={24} /> I FOUND IT!
-          </Button>
-          {/* As easy to find as the photo, but quieter: typing the label's name or number earns the same credit. */}
-          <Button variant="secondary" className="!min-h-16 flex-col !gap-0 py-2 leading-tight" onClick={() => setPhase({ kind: "text" })}>
-            <span className="inline-flex items-center gap-2">
-              <PenLine aria-hidden size={20} /> Continue without a photo
-            </span>
-            <span className="text-sm font-normal text-ink-soft">Enter the artwork name or number instead</span>
-          </Button>
+          <FoundItButton onClick={() => setPhase({ kind: "photo" })} />
+          <NoPhotoButton onClick={() => setPhase({ kind: "text" })} />
           {skipTo != null && (
-            <Button
-              variant="quiet"
-              className="mx-auto"
+            <SkipButton
               onClick={() => {
                 // Nothing is lost: the mystery stays unsolved and comes round again after the others.
                 trackQuest("quest_skipped", id, { reason: "user_switched" });
                 playQuest(skipTo);
                 navigate({ name: "next", from: id });
               }}
-            >
-              Can’t find it? Skip for now
-            </Button>
+            />
           )}
         </>
       )}

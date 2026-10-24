@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Andika, Geist, Geist_Mono, Mali } from "next/font/google";
 import { ServiceWorker } from "@/components/ServiceWorker";
 import "./globals.css";
 
@@ -11,6 +11,19 @@ const geist = Geist({
 
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
+  subsets: ["latin"],
+});
+
+// Storybook type for the illustrated adventures: hand lettering for names, an easy-reading face for riddles.
+const mali = Mali({
+  variable: "--font-mali",
+  weight: ["600", "700"],
+  subsets: ["latin"],
+});
+
+const andika = Andika({
+  variable: "--font-andika",
+  weight: ["400", "700"],
   subsets: ["latin"],
 });
 
@@ -28,7 +41,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="en" className={`${geist.variable} ${geistMono.variable} antialiased`}>
+    <html lang="en" className={`${geist.variable} ${geistMono.variable} ${mali.variable} ${andika.variable} antialiased`}>
       <body className="min-h-dvh">
         {children}
         <ServiceWorker />
