@@ -347,7 +347,8 @@ export function QuestScreen({ id }: { id: number }) {
 
       <Card className="relative text-center">
         <p className="font-mono text-[13px] font-medium uppercase tracking-[0.14em] text-gold">{bonus ? "Bonus mystery ★" : `Mystery #${n}`}</p>
-        {quest.title && <h2 className="mt-2 font-display text-2xl font-semibold text-burgundy">{quest.title}</h2>}
+        {/* The mystery's name gives the answer away, so it stays hidden until the find. */}
+        {solved && quest.title && <h2 className="mt-2 font-display text-2xl font-semibold text-burgundy">{quest.title}</h2>}
         <div className="@container mt-3">
           <blockquote className="font-display font-semibold leading-snug text-balance" style={{ fontSize: riddleFontSize(quest.riddle) }}>
             {quest.riddle.map((line, i) => (

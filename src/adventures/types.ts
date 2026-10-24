@@ -10,7 +10,7 @@ export interface QuestPublic {
   /** Unique within its adventure only. Never reused for a different artwork. */
   id: number;
   gallery: string;
-  /** Shown above the riddle when set, e.g. "The Mirror's Secret". */
+  /** The mystery's name, e.g. "The Mirror's Secret". It hints at the answer, so players see it only after the find (grown-ups see it in the answer key). */
   title?: string;
   /** Editorially locked lines, usually two (Egyptian Gallery 111 has four). Never rewrite them. */
   riddle: string[];
