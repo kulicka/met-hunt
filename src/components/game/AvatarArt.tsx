@@ -10,6 +10,7 @@ const BURG = "#7a1f2b";
 const GOLD = "#a8842c";
 const GOLD_SOFT = "#d9c38b";
 const FOREST = "#2f4a3a";
+const BLUSH = "#e9958a";
 
 const line = { stroke: INK, strokeWidth: 2.5, strokeLinejoin: "round" as const, strokeLinecap: "round" as const };
 
@@ -138,6 +139,52 @@ const art: Record<string, ReactElement> = {
       <path d="M48 72 Q60 84 72 72" fill={PAPER} {...line} />
       <circle cx={60} cy={73} r={3.5} fill={INK} />
       <Magnifier x={32} y={90} r={8} />
+    </g>
+  ),
+  koti: (
+    <g>
+      <path d="M28 112 Q32 86 60 84 Q88 86 92 112 Z" fill={FOREST} {...line} />
+      <path d="M44 88 L42 112 M76 88 L78 112" stroke={GOLD} strokeWidth={5} strokeLinecap="round" />
+      <circle cx={33} cy={36} r={11} fill="#3a2a22" {...line} />
+      <circle cx={87} cy={36} r={11} fill="#3a2a22" {...line} />
+      <path d="M36 66 Q32 40 60 34 Q88 40 84 66 Q84 82 60 84 Q36 82 36 66 Z" fill="#3a2a22" {...line} />
+      <circle cx={60} cy={62} r={20} fill="#f0c29e" {...line} />
+      <path d="M40 58 Q42 38 60 38 Q78 38 80 58 Q74 48 66 50 Q62 44 56 50 Q48 48 40 58 Z" fill="#3a2a22" {...line} />
+      <path d="M76 38 L78 43 L83 43 L79 46 L81 51 L76 48 L71 51 L73 46 L69 43 L74 43 Z" fill={GOLD} {...line} strokeWidth={1.5} />
+      <circle cx={46} cy={69} r={3.5} fill={BLUSH} fillOpacity={0.7} />
+      <circle cx={74} cy={69} r={3.5} fill={BLUSH} fillOpacity={0.7} />
+      <Eyes y={63} dx={8} r={3.4} />
+      <circle cx={53} cy={62} r={1.1} fill={PAPER} />
+      <circle cx={69} cy={62} r={1.1} fill={PAPER} />
+      <path d="M55 71 Q60 76 65 71" fill="none" {...line} />
+      <g transform="rotate(-10 90 98)">
+        <rect x={79} y={90} width={22} height={16} rx={2} fill={PAPER} {...line} />
+        <path d="M84 102 Q88 94 93 99" fill="none" stroke={BURG} strokeWidth={1.5} strokeDasharray="2 2" />
+        <path d="M93 96 L97 100 M97 96 L93 100" stroke={BURG} strokeWidth={2} strokeLinecap="round" />
+      </g>
+    </g>
+  ),
+  mustard: (
+    <g>
+      <path d="M30 112 Q34 88 60 86 Q86 88 90 112 Z" fill="#d9a62e" {...line} />
+      <path d="M38 92 L84 112" stroke="#c9ad7a" strokeWidth={6} strokeLinecap="round" />
+      <path d="M38 92 L84 112" stroke={INK} strokeWidth={1.2} strokeDasharray="3 4" />
+      <ellipse cx={46} cy={104} rx={9} ry={7} fill="none" stroke="#c9ad7a" strokeWidth={4} />
+      <ellipse cx={46} cy={104} rx={9} ry={7} fill="none" stroke={INK} strokeWidth={1.2} />
+      <path d="M40 48 Q22 50 26 80 Q36 84 42 66 Z M80 48 Q98 50 94 80 Q84 84 78 66 Z" fill="#a8771c" {...line} />
+      <circle cx={60} cy={63} r={23} fill="#e4b443" {...line} />
+      <ellipse cx={69} cy={60} rx={7} ry={6} fill="#c58f22" />
+      <path d="M38 50 Q40 28 60 28 Q80 28 82 50 Q60 42 38 50 Z" fill={BURG} {...line} />
+      <circle cx={60} cy={37} r={5} fill={GOLD_SOFT} {...line} strokeWidth={2} />
+      <circle cx={47} cy={71} r={3.2} fill={BLUSH} fillOpacity={0.6} />
+      <circle cx={73} cy={71} r={3.2} fill={BLUSH} fillOpacity={0.6} />
+      <ellipse cx={60} cy={74} rx={12} ry={9} fill="#f6e3b4" {...line} />
+      <path d="M57 78 Q60 86 63 78 Z" fill="#e6837a" {...line} strokeWidth={1.5} />
+      <path d="M60 72 L60 76 Q56 80 53 77 M60 76 Q64 80 67 77" fill="none" {...line} strokeWidth={1.8} />
+      <ellipse cx={60} cy={69} rx={4.5} ry={3.2} fill={INK} />
+      <Eyes y={60} dx={9} r={3.4} />
+      <circle cx={52} cy={59} r={1.1} fill={PAPER} />
+      <circle cx={70} cy={59} r={1.1} fill={PAPER} />
     </g>
   ),
 };

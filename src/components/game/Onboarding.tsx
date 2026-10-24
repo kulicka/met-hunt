@@ -35,21 +35,27 @@ export function AgePicker({ value, onPick }: { value?: AgeChoice; onPick: (age: 
 }
 
 export function ExplorerPicker({ value, onPick }: { value?: string; onPick: (id: string) => void }) {
+  const option = (a: (typeof avatars)[number]) => (
+    <label
+      key={a.id}
+      className={`${tile} ${tileState(value === a.id)} cursor-pointer flex-col justify-start gap-1 p-3 text-center has-[:focus-visible]:outline-3 has-[:focus-visible]:outline-burgundy ${a.featured ? "relative bg-gradient-to-b from-gold-soft/30 to-card pt-4" : ""}`}
+    >
+      <input type="radio" name="explorer" className="sr-only" checked={value === a.id} onChange={() => onPick(a.id)} />
+      {a.featured && (
+        <span className="absolute right-3 top-3 rounded-full bg-ink px-2 py-0.5 font-mono text-[11px] font-medium uppercase tracking-[0.12em] text-paper">New</span>
+      )}
+      <AvatarArt asset={a.imageAsset} size={a.featured ? 120 : 88} className="h-auto max-w-full" />
+      <span className={`font-display font-semibold ${a.featured ? "text-3xl" : "text-2xl"}`}>{a.displayName}</span>
+      <span className="text-sm font-normal leading-snug text-ink-soft">{a.description}</span>
+    </label>
+  );
+  // Featured explorers lead the list in bigger cards; the rest keep their order.
   return (
     <fieldset>
       <legend className="sr-only">Choose your explorer</legend>
       <div className="grid grid-cols-2 gap-3">
-        {avatars.map((a) => (
-          <label
-            key={a.id}
-            className={`${tile} ${tileState(value === a.id)} cursor-pointer flex-col justify-start gap-1 p-3 text-center has-[:focus-visible]:outline-3 has-[:focus-visible]:outline-burgundy`}
-          >
-            <input type="radio" name="explorer" className="sr-only" checked={value === a.id} onChange={() => onPick(a.id)} />
-            <AvatarArt asset={a.imageAsset} size={88} />
-            <span className="font-display text-2xl font-semibold">{a.displayName}</span>
-            <span className="text-sm font-normal leading-snug text-ink-soft">{a.description}</span>
-          </label>
-        ))}
+        {avatars.filter((a) => a.featured).map(option)}
+        {avatars.filter((a) => !a.featured).map(option)}
       </div>
     </fieldset>
   );
