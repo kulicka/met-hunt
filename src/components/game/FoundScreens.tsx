@@ -194,6 +194,10 @@ export function NextScreen({ from }: { from: number }) {
           <p className="font-display text-3xl font-semibold">{newChapter.title}</p>
         </Card>
       )}
+      {!progress.completedQuests.includes(from) && questById(from) && (
+        // Arrived here by skipping a mystery: it waits, and comes round again after the others.
+        <p className="text-lg">Gallery {questById(from)!.gallery} will wait for you. Come back to it any time.</p>
+      )}
       <h1 className="font-display text-4xl font-semibold">Your next mystery</h1>
       <p className="whitespace-nowrap font-display text-5xl font-semibold min-[360px]:text-6xl">Gallery {questById(next)!.gallery}</p>
       {hasRoutes ? (
