@@ -34,21 +34,29 @@ export function AgePicker({ value, onPick }: { value?: AgeChoice; onPick: (age: 
   );
 }
 
-export function ExplorerPicker({ value, onPick }: { value?: string; onPick: (id: string) => void }) {
-  const option = (a: (typeof avatars)[number]) => (
-    <label
+/**
+ * `chooseOnTap`: each explorer is a button and one tap is the choice (Change Explorer closes
+ * on it). Otherwise radios, so the onboarding step can be changed before CONTINUE.
+ */
+export function ExplorerPicker({ value, onPick, chooseOnTap = false }: { value?: string; onPick: (id: string) => void; chooseOnTap?: boolean }) {
+  const option = (a: (typeof avatars)[number]) => {
+    const Tile = chooseOnTap ? "button" : "label";
+    return (
+    <Tile
       key={a.id}
+      {...(chooseOnTap ? { type: "button" as const, "aria-pressed": value === a.id, onClick: () => onPick(a.id) } : {})}
       className={`${tile} ${tileState(value === a.id)} cursor-pointer flex-col justify-start gap-1 p-3 text-center has-[:focus-visible]:outline-3 has-[:focus-visible]:outline-burgundy ${a.featured ? "relative bg-gradient-to-b from-gold-soft/30 to-card pt-4" : ""}`}
     >
-      <input type="radio" name="explorer" className="sr-only" checked={value === a.id} onChange={() => onPick(a.id)} />
+      {!chooseOnTap && <input type="radio" name="explorer" className="sr-only" checked={value === a.id} onChange={() => onPick(a.id)} />}
       {a.featured && (
         <span className="absolute right-3 top-3 rounded-full bg-ink px-2 py-0.5 font-mono text-[11px] font-medium uppercase tracking-[0.12em] text-paper">New</span>
       )}
       <AvatarArt asset={a.imageAsset} size={a.featured ? 120 : 88} className="h-auto max-w-full" />
       <span className={`font-display font-semibold ${a.featured ? "text-3xl" : "text-2xl"}`}>{a.displayName}</span>
       <span className="text-sm font-normal leading-snug text-ink-soft">{a.description}</span>
-    </label>
-  );
+    </Tile>
+    );
+  };
   // Featured explorers lead the list in bigger cards; the rest keep their order.
   return (
     <fieldset>
@@ -139,8 +147,22 @@ export function EditProfile({ field }: { field: "explorer" | "age" }) {
     <Screen>
       <Title>{field === "explorer" ? "Change Explorer" : "Edit Age"}</Title>
       <p className="text-ink-soft">Your treasures and progress stay just as they are.</p>
-      {field === "explorer" ? <ExplorerPicker value={profile.avatarId} onPick={setAvatar} /> : <AgePicker value={profile.age} onPick={setAge} />}
-      <Button onClick={goBack}>DONE</Button>
+      {field === "explorer" ? (
+        // Tapping an explorer is the choice: save it and go back to where the player was.
+        <ExplorerPicker
+          value={profile.avatarId}
+          chooseOnTap
+          onPick={(id) => {
+            setAvatar(id);
+            goBack();
+          }}
+        />
+      ) : (
+        <>
+          <AgePicker value={profile.age} onPick={setAge} />
+          <Button onClick={goBack}>DONE</Button>
+        </>
+      )}
     </Screen>
   );
 }
