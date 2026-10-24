@@ -20,6 +20,8 @@
   --glow-a: rgb(255 196 120 / 0.35);
   --glow-b: rgb(140 160 255 / 0.28);
   --dots: rgb(13 13 16 / 0.09);
+  /* a picture along the bottom of every page; none in the standard look */
+  --scenery: none;
   /* the main call to action, and the quest card */
   --action: var(--ink);
   --action-hover: #25252b;
@@ -51,6 +53,12 @@
   --glow-a: rgb(255 226 170 / 0.55);
   --glow-b: rgb(255 214 150 / 0.3);
   --dots: rgb(138 95 18 / 0.08);
+  /*
+   * Line art along the bottom of every page: dunes, pyramids, a palm, a sun. It must never
+   * picture an answer, so no scarabs (111, 126), ankhs (122), cats (117, 125), lions (124),
+   * vultures (114), eyes or stars (112), mirrors (116) or crowns (115).
+   */
+  --scenery: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 320 64' fill='none' stroke='%238a5f12' stroke-width='1.2' stroke-linecap='round' stroke-linejoin='round' opacity='0.5'%3E%3Ccircle cx='262' cy='18' r='9' opacity='0.55'/%3E%3Cpath d='M0 56 C 40 46, 80 50, 120 55 S 220 44, 320 54' opacity='0.6'/%3E%3Cpath d='M0 62 C 60 56, 140 60, 200 61 S 280 57, 320 60' opacity='0.35'/%3E%3Cpath d='M150 54 L 182 20 L 214 54' opacity='0.75'/%3E%3Cpath d='M182 20 L 190 54' opacity='0.4'/%3E%3Cpath d='M204 54 L 226 32 L 248 54' opacity='0.6'/%3E%3Cpath d='M226 32 L 231 54' opacity='0.35'/%3E%3Cpath d='M58 56 C 60 44, 59 34, 62 24' opacity='0.7'/%3E%3Cpath d='M62 24 C 54 20, 46 22, 42 28 M62 24 C 70 18, 79 20, 83 26 M62 24 C 58 16, 52 14, 46 15 M62 24 C 67 15, 74 13, 79 15' opacity='0.7'/%3E%3C/svg%3E");
 }
 
 @theme inline {
@@ -82,17 +90,25 @@ html {
 
 body {
   background-color: var(--paper);
-  /* soft light from above over a faint dot field */
+  /* soft light from above over a faint dot field, and the adventure's scenery along the bottom */
   background-image:
+    var(--scenery),
     radial-gradient(60% 40% at 15% -5%, var(--glow-a), transparent 70%),
     radial-gradient(55% 35% at 95% 0%, var(--glow-b), transparent 70%),
     radial-gradient(var(--dots) 1px, transparent 1.3px);
-  background-size: 100% 100%, 100% 100%, 20px 20px;
-  background-repeat: no-repeat, no-repeat, repeat;
-  background-attachment: fixed;
+  background-size: min(100%, 640px) auto, 100% 100%, 100% 100%, 20px 20px;
+  background-position: center bottom 8px, 0 0, 0 0, 0 0;
+  background-repeat: no-repeat, no-repeat, no-repeat, repeat;
+  /* the light and dots stay put; the scenery sits below the last thing on the page */
+  background-attachment: scroll, fixed, fixed, fixed;
   color: var(--ink);
   font-family: var(--font-sans);
   font-size: 17px;
+}
+
+/* room under each page for the scenery, so it never runs behind text or buttons */
+[data-theme="egyptian"] body {
+  padding-bottom: min(20vw, 128px);
 }
 
 @layer base {

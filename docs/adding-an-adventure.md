@@ -44,8 +44,8 @@ Follow these rules:
   title. With no accession number and no alias, the game says honestly that it
   can't check typed answers there, and offers the photo or a grown-up.
 - **`theme`** is optional. `"egyptian"` gives every screen of that adventure its
-  warm ivory page, scarlet buttons and parchment cards (the line art stays on the
-  quest screen); leave it out for the standard look. Onboarding and the first
+  warm ivory page, scarlet buttons, parchment cards and the dunes-and-pyramids
+  line art along the bottom of each page (`--scenery` in globals.css); leave it out for the standard look. Onboarding and the first
   adventure picker always use the standard look.
 - **`contentPackVersion`** must be unique across all adventures, so analytics can
   separate them by version alone.
