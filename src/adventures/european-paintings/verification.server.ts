@@ -24,9 +24,9 @@ export const verificationTargets: VerificationTarget[] = [
     questId: 3,
     artist: "Edgar Degas",
     artwork: "Dancer with a Fan",
-    hiddenObject: "Folding fan",
+    hiddenObject: "Open folding fan",
     verificationDescription:
-      "Verify that the submitted photograph plausibly shows Degas’s “Dancer with a Fan” and that the folding fan is visible.",
+      "Verify that the submitted photograph plausibly shows Degas’s pastel “Dancer with a Fan” (The Met 29.100.557, ca. 1890–95) and that the open folding fan is visible. Gallery 816 also has Degas’s other “Dancer with a Fan” (29.100.188, ca. 1880); a photo of that one with its fan visible counts too.",
   },
   {
     questId: 4,

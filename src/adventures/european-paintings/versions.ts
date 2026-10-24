@@ -11,7 +11,7 @@ import type { QuestVersion } from "../types";
 // - The ten approved riddles stay as they are until the owner approves an edit.
 // - IDs are opaque on purpose: they ship to the browser and must not give away answers.
 
-export const CONTENT_PACK_VERSION = "2026.10.22-1";
+export const CONTENT_PACK_VERSION = "2026.10.24-1";
 
 const v = (questId: number, galleryId: number, riddleFingerprint: string, hintsFingerprint: string): QuestVersion => {
   const n = String(questId).padStart(2, "0");
@@ -32,7 +32,8 @@ const v = (questId: number, galleryId: number, riddleFingerprint: string, hintsF
 export const questVersions: QuestVersion[] = [
   v(1, 810, "31101e5f", "e9bb955f"),
   v(2, 815, "c6326a71", "3a91783f"),
-  v(3, 816, "5c8383a2", "eb8f2c19"),
+  // a2: pinned to Degas's 29.100.557; the gallery's other "Dancer with a Fan" (29.100.188) also counts.
+  { ...v(3, 816, "5c8383a2", "eb8f2c19"), artworkAssignmentVersion: "a2" },
   v(4, 817, "16d4ae0b", "d99505c6"),
   v(5, 818, "53dc6b1b", "71557edf"),
   v(6, 819, "4cb53335", "c3e3c135"),

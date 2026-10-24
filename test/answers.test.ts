@@ -109,11 +109,18 @@ describe("typed answers: titles", () => {
     expect(check(EGY, 122, "Funerary Figure of Akhenaten")).toBe("no_match");
   });
 
-  it("is honest when a quest has no checked answers yet", () => {
-    // Two "Dancer with a Fan" pastels hang in Gallery 816; the target isn't pinned.
-    expect(check(EUR, 3, "Dancer with a Fan")).toBe("unchecked");
-    expect(check(EUR, 3, "anything")).toBe("unchecked");
+  it("accepts either Degas \"Dancer with a Fan\" in Gallery 816, as Alex chose", () => {
+    expect(check(EUR, 3, "29.100.557")).toBe("match");
+    expect(check(EUR, 3, "29.100.188")).toBe("match");
+    expect(check(EUR, 3, "Dancer with a Fan")).toBe("match");
+    expect(check(EUR, 3, "29.100.555")).toBe("no_match"); // Fan Mount: Dancers, same gallery
+    expect(check(EUR, 3, "Dancer")).toBe("no_match");
+    expect(check(EUR, 3, "436136")).toBe("no_match");
+  });
+
+  it("is honest when a quest has no curated answers", () => {
     expect(checkAnswer("16.1.24", undefined)).toBe("unchecked");
+    expect(checkAnswer("anything", { questId: 1, metCollectionId: "", accessionNumbers: [], canonicalTitle: "Painting", acceptedTitles: [], titleUnique: false })).toBe("unchecked");
   });
 
   it("treats blank input as a miss", () => {
@@ -135,7 +142,7 @@ describe("answer data", () => {
 
   it("uses the same Met objects as the answers players see after a find", () => {
     for (const r of egyptianReveals) expect(questAnswer(EGY, r.id)?.metCollectionId).toBe(String(r.metObjectId));
-    for (const r of europeanReveals) expect(questAnswer(EUR, r.id)?.metCollectionId).toBe(r.metObjectId ? String(r.metObjectId) : "");
+    for (const r of europeanReveals) expect(questAnswer(EUR, r.id)?.metCollectionId).toBe(String(r.metObjectId));
   });
 });
 
