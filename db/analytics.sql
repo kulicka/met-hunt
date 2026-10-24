@@ -132,13 +132,14 @@ create or replace function analytics_funnel(p_from timestamptz, p_to timestamptz
 returns table (step text, step_order int, adventures bigint, completed bigint, ended_early bigint, restarted bigint, still_open bigint)
 language sql stable as $$
   with a as (select * from analytics_adventures(p_from, p_to, p_content)),
-  steps(step, step_order, min_quests) as (values ('started', 0, 0), ('1+ quests', 1, 1), ('3+ quests', 2, 3), ('6+ quests', 3, 6), ('all 10', 4, 10))
+  -- The last step is a finished hunt, whatever its length (10 stops, or 14 with the Egyptian Daily Life stops).
+  steps(step, step_order, min_quests) as (values ('started', 0, 0), ('1+ quests', 1, 1), ('3+ quests', 2, 3), ('6+ quests', 3, 6), ('all quests', 4, null::int))
   select s.step, s.step_order, count(a.adventure_id),
          count(a.adventure_id) filter (where a.completed),
          count(a.adventure_id) filter (where a.ended_early and not a.completed),
          count(a.adventure_id) filter (where a.restarted and not a.completed),
          count(a.adventure_id) filter (where not a.completed and not a.ended_early and not a.restarted)
-  from steps s left join a on a.quests_completed >= s.min_quests
+  from steps s left join a on (s.min_quests is null and a.completed) or a.quests_completed >= s.min_quests
   group by s.step, s.step_order
   order by s.step_order
 $$;

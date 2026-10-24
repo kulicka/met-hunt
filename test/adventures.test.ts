@@ -79,13 +79,14 @@ describe("adventure registry", () => {
   });
 });
 
-describe("Egyptian Adventure (spec v1.0 draft)", () => {
-  const c = contentFor(egyptian);
+describe("Egyptian Adventure (spec v1.0 draft), as launched without the Daily Life stops", () => {
+  const { adventure: original } = buildEgyptian(false);
+  const c = contentFor(original);
 
   it("stays field-test-only, with a map but no directions for 117 → 122", () => {
-    expect(egyptian.id).toBe("met-egyptian-adventure");
-    expect(egyptian.launchStatus).toBe("field_test_required");
-    expect(egyptian.map?.id).toBe("met-floor1-egyptian");
+    expect(original.id).toBe("met-egyptian-adventure");
+    expect(original.launchStatus).toBe("field_test_required");
+    expect(original.map?.id).toBe("met-floor1-egyptian");
     expect(c.hasRoutes).toBe(true);
     expect(c.findRoute("117", "122", [])).toBeNull();
     expect(c.findRoute("111", "112", [])?.path).toEqual(["111", "112"]);
@@ -95,26 +96,26 @@ describe("Egyptian Adventure (spec v1.0 draft)", () => {
 
   it("plays ten required stops in two chapters of 6 + 4, plus one bonus and one reserve", () => {
     expect(c.questOrder).toEqual(["111", "112", "114", "115", "116", "117", "122", "123", "124", "125"]);
-    expect(egyptian.chapters!.map((ch) => [ch.title, ch.questIds.length])).toEqual([
+    expect(original.chapters!.map((ch) => [ch.title, ch.questIds.length])).toEqual([
       ["Royal Treasures", 6],
       ["Secrets of the Pharaohs", 4],
     ]);
-    expect(egyptian.bonus!.map((b) => [b.id, b.gallery, b.atQuest])).toEqual([[1171, "117", 117]]);
+    expect(original.bonus!.map((b) => [b.id, b.gallery, b.atQuest])).toEqual([[1171, "117", 117]]);
     // The four Daily Life stops wait with the reserve until checked on site.
-    expect(egyptian.otherQuests!.map((q) => q.gallery)).toEqual(["105", "107", "108", "110", "126"]);
+    expect(original.otherQuests!.map((q) => q.gallery)).toEqual(["105", "107", "108", "110", "126"]);
     expect(c.questById(126)).toBeUndefined(); // reserve: not playable until swapped in
     expect(c.questById(105)).toBeUndefined();
   });
 
   it("never plays closed Galleries 118–120 or the unconfirmed 113 baboon", () => {
-    for (const q of stopsOf(egyptian)) expect(["113", "118", "119", "120"]).not.toContain(q.gallery);
+    for (const q of stopsOf(original)) expect(["113", "118", "119", "120"]).not.toContain(q.gallery);
   });
 
   it("keeps the locked riddle text exactly", () => {
     expect(c.questById(111)!.riddle).toHaveLength(4);
     expect(c.questById(124)!.riddle[1]).toBe("But I’m as still as still can be."); // curly apostrophe
     expect(c.questById(117)!.riddle[0]).toBe("I'm not a pet, I never roam,"); // straight apostrophe
-    for (const q of egyptian.quests.filter((q) => q.id !== 111)) expect(q.riddle).toHaveLength(2);
+    for (const q of original.quests.filter((q) => q.id !== 111)) expect(q.riddle).toHaveLength(2);
   });
 
   it("keeps the original master collection unchanged and separate", () => {
@@ -123,7 +124,7 @@ describe("Egyptian Adventure (spec v1.0 draft)", () => {
     expect(fingerprint(JSON.stringify(egyptianOriginalMaster)), "the master archive must never change").toBe("2d6ee640");
     // The launch edition agrees with the master wherever they share a stop.
     for (const m of egyptianOriginalMaster) {
-      const launch = [...egyptian.quests, ...egyptian.bonus!].find((q) => q.gallery === m.gallery && q.title === m.title);
+      const launch = [...original.quests, ...original.bonus!].find((q) => q.gallery === m.gallery && q.title === m.title);
       if (launch) expect(launch.riddle, m.title).toEqual(m.riddle);
     }
     expect(egyptianOriginalMaster.find((m) => m.gallery === "113")!.metObjectId).toBeNull();
@@ -143,7 +144,7 @@ describe("Egyptian Adventure (spec v1.0 draft)", () => {
     expect(a.status).toBe("in_progress");
     a = solve(a, ids.at(-1)!, "grown-up", null, ids);
     expect(a.status).toBe("completed");
-    const cert = certificateText(a, ids.length, "Cleo", egyptian.certificate);
+    const cert = certificateText(a, ids.length, "Cleo", original.certificate);
     expect(cert).toMatchObject({ kind: "full", countLine: "10/10 treasures discovered" });
   });
 
@@ -173,15 +174,17 @@ describe("Egyptian Adventure (spec v1.0 draft)", () => {
 });
 
 describe("Egyptian Daily Life stops (four new quests spec, 2026-10-24)", () => {
-  const { adventure: expanded, routeLegs: expandedLegs } = buildEgyptian(true);
+  const expanded = egyptian;
+  const expandedLegs = routeLegs;
+  const original = buildEgyptian(false).adventure;
   const c = contentFor(expanded);
   const NEW = [105, 107, 108, 110];
 
-  it("stays off in the live hunt until checked on site", () => {
-    expect(EXPANDED_ROUTE).toBe(false);
-    expect(egyptian.quests).toHaveLength(10);
-    expect(egyptian.where).toBe("Floor 1 · Egyptian Art, Galleries 111–125");
-    expect(egyptian.description).toContain("collect ten discoveries!");
+  it("are switched on in the live hunt (Alex, 2026-10-24); without them it is the original ten", () => {
+    expect(EXPANDED_ROUTE).toBe(true);
+    expect(original.quests).toHaveLength(10);
+    expect(original.where).toBe("Floor 1 · Egyptian Art, Galleries 111–125");
+    expect(original.description).toContain("collect ten discoveries!");
   });
 
   it("adds them first, in gallery order, as their own chapter, leaving the rest as it was", () => {
@@ -191,8 +194,8 @@ describe("Egyptian Daily Life stops (four new quests spec, 2026-10-24)", () => {
       ["royal-treasures", 6],
       ["pharaoh-secrets", 4],
     ]);
-    expect(expanded.quests.slice(4)).toEqual(egyptian.quests);
-    expect(expanded.bonus).toEqual(egyptian.bonus);
+    expect(expanded.quests.slice(4)).toEqual(original.quests);
+    expect(expanded.bonus).toEqual(original.bonus);
     expect(expanded.otherQuests!.map((q) => q.gallery)).toEqual(["126"]);
     expect(expanded.where).toBe("Floor 1 · Egyptian Art, Galleries 105–125");
     expect(expanded.description).toContain("collect fourteen discoveries!");
@@ -240,7 +243,7 @@ describe("Egyptian Daily Life stops (four new quests spec, 2026-10-24)", () => {
     expect(a.status).toBe("completed");
     expect(certificateText(a, ids.length, "Cleo", expanded.certificate)).toMatchObject({ kind: "full", countLine: "14/14 treasures discovered" });
 
-    const live = contentFor(egyptian);
+    const live = contentFor(original);
     const saved = { status: "in_progress", currentQuest: 112, completedQuests: [111], bonusFound: [1171] };
     const grown = parseAdventure(saved, c.questIds, c.extraIds);
     expect(grown).toMatchObject({ status: "in_progress", completedQuests: [111], bonusFound: [1171] });
@@ -257,7 +260,7 @@ describe("analytics across adventures", () => {
     adventure_id: "11111111-1111-4111-8111-111111111111",
     session_id: "22222222-2222-4222-8222-222222222222",
     app_version: "0.1.0",
-    content_pack_version: "1.1.0-draft",
+    content_pack_version: "1.2.0-draft",
   };
   const quest = (packId: string | undefined, key: string, gallery: number) => ({
     ...base,
@@ -325,7 +328,7 @@ describe("progress store", () => {
     const { progress, profile } = await fresh();
     progress.completeQuest(1, "ai-photo", 2);
     profile.setAdventure("met-egyptian-adventure");
-    expect(progress.getProgress()).toMatchObject({ status: "not_started", currentQuest: 111, completedQuests: [] });
+    expect(progress.getProgress()).toMatchObject({ status: "not_started", currentQuest: 105, completedQuests: [] });
     progress.completeQuest(111, "grown-up", 112);
     progress.completeQuest(1171, "ai-photo", null);
     expect(progress.getProgress()).toMatchObject({ completedQuests: [111], bonusFound: [1171], currentQuest: 112 });

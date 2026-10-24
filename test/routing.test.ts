@@ -160,7 +160,7 @@ describe("Egyptian Art map (Floor 1)", async () => {
     for (const v of floor1.routeValidations) {
       expect(egypt.findRoute(v.fromQuestGallery, v.toQuestGallery, [])?.path, `${v.fromQuestGallery} → ${v.toQuestGallery}`).toEqual(v.path);
     }
-    expect(floor1.routeValidations).toHaveLength(egypt.questOrder.length - 2);
+    expect(floor1.routeValidations).toHaveLength(egypt.questOrder.length - 1 - egyptian.heldRoutes!.length);
   });
 
   it("never gives directions for 117 → 122 until it is walked on site", () => {
