@@ -125,7 +125,6 @@ export function MapScreen({ focus, from }: Props) {
             closures={closures}
             current={current}
             emphasis={route?.path}
-            focus={focus ?? current}
             onSelect={setSelected}
           />
           <p className="-mt-2 text-center text-sm text-ink-soft">Pinch or double-tap to zoom. Drag to look around.</p>

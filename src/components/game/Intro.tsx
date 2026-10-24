@@ -1,5 +1,6 @@
 "use client";
 
+import { useClosures } from "@/lib/closures";
 import { useAdventure } from "@/lib/content";
 import { useAvatar } from "@/lib/profile";
 import { startAdventure, useProgress } from "@/lib/progress";
@@ -11,13 +12,17 @@ import { Button, Card, Eyebrow, ProgressDots, Screen, Title } from "./ui";
 export function StartScreen() {
   const progress = useProgress();
   const avatar = useAvatar();
-  const { adventure, questIds } = useAdventure();
+  const { adventure, questIds, questById, openUnsolved } = useAdventure();
+  const closures = useClosures();
   const count = progress.completedQuests.length;
   const total = questIds.length;
+  // Where the hunt picks up: the current mystery, or the first open one if that is solved or closed.
+  const open = openUnsolved(progress.completedQuests, closures);
+  const nextId = progress.status === "completed" ? undefined : open.includes(progress.currentQuest) ? progress.currentQuest : open[0];
 
   const go = () => {
     startAdventure();
-    navigate({ name: "quest", id: progress.currentQuest });
+    navigate({ name: "quest", id: nextId ?? progress.currentQuest });
   };
   // A new hunt always begins by choosing the adventure; nothing is assumed.
   const choose = () => navigate({ name: "adventures", start: true });
@@ -47,6 +52,7 @@ export function StartScreen() {
       primary = { label: "START THE HUNT", onClick: choose };
   }
   const finished = progress.status === "ended_early" || progress.status === "completed";
+  const resuming = progress.status === "in_progress" || progress.status === "ended_early";
   // Before a hunt begins, the adventure isn't chosen yet (it is on the next screen).
   const fresh = progress.status === "not_started";
 
@@ -58,7 +64,16 @@ export function StartScreen() {
       </Eyebrow>
       <Title className="text-4xl">{heading}</Title>
       <p className="text-lg leading-relaxed">{copy}</p>
-      {finished && <ProgressDots completed={progress.completedQuests} />}
+      {(finished || resuming) && (
+        <div className="flex justify-center">
+          <ProgressDots completed={progress.completedQuests} current={resuming ? nextId : undefined} />
+        </div>
+      )}
+      {resuming && nextId != null && (
+        <p className="text-lg">
+          Next mystery: <strong>Gallery {questById(nextId)!.gallery}</strong>
+        </p>
+      )}
       {!fresh && adventure.launchStatus === "field_test_required" && (
         <p className="rounded-2xl bg-paper-deep px-4 py-2 text-base">
           This adventure is new and still being tested at the museum. If a room is closed or hard to find, skip that mystery or

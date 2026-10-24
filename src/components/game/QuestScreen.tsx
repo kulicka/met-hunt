@@ -63,6 +63,8 @@ export function QuestScreen({ id }: { id: number }) {
   const chapter = chapterOf(id);
   const extras = bonusAt(id).filter((b) => !progress.bonusFound?.includes(b.id));
   const closed = isGalleryClosed(quest.gallery, closures);
+  // Stuck on an open mystery: move on to the next one and come back to this later.
+  const skipTo = !bonus && !closed && !solved ? nextUnsolved(id, progress.completedQuests, closures) : null;
 
   function discardPhoto() {
     if (photo.current) URL.revokeObjectURL(photo.current.url);
@@ -387,6 +389,20 @@ export function QuestScreen({ id }: { id: number }) {
           <Button variant="quiet" className="mx-auto" onClick={() => setPhase({ kind: "grownup" })}>
             Continue without a photo
           </Button>
+          {skipTo != null && (
+            <Button
+              variant="quiet"
+              className="mx-auto"
+              onClick={() => {
+                // Nothing is lost: the mystery stays unsolved and comes round again after the others.
+                trackQuest("quest_skipped", id, { reason: "user_switched" });
+                playQuest(skipTo);
+                navigate({ name: "next", from: id });
+              }}
+            >
+              Stuck? Skip this one for now
+            </Button>
+          )}
         </>
       )}
       {extras.map((b) => (

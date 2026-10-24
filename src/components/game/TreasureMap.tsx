@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useRef } from "react";
-import { TransformComponent, TransformWrapper, type ReactZoomPanPinchContentRef } from "react-zoom-pan-pinch";
+import { useMemo } from "react";
+import { TransformComponent, TransformWrapper } from "react-zoom-pan-pinch";
 import type { ClosureOverride } from "@/data/closures";
 import type { FloorMap, GalleryConnection, GalleryNode } from "@/data/maps/types";
 import { isGalleryClosed } from "@/lib/closures";
@@ -106,28 +106,20 @@ interface Props {
   current?: number;
   /** Verified walk to emphasize (from the last solved gallery to the next one). */
   emphasis?: string[] | null;
-  /** Quest to center on. */
-  focus?: number;
   onSelect: (questId: number) => void;
 }
 
 /** Only for adventures with a map (AdventureContent.hasRoutes). */
-export function TreasureMap({ completed, closures, current, emphasis, focus, onSelect }: Props) {
+export function TreasureMap({ completed, closures, current, emphasis, onSelect }: Props) {
   const adv = useAdventure();
-  const { map, questById, questByGallery, questNumber } = adv;
+  const { map, questByGallery, questNumber } = adv;
   const g = useMemo(() => geometry(map!), [map]);
   const { width: MAP_W, height: MAP_H, box } = g;
-  const zoom = useRef<ReactZoomPanPinchContentRef>(null);
-  const focusGallery = focus ? questById(focus)?.gallery : undefined;
 
-  useEffect(() => {
-    if (!focusGallery) return;
-    const t = setTimeout(() => zoom.current?.zoomToElement(`room-${focusGallery}`, 1.9, 500), 150);
-    return () => clearTimeout(t);
-  }, [focusGallery]);
-
+  // Opens zoomed out, so the whole floor and the highlighted walk are in view;
+  // players pinch or double-tap to look closer.
   return (
-    <TransformWrapper ref={zoom} minScale={1} maxScale={3.5} centerOnInit doubleClick={{ mode: "zoomIn" }}>
+    <TransformWrapper minScale={1} maxScale={3.5} centerOnInit doubleClick={{ mode: "zoomIn" }}>
       <TransformComponent wrapperClass="!w-full rounded-2xl border border-line bg-card/60" contentClass="!w-full">
         <svg
           className="tmap block h-auto w-full touch-none select-none"
