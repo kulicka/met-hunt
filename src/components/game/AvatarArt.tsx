@@ -154,6 +154,9 @@ const art: Record<string, ReactElement> = {
   ),
   koti: (
     <g>
+      <path d="M32 110 Q12 104 14 86 Q16 72 28 74 Q34 76 30 82" fill="none" stroke={INK} strokeWidth={7} strokeLinecap="round" />
+      <path d="M38 48 L34 18 L58 36 Z M82 48 L86 18 L62 36 Z" fill="#1d1b19" {...line} />
+      <path d="M40 40 L38 25 L50 35 Z M80 40 L82 25 L70 35 Z" fill="#e8a0b4" />
       <path d="M36 62 Q34 36 60 34 Q86 36 84 62 L86 96 L34 96 Z" fill="#e8c14a" {...line} />
       <path d="M28 112 Q32 86 60 84 Q88 86 92 112 Z" fill="#b5dca6" {...line} />
       <path d="M50 85 L60 100 L70 85" fill="none" {...line} />
