@@ -125,7 +125,7 @@ export function NotebookScreen() {
                 className="flex h-full min-h-44 w-full flex-col items-center gap-1 rounded-3xl border border-line bg-card p-3 text-center shadow-[0_1px_2px_rgb(13_13_16/0.04),0_12px_30px_-22px_rgb(13_13_16/0.3)] hover:border-ink/40 focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-burgundy"
               >
                 <StampSlot questId={id} size={76} />
-                <span className="font-mono text-xs font-medium uppercase tracking-[0.12em] text-gold">
+                <span className="font-mono text-[11px] font-medium uppercase tracking-[0.08em] text-gold">
                   {isExtra ? "★ Bonus" : `#${n}`} · Gallery {quest.gallery}
                 </span>
                 <span className="font-display text-lg font-semibold leading-tight">{reveal?.hiddenObject ?? "Treasure found"}</span>

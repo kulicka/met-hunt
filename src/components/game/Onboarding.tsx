@@ -6,7 +6,7 @@ import { AGE_CHOICES, type AgeChoice } from "@/lib/adventure";
 import { finishOnboarding, setAge, setAvatar, useProfile } from "@/lib/profile";
 import { playQuest, useProgress } from "@/lib/progress";
 import { AvatarArt } from "./AvatarArt";
-import { navigate } from "./router";
+import { goBack, navigate } from "./router";
 import { Button, Eyebrow, Screen, Title } from "./ui";
 
 // First launch: age, then explorer, then ready. The adventure is chosen right
@@ -140,7 +140,7 @@ export function EditProfile({ field }: { field: "explorer" | "age" }) {
       <Title>{field === "explorer" ? "Change Explorer" : "Edit Age"}</Title>
       <p className="text-ink-soft">Your treasures and progress stay just as they are.</p>
       {field === "explorer" ? <ExplorerPicker value={profile.avatarId} onPick={setAvatar} /> : <AgePicker value={profile.age} onPick={setAge} />}
-      <Button onClick={() => history.back()}>DONE</Button>
+      <Button onClick={goBack}>DONE</Button>
     </Screen>
   );
 }

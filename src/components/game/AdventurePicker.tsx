@@ -77,10 +77,11 @@ export function AdventurePickerScreen({ start = false }: { start?: boolean }) {
   const go = () => {
     if (!choice) return;
     setAdventure(choice);
-    if (!firstTime) return navigate({ name: "start" }, { replace: true });
-    // They already tapped START THE HUNT, so go straight to the first mystery
-    // (or where an older save left off).
     const p = getProgress();
+    // Switching to a hunt already under way shows its welcome-back screen. Anything
+    // else (they tapped START THE HUNT, or picked one not begun yet) goes straight
+    // to the first mystery (or where an older save left off): they have just chosen.
+    if (!firstTime && p.status !== "not_started") return navigate({ name: "start" }, { replace: true });
     if (p.status === "completed") return navigate({ name: "start" }, { replace: true });
     playQuest(p.currentQuest);
     navigate({ name: "quest", id: p.currentQuest }, { replace: true });
@@ -95,7 +96,11 @@ export function AdventurePickerScreen({ start = false }: { start?: boolean }) {
       <AdventureList value={choice} onPick={setChoice} />
       <div className="sticky bottom-0 -mx-5 flex flex-col gap-2 border-t border-line bg-paper/85 px-5 pb-4 pt-3 backdrop-blur-md">
         <Button disabled={!choice} className="disabled:opacity-40" onClick={go}>
-          {firstTime ? (choice ? "START THE HUNT" : "PICK AN ADVENTURE") : choice === profile.adventureId ? "BACK TO MY ADVENTURE" : "PLAY THIS ADVENTURE"}
+          {firstTime ? (choice ? "START THE HUNT" : "PICK AN ADVENTURE") : choice === profile.adventureId
+              ? "BACK TO MY ADVENTURE"
+              : getProgressFor(choice!)?.status === "not_started"
+                ? "START THIS ADVENTURE"
+                : "PLAY THIS ADVENTURE"}
         </Button>
       </div>
     </Screen>

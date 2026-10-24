@@ -53,7 +53,7 @@ export function Dialog({
     <dialog
       ref={ref}
       aria-labelledby={labelledBy}
-      className="m-auto w-[calc(100%-2rem)] max-w-md rounded-3xl border border-line bg-card p-0 text-ink shadow-[0_30px_80px_-20px_rgb(13_13_16/0.45)] backdrop:bg-ink/40 backdrop:backdrop-blur-sm"
+      className="m-auto max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] max-w-md overflow-y-auto overscroll-contain rounded-3xl border border-line bg-card p-0 text-ink shadow-[0_30px_80px_-20px_rgb(13_13_16/0.45)] backdrop:bg-ink/40 backdrop:backdrop-blur-sm"
       onClick={(e) => {
         if (e.target === ref.current) onClose(); // tap on the backdrop
       }}

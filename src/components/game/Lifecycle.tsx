@@ -82,7 +82,7 @@ export function GameBar() {
     navigate(route);
   };
 
-  const item = "flex min-h-12 w-full items-center rounded-2xl px-3 text-left text-lg hover:bg-paper";
+  const item = "flex min-h-11 w-full items-center rounded-2xl px-3 text-left text-lg hover:bg-paper";
   return (
     <>
       <div className="mx-auto w-full max-w-md px-4 pt-3">
@@ -132,7 +132,9 @@ export function GameBar() {
           {progress.status === "in_progress" && (
             <button type="button" className={item} onClick={() => setSheet("end")}>End Adventure</button>
           )}
-          <button type="button" className={`${item} text-burgundy`} onClick={() => setSheet("restart")}>Restart Adventure</button>
+          {progress.status !== "not_started" && (
+            <button type="button" className={`${item} text-burgundy`} onClick={() => setSheet("restart")}>Restart Adventure</button>
+          )}
         </nav>
         <Button variant="secondary" onClick={close}>
           Close
