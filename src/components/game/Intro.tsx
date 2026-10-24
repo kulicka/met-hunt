@@ -19,6 +19,8 @@ export function StartScreen() {
     startAdventure();
     navigate({ name: "quest", id: progress.currentQuest });
   };
+  // A new hunt always begins by choosing the adventure; nothing is assumed.
+  const choose = () => navigate({ name: "adventures", start: true });
 
   let heading: string;
   let copy: string;
@@ -42,20 +44,22 @@ export function StartScreen() {
     default:
       heading = `Ready for another adventure, ${avatar.displayName}?`;
       copy = "Somewhere inside each gallery, a tiny detail is hiding in plain sight. Read the clue. Look carefully. Find the treasure.";
-      primary = { label: "START THE HUNT", onClick: go };
+      primary = { label: "START THE HUNT", onClick: choose };
   }
   const finished = progress.status === "ended_early" || progress.status === "completed";
+  // Before a hunt begins, the adventure isn't chosen yet (it is on the next screen).
+  const fresh = progress.status === "not_started";
 
   return (
     <Screen className="min-h-dvh justify-center text-center">
       <AvatarArt asset={avatar.imageAsset} size={112} className="mx-auto" />
       <Eyebrow>
-        The Met · {adventure.title}
+        The Met · {fresh ? "Hidden Treasures" : adventure.title}
       </Eyebrow>
       <Title className="text-4xl">{heading}</Title>
       <p className="text-lg leading-relaxed">{copy}</p>
       {finished && <ProgressDots completed={progress.completedQuests} />}
-      {adventure.launchStatus === "field_test_required" && (
+      {!fresh && adventure.launchStatus === "field_test_required" && (
         <p className="rounded-2xl bg-paper-deep px-4 py-2 text-base">
           This adventure is new and still being tested at the museum. If a room is closed or hard to find, skip that mystery or
           ask a guard.
@@ -76,9 +80,11 @@ export function StartScreen() {
         )}
       </div>
       <div className="mt-4 flex flex-wrap justify-center gap-x-4">
-        <Button variant="quiet" onClick={() => navigate({ name: "adventures" })}>
-          Switch Adventure
-        </Button>
+        {!fresh && (
+          <Button variant="quiet" onClick={() => navigate({ name: "adventures" })}>
+            Switch Adventure
+          </Button>
+        )}
         <Button variant="quiet" onClick={() => navigate({ name: "explorer" })}>
           Change Explorer
         </Button>

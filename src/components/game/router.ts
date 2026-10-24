@@ -19,7 +19,8 @@ export type Route =
   | { name: "entry"; id: number; fresh?: boolean }
   | { name: "certificate" }
   | { name: "age" }
-  | { name: "adventures" };
+  /** `start`: picking which hunt to begin (after START THE HUNT), not switching mid-hunt. */
+  | { name: "adventures"; start?: boolean };
 
 export function parseRoute(hash: string): Route {
   const [path, query = ""] = hash.replace(/^#\/?/, "").split("?");
@@ -34,8 +35,9 @@ export function parseRoute(hash: string): Route {
     case "explorer":
     case "age":
     case "certificate":
-    case "adventures":
       return { name };
+    case "adventures":
+      return params.get("start") === "1" ? { name, start: true } : { name };
     case "entry":
       return num(arg) ? { name, id: num(arg)!, fresh: params.get("new") === "1" } : { name: "collection" };
     case "quest":
@@ -68,6 +70,8 @@ export function routeHash(route: Route): string {
       const q = params.toString();
       return `#/map${q ? `?${q}` : ""}`;
     }
+    case "adventures":
+      return route.start ? "#/adventures?start=1" : "#/adventures";
     default:
       return `#/${route.name}`;
   }

@@ -48,7 +48,7 @@ function screenFor(route: Route) {
     case "certificate":
       return <CertificateScreen />;
     case "adventures":
-      return <AdventurePickerScreen />;
+      return <AdventurePickerScreen key={route.start ? "start" : "switch"} start={route.start} />;
   }
 }
 
