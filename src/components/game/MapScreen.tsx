@@ -38,6 +38,12 @@ export function MapScreen({ focus, from }: Props) {
   const [selected, setSelected] = useState<number | null>(null);
   const [reveals, setReveals] = useState<QuestReveal[] | null>(null);
 
+  // No adventure picked and begun yet (an old link, or after a restart): pick one first.
+  const notStarted = progress.status === "not_started";
+  useEffect(() => {
+    if (notStarted) navigate({ name: "adventures", start: true }, { replace: true });
+  }, [notStarted]);
+
   // Solved markers say what was found, so answers for solved quests are needed here.
   useEffect(() => {
     if (progress.completedQuests.length) loadReveals().then(setReveals, () => {});
@@ -80,6 +86,8 @@ export function MapScreen({ focus, from }: Props) {
     upcoming: "○ Still to discover",
     closed: "🔒 Temporarily closed",
   };
+
+  if (notStarted) return null;
 
   return (
     <Screen>
