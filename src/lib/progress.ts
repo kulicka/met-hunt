@@ -1,10 +1,12 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
-import { hiddenTreasuresPack } from "@/data/hidden-treasures/pack";
+import { adventures } from "@/adventures/registry";
+import type { Adventure } from "@/adventures/types";
 import {
   begin,
   endEarly,
+  solveBonus,
   freshAdventure,
   parseAdventure,
   restart,
@@ -12,73 +14,105 @@ import {
   type AdventureState,
   type VerificationMethod,
 } from "./adventure";
+import { activeAdventure, contentFor } from "./content";
+import { subscribeProfile } from "./profile";
 
-// Local-only adventure progress. Never holds photos, names, emails, or locations.
-// The player profile (age, explorer) is stored separately in profile.ts.
+// Local-only adventure progress, one record per adventure, so switching
+// adventures never loses anything. Never holds photos, names, emails, or
+// locations. The player profile (age, explorer, chosen adventure) is stored
+// separately in profile.ts. Everything below acts on the chosen adventure.
 
 export type { AdventureState, VerificationMethod } from "./adventure";
 
-const KEY = "met-hidden-treasures:adventure:v2";
-const LEGACY_KEY = "met-hidden-treasures:progress:v1";
-const questIds = hiddenTreasuresPack.questIds;
-const firstQuest = questIds[0];
+export const progressKey = (adventureId: string) => `met-hidden-treasures:adventure:v3:${adventureId}`;
 
-export const initialProgress: AdventureState = freshAdventure(firstQuest);
+/** Shown during server render, before localStorage can be read. */
+export const initialProgress: AdventureState = freshAdventure(adventures[0].quests[0].id);
 
-let current: AdventureState = initialProgress;
-let loaded = false;
+const states = new Map<string, AdventureState>();
 const listeners = new Set<() => void>();
-const observers = new Set<(prev: AdventureState, next: AdventureState) => void>();
+const observers = new Set<(adventureId: string, prev: AdventureState, next: AdventureState) => void>();
 
-function load() {
-  if (loaded || typeof window === "undefined") return;
-  loaded = true;
+
+function write(adventureId: string, state: AdventureState) {
   try {
-    const raw = window.localStorage.getItem(KEY) ?? window.localStorage.getItem(LEGACY_KEY);
-    if (raw) current = parseAdventure(JSON.parse(raw), questIds);
+    window.localStorage.setItem(progressKey(adventureId), JSON.stringify(state));
   } catch {
-    // Storage blocked (private mode) or unreadable: start fresh for this visit.
+    // Storage blocked (private mode) or full: progress lasts for this visit only.
   }
 }
 
-function persist() {
-  try {
-    window.localStorage.setItem(KEY, JSON.stringify(current));
-  } catch {
-    // ignore, see load()
-  }
+function parse(a: Adventure, raw: unknown) {
+  const c = contentFor(a);
+  return parseAdventure(raw, c.questIds, c.extraIds);
 }
 
-export function getProgress(): AdventureState {
-  load();
-  return current;
+function load(a: Adventure): AdventureState {
+  const known = states.get(a.id);
+  if (known) return known;
+  let state = freshAdventure(a.quests[0].id);
+  if (typeof window === "undefined") return state;
+  try {
+    const raw = window.localStorage.getItem(progressKey(a.id));
+    if (raw) {
+      state = parse(a, JSON.parse(raw));
+    } else {
+      // A hunt saved before adventures were pluggable: copy it over once, and
+      // leave the old record where it is so nothing is ever lost.
+      const legacy = a.legacyProgressKeys?.map((k) => window.localStorage.getItem(k)).find((v) => v != null);
+      if (legacy) {
+        state = parse(a, JSON.parse(legacy));
+        write(a.id, state);
+      }
+    }
+  } catch {
+    // Unreadable: start fresh for this visit.
+  }
+  states.set(a.id, state);
+  return state;
+}
+
+/** Progress in the chosen adventure. */
+export const getProgress = (): AdventureState => load(activeAdventure().adventure);
+
+/** Progress in any adventure, e.g. for the adventure picker. */
+export function getProgressFor(adventureId: string): AdventureState | undefined {
+  const a = adventures.find((x) => x.id === adventureId);
+  return a && load(a);
 }
 
 export function updateProgress(change: (p: AdventureState) => AdventureState) {
-  load();
-  const next = change(current);
-  if (next === current) return;
-  const prev = current;
-  current = next;
-  persist();
-  observers.forEach((o) => o(prev, next));
+  const a = activeAdventure().adventure;
+  const prev = load(a);
+  const next = change(prev);
+  if (next === prev) return;
+  states.set(a.id, next);
+  write(a.id, next);
+  observers.forEach((o) => o(a.id, prev, next));
   listeners.forEach((l) => l());
 }
 
-/** Called with the old and new state after every change (analytics derives its events from these). */
-export function observeProgress(observer: (prev: AdventureState, next: AdventureState) => void) {
+/** Called with the adventure and the old and new state after every change (analytics derives its events from these). */
+export function observeProgress(observer: (adventureId: string, prev: AdventureState, next: AdventureState) => void) {
   observers.add(observer);
   return () => observers.delete(observer);
 }
 
 function subscribe(listener: () => void) {
   listeners.add(listener);
-  return () => listeners.delete(listener);
+  // Choosing another adventure changes which progress is current.
+  const unsubscribeProfile = subscribeProfile(listener);
+  return () => {
+    listeners.delete(listener);
+    unsubscribeProfile();
+  };
 }
 
 export function useProgress(): AdventureState {
   return useSyncExternalStore(subscribe, getProgress, () => initialProgress);
 }
+
+const firstQuest = () => activeAdventure().questIds[0];
 
 /** Start a new adventure or continue an ended one. */
 export const startAdventure = () => updateProgress(begin);
@@ -92,9 +126,13 @@ export const playQuest = (id: number) =>
 
 export const endAdventure = () => updateProgress(endEarly);
 
-/** Clears all hunt progress. Age and explorer are kept. */
-export const restartAdventure = () => updateProgress(() => restart(firstQuest));
+/** Clears this adventure's hunt progress. Age, explorer, and other adventures are kept. */
+export const restartAdventure = () => updateProgress(() => restart(firstQuest()));
 
 export function completeQuest(id: number, method: VerificationMethod, nextQuest: number | null) {
-  updateProgress((p) => solve(p, id, method, nextQuest, questIds));
+  const adv = activeAdventure();
+  updateProgress((p) => (adv.isBonus(id) ? solveBonus(p, id, method) : solve(p, id, method, nextQuest, adv.questIds)));
 }
+
+/** Test hook: forget what was read from storage. */
+export const resetProgressCache = () => states.clear();

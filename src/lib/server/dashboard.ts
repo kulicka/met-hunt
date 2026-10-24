@@ -49,7 +49,7 @@ export async function loadDashboard(f: Filters) {
     q("select * from analytics_routes($1, $2, $3)", w),
     q("select * from analytics_early_exits($1, $2, $3)", w),
     q("select * from analytics_age_groups($1, $2, $3, $4)", [...w, minCohort]),
-    q("select content_pack_version, min(occurred_at) as first_seen from analytics_events where not is_test group by 1 order by 2", []),
+    q("select content_pack_version, min(pack_id) as pack_id, min(occurred_at) as first_seen from analytics_events where not is_test group by 1 order by 2", []),
     q("select count(*)::int as n from analytics_events where is_test and occurred_at >= $1 and occurred_at < $2", w.slice(0, 2)),
   ]);
   return { overview, funnel, quests, verification, routes, exits, ages, versions, testEvents: Number(tests[0]?.n ?? 0), minCohort };
@@ -144,7 +144,7 @@ export function renderDashboard(f: Filters, d: Awaited<ReturnType<typeof loadDas
   ];
 
   const versionOptions = d.versions
-    .map((v) => `<option value="${esc(v.content_pack_version)}"${v.content_pack_version === f.content ? " selected" : ""}>${esc(v.content_pack_version)}</option>`)
+    .map((v) => `<option value="${esc(v.content_pack_version)}"${v.content_pack_version === f.content ? " selected" : ""}>${esc(v.pack_id)} · ${esc(v.content_pack_version)}</option>`)
     .join("");
 
   return `<!doctype html>
@@ -168,7 +168,7 @@ button{background:var(--accent);color:#fff;border-color:var(--accent)}a.btn{text
 <form method="get">
 <label>From<input type="date" name="from" value="${esc(f.from)}"></label>
 <label>To<input type="date" name="to" value="${esc(f.to)}"></label>
-<label>Content version<select name="content"><option value="">All</option>${versionOptions}</select></label>
+<label>Adventure · content version<select name="content"><option value="">All</option>${versionOptions}</select></label>
 <button type="submit">Apply</button>
 <a class="btn" href="/admin/export?${esc(exportQs)}">Download quest table (CSV)</a>
 </form>

@@ -15,13 +15,23 @@ Lucide icons · Anthropic SDK (server-side photo check) · react-zoom-pan-pinch
 
 ## Content
 
-Quest content is data, not UI code, and is split by who may see it:
+The game offers several **adventures**, one per section of the museum, listed in
+[`src/adventures/registry.ts`](src/adventures/registry.ts): European Paintings
+(Floor 2) and the Egyptian Adventure (Floor 1, still `field_test_required`). Players
+pick one after choosing their explorer, can switch any time, and each adventure keeps
+its own progress. To add one, see [docs/adding-an-adventure.md](docs/adding-an-adventure.md).
+
+Quest content is data, not UI code, and is split by who may see it. Per adventure
+(`src/adventures/<adventure>/`):
 
 | File | Contents | Reaches the browser |
 | --- | --- | --- |
-| `src/data/hidden-treasures/quests.ts` | gallery, riddle, hints | yes |
-| `src/data/hidden-treasures/reveals.ts` | artist, title, answer, fact | only after a find, or in grown-up mode |
-| `src/data/hidden-treasures/verification.server.ts` | AI verification targets | never |
+| `index.ts` | the adventure: title, lineup, chapters, map, certificate titles | yes |
+| `quests.ts` | gallery, riddle, hints | yes |
+| `reveals.ts` | artist, title, answer, fact | only after a find, or in grown-up mode |
+| `verification.server.ts` | AI verification targets | never |
+| `versions.ts` | content versions for analytics | yes |
+| `Stamps.tsx` | notebook stamps | only after a find |
 | `src/data/maps/met-floor2-european-paintings.ts` | map nodes, verified doorways, route validations | yes |
 | `data/closures.json` | current temporary gallery closures, read at runtime | yes |
 

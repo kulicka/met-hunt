@@ -1,3 +1,5 @@
+import type { QuestVersion } from "../types";
+
 // Stable content IDs and published versions, for analytics (analytics spec, section 7).
 // Results are compared by these versions, never by display titles or gallery numbers alone.
 //
@@ -10,22 +12,6 @@
 // - IDs are opaque on purpose: they ship to the browser and must not give away answers.
 
 export const CONTENT_PACK_VERSION = "2026.10.22-1";
-
-export interface QuestVersion {
-  questId: number;
-  /** Stable analytics key, e.g. "q01". */
-  key: string;
-  galleryId: number;
-  artworkId: string;
-  hiddenDetailId: string;
-  riddleVersion: string;
-  hintSetVersion: string;
-  artworkAssignmentVersion: string;
-  /** fingerprint() of the riddle lines joined by "\n", as published in riddleVersion. */
-  riddleFingerprint: string;
-  /** fingerprint() of the hints joined by "\n", as published in hintSetVersion. */
-  hintsFingerprint: string;
-}
 
 const v = (questId: number, galleryId: number, riddleFingerprint: string, hintsFingerprint: string): QuestVersion => {
   const n = String(questId).padStart(2, "0");

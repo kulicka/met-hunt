@@ -1,5 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
-import { verificationTargets } from "@/data/hidden-treasures/verification.server";
+import { verificationTarget } from "@/adventures/registry.server";
 import { stripJpegMetadata } from "@/lib/server/image";
 import { checkRateLimit } from "@/lib/server/rate-limit";
 import { isVerifierConfigured, verifyPhoto } from "@/lib/server/verify-photo";
@@ -28,8 +28,10 @@ const outcome = (status: VerificationStatus): VerificationResult => ({
 });
 
 export async function POST(request: Request) {
-  const questId = Number(new URL(request.url).searchParams.get("quest"));
-  const target = verificationTargets.find((t) => t.questId === questId);
+  const params = new URL(request.url).searchParams;
+  const adventureId = params.get("adventure");
+  const questId = Number(params.get("quest"));
+  const target = verificationTarget(adventureId, questId);
   if (!target) return json({ error: "unknown_quest" }, 400);
 
   if (request.headers.get("content-type") !== "image/jpeg") return json({ error: "unsupported_type" }, 415);
@@ -50,12 +52,12 @@ export async function POST(request: Request) {
 
   try {
     const verdict = await verifyPhoto(target, jpeg);
-    console.log("verify: quest", questId, "->", verdict.status);
+    console.log("verify:", adventureId ?? "default", "quest", questId, "->", verdict.status);
     return json(verdict);
   } catch (err) {
     // Never log the photo or the request body. The error's class, HTTP status,
     // API error type and request id are enough to debug and say nothing about the child.
-    console.error("verify: model call failed for quest", questId, describeError(err));
+    console.error("verify: model call failed for", adventureId ?? "default", "quest", questId, describeError(err));
     return json({ error: "verifier_unavailable" }, 503);
   }
 }

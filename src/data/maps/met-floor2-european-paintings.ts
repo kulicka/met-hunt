@@ -1,50 +1,11 @@
 // Original schematic of the Floor 2 European Paintings wing (spec v2, section C).
-// Quest order lives in the quest pack; this file only describes physical space.
-//
-// RULES (spec v2):
-// - Only add a connection after checking it on The Met's current Floor 2 map or on site.
-// - A shared wall, consecutive numbers, or quest order never imply a doorway.
-// - Unknown connectivity is stored with verified: false and is never routed through.
-// - 817 and 818 are NOT directly connected (enforced by a test).
+// Quest order lives in the adventure; this file only describes physical space.
+// The rules for adding doorways are in ./types.ts.
+// 817 and 818 are NOT directly connected (enforced by a test).
 
-export interface GalleryNode {
-  id: string;
-  label: string;
-  /** Room outline in schematic map units (1 unit = 10 px of the official map screenshot). Not GPS. */
-  x: number;
-  y: number;
-  w: number;
-  h: number;
-  /** A hallway: routes run along it rather than through its middle. */
-  kind?: "gallery" | "corridor";
-  isQuestGallery: boolean;
-  floor: number;
-}
+import type { FloorMap, GalleryConnection, GalleryNode, RouteValidation } from "./types";
 
-export interface GalleryConnection {
-  id: string;
-  from: string;
-  to: string;
-  bidirectional: boolean;
-  type: "doorway" | "passage" | "corridor" | "stairs" | "elevator";
-  /** Where the doorway is, in map units, on the wall the two rooms share. */
-  at?: { x: number; y: number };
-  stepFree?: boolean;
-  verified: boolean;
-  source?: string;
-  verifiedAt?: string;
-}
-
-export interface RouteValidation {
-  fromQuestGallery: string;
-  toQuestGallery: string;
-  path: string[];
-  verifiedOn?: string;
-  verifiedBy: "official-map" | "onsite";
-  notes?: string;
-}
-
-const QUEST_GALLERIES = new Set(["810", "815", "816", "817", "818", "819", "821", "822", "824", "825"]);
+export type { GalleryConnection, GalleryNode, RouteValidation } from "./types";
 
 const room = (id: string, x: number, y: number, w: number, h: number, kind: GalleryNode["kind"] = "gallery"): GalleryNode => ({
   id,
@@ -54,7 +15,6 @@ const room = (id: string, x: number, y: number, w: number, h: number, kind: Gall
   w,
   h,
   kind,
-  isQuestGallery: QUEST_GALLERIES.has(id),
   floor: 2,
 });
 
@@ -135,3 +95,14 @@ export const routeValidations: RouteValidation[] = [
   official("822", "824", ["822", "821", "824"]),
   official("824", "825", ["824", "825"]),
 ];
+
+export const floor2EuropeanPaintings: FloorMap = {
+  id: "met-floor2-european-paintings",
+  routeGraphVersion: ROUTE_GRAPH_VERSION,
+  nodes: galleryNodes,
+  connections: galleryConnections,
+  // The quest galleries and Hall 800.
+  view: { x: 31, y: -2, w: 102.6, h: 126 },
+  caption: "SCHEMATIC · LAID OUT LIKE THE MET’S FLOOR 2 MAP",
+  label: "Treasure map of the European Paintings galleries, schematic and not to scale. A list of the same information follows the map.",
+};

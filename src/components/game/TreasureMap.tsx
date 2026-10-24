@@ -1,36 +1,45 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { TransformComponent, TransformWrapper, type ReactZoomPanPinchContentRef } from "react-zoom-pan-pinch";
 import type { ClosureOverride } from "@/data/closures";
-import { galleryConnections, galleryNodes, type GalleryConnection, type GalleryNode } from "@/data/maps/met-floor2-european-paintings";
+import type { FloorMap, GalleryConnection, GalleryNode } from "@/data/maps/types";
 import { isGalleryClosed } from "@/lib/closures";
-import { isQuestClosed, questByGallery, questById, questNumber, questOrder } from "@/lib/content";
-import { findRoute } from "@/lib/routing";
+import { useAdventure, type AdventureContent } from "@/lib/content";
 
-// Scale and the part of the floor shown: the quest galleries and Hall 800. Rooms
-// beyond the edges are drawn too and simply run off the map.
+// Scale of the drawing. The part of the floor shown comes from the map (FloorMap.view);
+// rooms beyond its edges are drawn too and simply run off the map.
 const S = 6;
-const VIEW = { x: 31, y: -2, w: 102.6, h: 126 };
 const PAD_BOTTOM = 34;
 const INSET = 1.6; // px between neighbouring rooms, so walls read as gaps
-const MAP_W = VIEW.w * S;
-const MAP_H = VIEW.h * S + PAD_BOTTOM;
 
-const byId = new Map(galleryNodes.map((n) => [n.id, n]));
-const px = (x: number) => (x - VIEW.x) * S;
-const py = (y: number) => (y - VIEW.y) * S;
-const box = (n: GalleryNode) => ({ x: px(n.x) + INSET, y: py(n.y) + INSET, w: n.w * S - 2 * INSET, h: n.h * S - 2 * INSET });
-const center = (n: GalleryNode) => ({ x: px(n.x + n.w / 2), y: py(n.y + n.h / 2) });
-const edgeBetween = (a: string, b: string) =>
-  galleryConnections.find((c) => (c.from === a && c.to === b) || (c.from === b && c.to === a));
-const doorPoint = (a: string, b: string) => {
-  const at = edgeBetween(a, b)?.at;
-  return at ? { x: px(at.x), y: py(at.y) } : center(byId.get(b)!);
-};
+/** Pixel helpers for one map. */
+function geometry(map: FloorMap) {
+  const view = map.view;
+  const byId = new Map(map.nodes.map((n) => [n.id, n]));
+  const px = (x: number) => (x - view.x) * S;
+  const py = (y: number) => (y - view.y) * S;
+  const center = (n: GalleryNode) => ({ x: px(n.x + n.w / 2), y: py(n.y + n.h / 2) });
+  const edgeBetween = (a: string, b: string) =>
+    map.connections.find((c) => (c.from === a && c.to === b) || (c.from === b && c.to === a));
+  return {
+    width: view.w * S,
+    height: view.h * S + PAD_BOTTOM,
+    byId,
+    px,
+    py,
+    center,
+    box: (n: GalleryNode) => ({ x: px(n.x) + INSET, y: py(n.y) + INSET, w: n.w * S - 2 * INSET, h: n.h * S - 2 * INSET }),
+    doorPoint: (a: string, b: string) => {
+      const at = edgeBetween(a, b)?.at;
+      return at ? { x: px(at.x), y: py(at.y) } : center(byId.get(b)!);
+    },
+  };
+}
+type Geometry = ReturnType<typeof geometry>;
 
 /** Room middle → doorway → room middle. Through a hallway the line follows the hall instead of its middle. */
-function pathD(path: string[]) {
+function pathD({ byId, center, doorPoint }: Geometry, path: string[]) {
   const pts: { x: number; y: number }[] = [];
   path.forEach((id, i) => {
     const n = byId.get(id)!;
@@ -47,24 +56,31 @@ function pathD(path: string[]) {
 
 export type RoomState = "found" | "current" | "upcoming" | "closed";
 
-export function roomState(questId: number, completed: number[], closures: ClosureOverride[], current?: number): RoomState {
+export function roomState(
+  adv: AdventureContent,
+  questId: number,
+  completed: number[],
+  closures: ClosureOverride[],
+  current?: number,
+): RoomState {
   if (completed.includes(questId)) return "found";
-  if (isQuestClosed(questId, closures)) return "closed";
+  if (adv.isQuestClosed(questId, closures)) return "closed";
   return questId === current ? "current" : "upcoming";
 }
 
 /** Verified routes between consecutive open quest galleries. Missing legs are simply not drawn. */
-function huntPaths(closures: ClosureOverride[]): string[][] {
-  const stops = questOrder.filter((g) => !isGalleryClosed(g, closures));
+function huntPaths(adv: AdventureContent, closures: ClosureOverride[]): string[][] {
+  const stops = adv.questOrder.filter((g) => !isGalleryClosed(g, closures));
   const paths: string[][] = [];
   for (let i = 1; i < stops.length; i++) {
-    const route = findRoute(stops[i - 1], stops[i], closures);
+    const route = adv.findRoute(stops[i - 1], stops[i], closures);
     if (route) paths.push(route.path);
   }
   return paths;
 }
 
-function Doorway({ c, closures }: { c: GalleryConnection; closures: ClosureOverride[] }) {
+function Doorway({ g, c, closures }: { g: Geometry; c: GalleryConnection; closures: ClosureOverride[] }) {
+  const { byId, px, py } = g;
   const a = byId.get(c.from);
   if (!a || !c.at) return null;
   const closed = isGalleryClosed(c.from, closures) || isGalleryClosed(c.to, closures) || closures.some((o) => o.connectionId === c.id);
@@ -95,7 +111,12 @@ interface Props {
   onSelect: (questId: number) => void;
 }
 
+/** Only for adventures with a map (AdventureContent.hasRoutes). */
 export function TreasureMap({ completed, closures, current, emphasis, focus, onSelect }: Props) {
+  const adv = useAdventure();
+  const { map, questById, questByGallery, questNumber } = adv;
+  const g = useMemo(() => geometry(map!), [map]);
+  const { width: MAP_W, height: MAP_H, box } = g;
   const zoom = useRef<ReactZoomPanPinchContentRef>(null);
   const focusGallery = focus ? questById(focus)?.gallery : undefined;
 
@@ -112,7 +133,7 @@ export function TreasureMap({ completed, closures, current, emphasis, focus, onS
           className="tmap block h-auto w-full touch-none select-none"
           viewBox={`0 0 ${MAP_W} ${MAP_H}`}
           role="group"
-          aria-label="Treasure map of the European Paintings galleries, schematic and not to scale. A list of the same information follows the map."
+          aria-label={map!.label}
         >
           <defs>
             <filter id="ink">
@@ -124,10 +145,10 @@ export function TreasureMap({ completed, closures, current, emphasis, focus, onS
             </pattern>
           </defs>
 
-          <text className="schematic-label" x={MAP_W / 2} y={MAP_H - 12}>SCHEMATIC · LAID OUT LIKE THE MET’S FLOOR 2 MAP</text>
+          <text className="schematic-label" x={MAP_W / 2} y={MAP_H - 12}>{map!.caption}</text>
 
           <g filter="url(#ink)">
-            {galleryNodes.map((n) => {
+            {map!.nodes.map((n) => {
               const b = box(n);
               const quest = questByGallery(n.id);
               const closed = isGalleryClosed(n.id, closures);
@@ -136,7 +157,7 @@ export function TreasureMap({ completed, closures, current, emphasis, focus, onS
                   <rect key={n.id} className={`room-body room--quiet-body${closed ? " room--blocked-body" : ""}`} x={b.x} y={b.y} width={b.w} height={b.h} rx={6} fill={closed ? "url(#hatch)" : undefined} aria-hidden />
                 );
               }
-              const state = roomState(quest.id, completed, closures, current);
+              const state = roomState(adv, quest.id, completed, closures, current);
               const num = questNumber(quest.id);
               return (
                 <g
@@ -159,21 +180,21 @@ export function TreasureMap({ completed, closures, current, emphasis, focus, onS
                 </g>
               );
             })}
-            {galleryConnections.map((c) => (
-              <Doorway key={c.id} c={c} closures={closures} />
+            {map!.connections.map((c) => (
+              <Doorway key={c.id} g={g} c={c} closures={closures} />
             ))}
           </g>
 
           <g className="route" aria-hidden>
-            {huntPaths(closures).map((p) => (
-              <path key={p.join("-")} d={pathD(p)} />
+            {huntPaths(adv, closures).map((p) => (
+              <path key={p.join("-")} d={pathD(g, p)} />
             ))}
           </g>
-          {emphasis && <path className="route-leg" d={pathD(emphasis)} aria-hidden />}
+          {emphasis && <path className="route-leg" d={pathD(g, emphasis)} aria-hidden />}
 
           {/* Labels sit above the route so the dotted line never hides a gallery number. */}
           <g className="labels" aria-hidden>
-            {galleryNodes.map((n) => {
+            {map!.nodes.map((n) => {
               const b = box(n);
               const quest = questByGallery(n.id);
               const closed = isGalleryClosed(n.id, closures);
@@ -185,7 +206,7 @@ export function TreasureMap({ completed, closures, current, emphasis, focus, onS
                   </g>
                 );
               }
-              const state = roomState(quest.id, completed, closures, current);
+              const state = roomState(adv, quest.id, completed, closures, current);
               return (
                 <g key={n.id} className={`room room--${state}`}>
                   <text className="num" x={b.x + b.w / 2} y={b.y + b.h / 2 + 2}>{n.label}</text>

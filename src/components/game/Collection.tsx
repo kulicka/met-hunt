@@ -3,8 +3,8 @@
 import { useEffect, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { isGalleryClosed, useClosures } from "@/lib/closures";
-import type { QuestReveal } from "@/data/types";
-import { loadReveals, openUnsolved, pack, questById } from "@/lib/content";
+import type { QuestReveal } from "@/adventures/types";
+import { useAdventure } from "@/lib/content";
 import { useAvatar } from "@/lib/profile";
 import { startAdventure, useProgress } from "@/lib/progress";
 import { AvatarArt } from "./AvatarArt";
@@ -13,18 +13,20 @@ import { navigate } from "./router";
 import { Button, Card, Eyebrow, ProgressDots, Screen, Title } from "./ui";
 
 export function FinalScreen() {
+  const { adventure, questIds, questById, openUnsolved, loadReveals } = useAdventure();
   const progress = useProgress();
   const closures = useClosures();
   const avatar = useAvatar();
   const reduce = useReducedMotion();
-  const total = pack.questIds.length;
+  const total = questIds.length;
+  const stars = progress.bonusFound?.length ?? 0;
   const found = progress.completedQuests.length;
-  const closed = pack.questIds.filter((id) => !progress.completedQuests.includes(id) && isGalleryClosed(questById(id)!.gallery, closures)).length;
+  const closed = questIds.filter((id) => !progress.completedQuests.includes(id) && isGalleryClosed(questById(id)!.gallery, closures)).length;
   const remaining = openUnsolved(progress.completedQuests, closures);
   const [reveals, setReveals] = useState<QuestReveal[] | null>(null);
   useEffect(() => {
     if (found) loadReveals().then(setReveals, () => {});
-  }, [found]);
+  }, [found, loadReveals]);
 
   if (progress.status === "in_progress" && remaining.length) {
     // Not finished yet; send them to what is left.
@@ -51,7 +53,8 @@ export function FinalScreen() {
         <p className="font-display text-3xl font-semibold">
           {found} / {total} mysteries solved
         </p>
-        <Certificate avatarAsset={avatar.imageAsset} name={avatar.displayName} title="Legendary Art Detective" />
+        {stars > 0 && <p className="text-lg font-semibold text-gold">★ Plus {stars} bonus {stars === 1 ? "star" : "stars"}!</p>}
+        <Certificate avatarAsset={avatar.imageAsset} name={avatar.displayName} title={titleCase(adventure.certificate.fullTitle)} />
         <Button onClick={() => navigate({ name: "certificate" })}>VIEW DETECTIVE CERTIFICATE</Button>
         <Button variant="secondary" onClick={() => navigate({ name: "collection" })}>
           OPEN MY NOTEBOOK
@@ -74,7 +77,7 @@ export function FinalScreen() {
       </div>
       {reveals && found > 0 && (
         <ul aria-label="Treasures you found" className="flex flex-wrap justify-center gap-2">
-          {pack.questIds
+          {questIds
             .filter((id) => progress.completedQuests.includes(id))
             .map((id) => (
               <li key={id} className="rounded-full border border-line bg-card px-3 py-1 text-sm font-semibold">
@@ -91,7 +94,7 @@ export function FinalScreen() {
       <Certificate
         avatarAsset={avatar.imageAsset}
         name={avatar.displayName}
-        title="Explorer of Hidden Treasures"
+        title={titleCase(adventure.certificate.partialTitle)}
         detail={found ? `${found} of ${total} hidden treasures discovered` : "Began a museum adventure"}
       />
       <Button onClick={() => navigate({ name: "certificate" })}>VIEW MY CERTIFICATE</Button>
@@ -111,6 +114,8 @@ export function FinalScreen() {
     </Screen>
   );
 }
+
+const titleCase = (s: string) => s.toLowerCase().replace(/\b(\w)(\w*)/g, (_, a: string, b: string) => (["of", "the"].includes(a + b) ? a + b : a.toUpperCase() + b));
 
 function Certificate({ avatarAsset, name, title, detail }: { avatarAsset: string; name: string; title: string; detail?: string }) {
   return (

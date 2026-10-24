@@ -1,7 +1,9 @@
+import type { Adventure } from "@/adventures/types";
 import type { AdventureStatus } from "./adventure";
 
-// What the keepsake certificate says. The top title is only for all ten finds;
-// anything else gets truthful partial wording, including at zero.
+// What the keepsake certificate says. The top title is only for finding every
+// treasure in the adventure; anything else gets truthful partial wording,
+// including at zero. The titles come from the adventure.
 
 export interface CertificateText {
   kind: "full" | "explorer";
@@ -18,13 +20,14 @@ export function certificateText(
   a: { status: AdventureStatus; completedQuests: number[]; endedAt?: string; completedAt?: string },
   total: number,
   name: string,
+  titles: Adventure["certificate"],
   now = new Date().toISOString(),
 ): CertificateText {
   const n = a.completedQuests.length;
   if (a.status === "completed" && n === total) {
     return {
       kind: "full",
-      title: "LEGENDARY ART DETECTIVE",
+      title: titles.fullTitle,
       statement: `This certifies that ${name} discovered all ${total} hidden treasures at The Met.`,
       countLine: `${total}/${total} treasures discovered`,
       date: a.completedAt ?? now,
@@ -38,7 +41,7 @@ export function certificateText(
         : `${name} has discovered ${treasures(n)} so far on a museum adventure.`;
   return {
     kind: "explorer",
-    title: "EXPLORER OF HIDDEN TREASURES",
+    title: titles.partialTitle,
     statement,
     countLine: n > 0 ? `${n} of ${total} treasures discovered` : undefined,
     date: (a.status === "ended_early" && a.endedAt) || now,

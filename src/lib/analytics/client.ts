@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useSyncExternalStore } from "react";
-import { CONTENT_PACK_VERSION, questVersion } from "@/data/hidden-treasures/versions";
+import { adventureIds, LEGACY_ADVENTURE_ID } from "@/adventures/registry";
 import type { AdventureState } from "@/lib/adventure";
+import { activeAdventure, contentFor, resolveAdventure, type AdventureContent } from "@/lib/content";
 import { getProfile } from "@/lib/profile";
 import { getProgress, observeProgress } from "@/lib/progress";
 import { activity, setVisible, startClock, tick, type ClockState } from "./clock";
@@ -24,12 +25,16 @@ import {
 // - Nothing is recorded or sent until a grown-up turns it on in the grown-ups
 //   area, and only when the server says analytics is enabled.
 // - Turning it off deletes the local queue and timers at once; nothing more is sent.
-// - Events carry a random adventure id (new for every new adventure) and a random
-//   visit id. Never a name, the explorer, a photo, free text, or a location.
+// - Events carry a random adventure id (new for every new play-through) and a random
+//   visit id, plus which adventure pack is being played (pack_id). Never a name,
+//   the explorer, a photo, free text, or a location.
+// - Timers and play-through ids are kept per adventure pack, like progress.
 
 const CONSENT_KEY = "met-hidden-treasures:analytics-consent:v1";
 const ENABLED_KEY = "met-hidden-treasures:analytics-enabled:v1";
-const STATE_KEY = "met-hidden-treasures:analytics:v1";
+/** Before adventures were pluggable: one record, for the first adventure. */
+const LEGACY_STATE_KEY = "met-hidden-treasures:analytics:v1";
+const stateKey = (packId: string) => `met-hidden-treasures:analytics:v2:${packId}`;
 const QUEUE_KEY = "met-hidden-treasures:analytics-queue:v1";
 const SESSION_KEY = "met-hidden-treasures:analytics-session:v1";
 /** Bump when the grown-up notice changes in a way that needs asking again. */
@@ -169,8 +174,9 @@ export function setAnalyticsConsent(allow: boolean) {
   consent = { status: allow ? "granted" : "declined", decidedAt: new Date().toISOString(), noticeVersion: NOTICE_VERSION };
   write(CONSENT_KEY, consent);
   if (allow) {
-    state = freshState();
-    saveState();
+    // Fresh ids for every adventure: nothing links back to before this consent.
+    forgetStates();
+    resetState(activeAdventure().adventure.id);
     track("analytics_consent_changed", { consent: "granted" });
   } else {
     clearLocalData(); // opt-out is immediate: nothing queued is ever sent
@@ -181,39 +187,65 @@ export function setAnalyticsConsent(allow: boolean) {
 /** Deletes everything analytics keeps on this phone (queue, timers, ids). The consent choice itself stays. */
 export function clearLocalData() {
   queue = [];
-  state = null;
   write(QUEUE_KEY, null);
-  write(STATE_KEY, null);
+  forgetStates();
+}
+
+function forgetStates() {
+  states.clear();
+  clock = null;
+  clockPack = null;
+  write(LEGACY_STATE_KEY, null);
+  for (const id of adventureIds) write(stateKey(id), null);
 }
 
 // ---------- adventure state, clock, queue ----------
 
-let state: State | null = null;
+const states = new Map<string, State>();
+/** The active-time clock runs for one adventure pack at a time: the one being played. */
 let clock: ClockState | null = null;
+let clockPack: string | null = null;
 let queue: AnalyticsEvent[] = [];
 let sessionId = "";
 let errorsThisVisit = 0;
 
-function freshState(): State {
-  clock = startClock(Date.now(), 0, document.visibilityState !== "hidden");
-  return { adventureId: randomId(), activeMs: 0, quests: {} };
+const visible = () => document.visibilityState !== "hidden";
+
+/** A new play-through of `packId`: new id, timers from zero. */
+function resetState(packId: string): State {
+  const s: State = { adventureId: randomId(), activeMs: 0, quests: {} };
+  states.set(packId, s);
+  clock = startClock(Date.now(), 0, visible());
+  clockPack = packId;
+  saveState(packId);
+  return s;
 }
 
-function loadState(): State {
-  if (state) return state;
-  const raw = read<State>(STATE_KEY);
-  const valid = raw && typeof raw.adventureId === "string" && typeof raw.activeMs === "number" && raw.quests && typeof raw.quests === "object";
-  const loaded = valid ? raw : freshState();
-  state = loaded;
-  if (!valid) saveState();
-  clock ??= startClock(Date.now(), loaded.activeMs, document.visibilityState !== "hidden");
-  return loaded;
+function loadState(packId: string): State {
+  let s = states.get(packId);
+  if (!s) {
+    const legacy = packId === LEGACY_ADVENTURE_ID ? read<State>(LEGACY_STATE_KEY) : null;
+    const raw = read<State>(stateKey(packId)) ?? legacy;
+    const valid = raw && typeof raw.adventureId === "string" && typeof raw.activeMs === "number" && raw.quests && typeof raw.quests === "object";
+    if (!valid) return resetState(packId);
+    s = raw;
+    states.set(packId, s);
+    if (raw === legacy) saveState(packId);
+  }
+  if (clockPack !== packId) {
+    // Switched adventures: bank the old one's active time and pick up this one's.
+    if (clockPack) saveState(clockPack);
+    clock = startClock(Date.now(), s.activeMs, visible());
+    clockPack = packId;
+  }
+  return s;
 }
 
-function saveState() {
-  if (!state) return;
-  if (clock) state.activeMs = clock.activeMs;
-  write(STATE_KEY, state);
+function saveState(packId: string | null = clockPack) {
+  const s = packId && states.get(packId);
+  if (!s) return;
+  if (clock && clockPack === packId) s.activeMs = clock.activeMs;
+  write(stateKey(packId), s);
 }
 
 const activeNow = () => {
@@ -221,8 +253,8 @@ const activeNow = () => {
   return clock?.activeMs ?? 0;
 };
 
-function envelope() {
-  const s = loadState();
+function envelope(adv: AdventureContent) {
+  const s = loadState(adv.adventure.id);
   return {
     event_id: randomId(),
     schema_version: SCHEMA_VERSION,
@@ -230,12 +262,13 @@ function envelope() {
     adventure_id: s.adventureId,
     session_id: sessionId || (sessionId = randomId()),
     app_version: APP_VERSION,
-    content_pack_version: CONTENT_PACK_VERSION,
+    pack_id: adv.adventure.id,
+    content_pack_version: adv.adventure.versions.contentPackVersion,
   } as const;
 }
 
-function questFields(questId: number) {
-  const v = questVersion(questId);
+function questFields(adv: AdventureContent, questId: number) {
+  const v = adv.versionOf(questId);
   if (!v) return null;
   return {
     quest_id: v.key,
@@ -254,18 +287,18 @@ function push(event: unknown) {
   scheduleFlush();
 }
 
-/** Record an adventure-level event. Does nothing without consent. */
-export function track<N extends Exclude<AnalyticsEventName, QuestEventName>>(name: N, properties: PropsOf<N>) {
+/** Record an adventure-level event for the adventure being played. Does nothing without consent. */
+export function track<N extends Exclude<AnalyticsEventName, QuestEventName>>(name: N, properties: PropsOf<N>, adv = activeAdventure()) {
   if (!granted()) return;
-  push({ ...envelope(), event_name: name, properties });
+  push({ ...envelope(adv), event_name: name, properties });
 }
 
-/** Record a quest event; quest IDs and content versions are filled in from versions.ts. */
-export function trackQuest<N extends QuestEventName>(name: N, questId: number, properties: PropsOf<N>) {
+/** Record a quest event; quest IDs and content versions are filled in from the adventure's versions. */
+export function trackQuest<N extends QuestEventName>(name: N, questId: number, properties: PropsOf<N>, adv = activeAdventure()) {
   if (!granted()) return;
-  const fields = questFields(questId);
+  const fields = questFields(adv, questId);
   if (!fields) return;
-  push({ ...envelope(), ...fields, event_name: name, properties });
+  push({ ...envelope(adv), ...fields, event_name: name, properties });
 }
 
 // ---------- quest helpers used by screens ----------
@@ -273,12 +306,13 @@ export function trackQuest<N extends QuestEventName>(name: N, questId: number, p
 /** The clue for `questId` is on screen. Starts its active timer the first time. */
 export function questViewed(questId: number, progress: AdventureState) {
   if (!granted()) return;
-  const s = loadState();
+  const packId = activeAdventure().adventure.id;
+  const s = loadState(packId);
   if (!s.quests[questId]) {
     // A quest already part-way when timing begins can't have a complete solve time.
     const partWay = (progress.hintsUsed[questId] ?? 0) > 0 || (progress.attempts[questId] ?? 0) > 0;
     s.quests[questId] = { startActive: activeNow(), startWall: Date.now(), photos: 0, complete: !partWay };
-    saveState();
+    saveState(packId);
   }
   trackQuest("quest_viewed", questId, { already_solved: progress.completedQuests.includes(questId) });
 }
@@ -286,10 +320,11 @@ export function questViewed(questId: number, progress: AdventureState) {
 /** A photo is being sent for checking. Returns the attempt number for the result event. */
 export function photoSubmitted(questId: number, source: "camera" | "library"): number {
   if (!granted()) return 0;
-  const s = loadState();
+  const packId = activeAdventure().adventure.id;
+  const s = loadState(packId);
   const mark = (s.quests[questId] ??= { startActive: activeNow(), startWall: Date.now(), photos: 0, complete: false });
   mark.photos += 1;
-  saveState();
+  saveState(packId);
   trackQuest("quest_photo_submitted", questId, { attempt_number: mark.photos, source });
   return mark.photos;
 }
@@ -310,7 +345,8 @@ export function arrivalConfirmed(questId: number, via: "map" | "next_screen") {
   trackQuest("quest_arrival_confirmed", questId, { via, navigation_ms: navigation });
 }
 
-export const photoAttempts = (questId: number) => (granted() ? (loadState().quests[questId]?.photos ?? 0) : 0);
+export const photoAttempts = (questId: number) =>
+  granted() ? (loadState(activeAdventure().adventure.id).quests[questId]?.photos ?? 0) : 0;
 
 /** Maps an uncaught error to an allowlisted code. Messages and stacks are never sent. */
 export function trackError(err: unknown, component: "global" | "verify" = "global") {
@@ -323,41 +359,45 @@ export function trackError(err: unknown, component: "global" | "verify" = "globa
 
 // ---------- events derived from game state ----------
 
-function onProgress(prev: AdventureState, next: AdventureState) {
+function onProgress(packId: string, prev: AdventureState, next: AdventureState) {
   if (!granted()) return;
+  const adv = contentFor(resolveAdventure(packId));
   for (const c of changes(prev, next)) {
     switch (c.type) {
       case "adventure_started":
         // A brand-new adventure gets a brand-new id.
-        state = freshState();
-        saveState();
-        track("adventure_started", { age_bucket: ageBucket(getProfile().age) });
+        resetState(packId);
+        track("adventure_started", { age_bucket: ageBucket(getProfile().age) }, adv);
         break;
       case "adventure_resumed":
-        track("adventure_resumed", { from: "ended_early" });
+        track("adventure_resumed", { from: "ended_early" }, adv);
         break;
       case "adventure_ended_early": {
-        track("adventure_ended_early", {
-          completed_count: next.completedQuests.length,
-          current_quest_id: questVersion(next.currentQuest)?.key ?? "q01",
-          reason: "user_action",
-          elapsed_ms: elapsed(next.startedAt),
-          active_ms: activeNow(),
-        });
+        track(
+          "adventure_ended_early",
+          {
+            completed_count: next.completedQuests.length,
+            current_quest_id: (adv.versionOf(next.currentQuest) ?? adv.adventure.versions.quests[0]).key,
+            reason: "user_action",
+            elapsed_ms: elapsed(next.startedAt),
+            active_ms: activeNow(),
+          },
+          adv,
+        );
         break;
       }
       case "adventure_completed":
-        track("adventure_completed", {
-          completed_count: next.completedQuests.length,
-          elapsed_ms: elapsed(next.startedAt),
-          active_ms: activeNow(),
-        });
+        track(
+          "adventure_completed",
+          { completed_count: next.completedQuests.length, elapsed_ms: elapsed(next.startedAt), active_ms: activeNow() },
+          adv,
+        );
         break;
       case "quest_hint_opened":
-        trackQuest("quest_hint_opened", c.questId, { hint_level: c.level });
+        trackQuest("quest_hint_opened", c.questId, { hint_level: c.level }, adv);
         break;
       case "quest_completed": {
-        const mark = loadState().quests[c.questId];
+        const mark = loadState(packId).quests[c.questId];
         trackQuest("quest_completed", c.questId, {
           method: c.method,
           hints_used: c.hintsUsed,
@@ -365,7 +405,7 @@ function onProgress(prev: AdventureState, next: AdventureState) {
           active_ms: mark ? Math.round(activeNow() - mark.startActive) : null,
           elapsed_ms: mark ? Math.min(Date.now() - mark.startWall, 7 * 24 * 3600_000) : null,
           timing_complete: !!mark?.complete,
-        });
+        }, adv);
         break;
       }
     }
@@ -382,8 +422,7 @@ function elapsed(startedAt?: string) {
 export function restartConfirmed(prev: AdventureState) {
   if (!granted()) return;
   track("adventure_restart_confirmed", { previous_completed_count: prev.completedQuests.length, previous_status: prev.status });
-  state = freshState();
-  saveState();
+  resetState(activeAdventure().adventure.id);
 }
 
 // ---------- upload ----------
@@ -440,7 +479,7 @@ export function startAnalytics() {
   observeProgress(onProgress);
   refreshEnabled().then(() => {
     if (!granted()) return;
-    loadState();
+    loadState(activeAdventure().adventure.id);
     const progress = getProgress();
     if (!existingSession) {
       const returning = progress.status === "in_progress" || progress.status === "ended_early";
@@ -472,7 +511,7 @@ export function startAnalytics() {
     }
   });
   setInterval(() => {
-    if (!granted() || !state) return;
+    if (!granted() || !clockPack) return;
     activeNow();
     saveState();
     flush();

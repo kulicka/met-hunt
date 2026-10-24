@@ -1,7 +1,7 @@
 import "server-only";
 import Anthropic from "@anthropic-ai/sdk";
 import { z } from "zod";
-import type { VerificationTarget } from "@/data/types";
+import type { VerificationTarget } from "@/adventures/types";
 import { FEEDBACK, type VerificationResult, type VerificationStatus } from "@/lib/verification";
 
 const MODEL = "claude-opus-5-5";
@@ -64,7 +64,7 @@ export async function verifyPhoto(target: VerificationTarget, jpeg: Uint8Array):
           {
             type: "text",
             text: [
-              `Intended artwork: “${target.artwork}” by ${target.artist}.`,
+              `Intended artwork: “${target.artwork}”${target.artist ? ` by ${target.artist}` : ""}.`,
               `Hidden detail: ${target.hiddenObject}.`,
               `What to check: ${target.verificationDescription}`,
             ].join("\n"),

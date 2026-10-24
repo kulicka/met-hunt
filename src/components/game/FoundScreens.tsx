@@ -5,14 +5,16 @@ import { motion, useReducedMotion } from "framer-motion";
 import { ExternalLink, Map as MapIcon } from "lucide-react";
 import { statusFor, useArtworkStatus, withMetData } from "@/lib/artwork-status";
 import { isGalleryClosed, useClosures } from "@/lib/closures";
-import type { QuestReveal } from "@/data/types";
-import { loadReveals, pack, questById, questNumber } from "@/lib/content";
+import type { QuestReveal } from "@/adventures/types";
+import { useAdventure } from "@/lib/content";
 import { endAdventure, useProgress } from "@/lib/progress";
 import { arrivalConfirmed } from "@/lib/analytics/client";
+import { OFFICIAL_MAP_URL } from "@/lib/links";
 import { navigate } from "./router";
 import { Button, Card, Eyebrow, ProgressDots, Screen } from "./ui";
 
 export function useReveal(id: number) {
+  const { adventure, loadReveals } = useAdventure();
   const [reveal, setReveal] = useState<QuestReveal | null>(null);
   const [failed, setFailed] = useState(false);
   useEffect(() => {
@@ -20,9 +22,9 @@ export function useReveal(id: number) {
       (all) => setReveal(all.find((r) => r.id === id) ?? null),
       () => setFailed(true),
     );
-  }, [id]);
+  }, [id, loadReveals]);
   const artworks = useArtworkStatus();
-  return { reveal: reveal && withMetData(reveal, statusFor(artworks, id)), failed };
+  return { reveal: reveal && withMetData(reveal, statusFor(artworks, adventure.id, id)), failed };
 }
 
 /** A few gold sparkles, once. Nothing at all with reduced motion. */
@@ -50,15 +52,18 @@ function Sparkles() {
 }
 
 export function FoundScreen({ id }: { id: number }) {
+  const { questById, questNumber, isFound, isBonus, hasRoutes } = useAdventure();
   const progress = useProgress();
   const closures = useClosures();
   const { reveal, failed } = useReveal(id);
   const quest = questById(id);
+  const found = isFound(progress, id);
+  const bonus = isBonus(id);
 
   useEffect(() => {
     // Only reachable for solved quests.
-    if (quest && !progress.completedQuests.includes(id)) navigate({ name: "quest", id }, { replace: true });
-  }, [id, quest, progress.completedQuests]);
+    if (quest && !found) navigate({ name: "quest", id }, { replace: true });
+  }, [id, quest, found]);
 
   if (!quest) return null;
 
@@ -66,13 +71,16 @@ export function FoundScreen({ id }: { id: number }) {
     const next = progress.currentQuest;
     const open = !progress.completedQuests.includes(next) && !isGalleryClosed(questById(next)!.gallery, closures);
     // When nothing is left (or only closed galleries), the next screen wraps up the hunt.
-    navigate(open ? { name: "map", focus: next, from: id } : { name: "next", from: id }, { replace: true });
+    // Without a verified map, the next screen names the gallery (and any new chapter) instead.
+    navigate(open && hasRoutes ? { name: "map", focus: next, from: id } : { name: "next", from: id }, { replace: true });
   };
 
   return (
     <Screen className="relative text-center">
       <Sparkles />
-      <Eyebrow>Gallery {quest.gallery} · Mystery #{questNumber(id)}</Eyebrow>
+      <Eyebrow>
+        Gallery {quest.gallery} · {bonus ? "Bonus mystery ★" : `Mystery #${questNumber(id)}`}
+      </Eyebrow>
       <h1 className="font-display text-5xl font-semibold">✨ Treasure found! 🎉</h1>
       <p className="font-display text-2xl italic">“That’s the one!”</p>
 
@@ -100,9 +108,15 @@ export function FoundScreen({ id }: { id: number }) {
       )}
 
       <Button onClick={() => navigate({ name: "entry", id, fresh: true }, { replace: true })}>ADD TO MY NOTEBOOK</Button>
-      <Button variant="secondary" onClick={showTheWay}>
-        <MapIcon aria-hidden size={20} /> SHOW ME THE WAY
-      </Button>
+      {bonus ? (
+        <Button variant="secondary" onClick={() => navigate({ name: "quest", id: progress.currentQuest }, { replace: true })}>
+          BACK TO MY MYSTERY
+        </Button>
+      ) : (
+        <Button variant="secondary" onClick={showTheWay}>
+          <MapIcon aria-hidden size={20} /> {hasRoutes ? "SHOW ME THE WAY" : "WHERE NEXT?"}
+        </Button>
+      )}
     </Screen>
   );
 }
@@ -112,10 +126,10 @@ export function ArtworkFigure({ reveal }: { reveal: QuestReveal }) {
     <figure className="mt-3 flex flex-col gap-2">
       {reveal.imageUrl && reveal.openAccess && (
         // eslint-disable-next-line @next/next/no-img-element -- Met Open Access image, shown only after the find
-        <img src={reveal.imageUrl} alt={`${reveal.artwork} by ${reveal.artist}`} className="w-full rounded-2xl border border-line" />
+        <img src={reveal.imageUrl} alt={reveal.artist ? `${reveal.artwork} by ${reveal.artist}` : reveal.artwork} className="w-full rounded-2xl border border-line" />
       )}
       <figcaption className="border-l-2 border-ink pl-3">
-        <span className="block font-semibold">{reveal.artist}</span>
+        {reveal.artist && <span className="block font-semibold">{reveal.artist}</span>}
         <span className="block font-display text-xl italic">
           {reveal.artwork}
           {reveal.year && !reveal.artwork.includes(reveal.year) ? `, ${reveal.year}` : ""}
@@ -127,11 +141,12 @@ export function ArtworkFigure({ reveal }: { reveal: QuestReveal }) {
 }
 
 export function NextScreen({ from }: { from: number }) {
+  const { questIds, questById, chapterOf, hasRoutes } = useAdventure();
   const progress = useProgress();
   const closures = useClosures();
   const reduce = useReducedMotion();
   const next = progress.completedQuests.includes(progress.currentQuest) ? null : progress.currentQuest;
-  const closedLeft = pack.questIds.filter((q) => !progress.completedQuests.includes(q) && isGalleryClosed(questById(q)!.gallery, closures));
+  const closedLeft = questIds.filter((q) => !progress.completedQuests.includes(q) && isGalleryClosed(questById(q)!.gallery, closures));
 
   if (!next || isGalleryClosed(questById(next)!.gallery, closures)) {
     return (
@@ -157,6 +172,9 @@ export function NextScreen({ from }: { from: number }) {
     );
   }
 
+  const chapter = chapterOf(next);
+  const newChapter = chapter && chapter.id !== chapterOf(from)?.id ? chapter : undefined;
+
   return (
     <Screen className="text-center">
       <motion.div
@@ -168,13 +186,34 @@ export function NextScreen({ from }: { from: number }) {
         <ProgressDots completed={progress.completedQuests} current={next} />
       </motion.div>
       <Eyebrow>
-        {progress.completedQuests.length} of {pack.questIds.length} treasures collected
+        {progress.completedQuests.length} of {questIds.length} treasures collected
       </Eyebrow>
+      {newChapter && (
+        <Card>
+          <p className="font-mono text-[13px] font-medium uppercase tracking-[0.14em] text-gold">New chapter</p>
+          <p className="font-display text-3xl font-semibold">{newChapter.title}</p>
+        </Card>
+      )}
       <h1 className="font-display text-4xl font-semibold">Your next mystery</h1>
       <p className="font-display text-6xl font-semibold">Gallery {questById(next)!.gallery}</p>
-      <Button onClick={() => navigate({ name: "map", focus: next, from })}>
-        <MapIcon aria-hidden size={22} /> SHOW ME THE WAY
-      </Button>
+      {hasRoutes ? (
+        <Button onClick={() => navigate({ name: "map", focus: next, from })}>
+          <MapIcon aria-hidden size={22} /> SHOW ME THE WAY
+        </Button>
+      ) : (
+        <>
+          {/* No doorway here is verified yet, so no directions: just the gallery number. */}
+          <p className="text-lg">Look for the gallery number on the wall. A guard or The Met’s map can point the way.</p>
+          <a
+            className="inline-flex min-h-14 w-full items-center justify-center gap-2 rounded-full border border-line bg-card px-6 font-semibold shadow-[0_1px_2px_rgb(13_13_16/0.05)] hover:border-ink/40"
+            href={OFFICIAL_MAP_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <MapIcon aria-hidden size={22} /> OPEN THE MET’S MAP <ExternalLink aria-hidden size={18} />
+          </a>
+        </>
+      )}
       <Button
         variant="secondary"
         onClick={() => {

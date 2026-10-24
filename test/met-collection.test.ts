@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { reveals } from "@/data/hidden-treasures/reveals";
+import { europeanPaintings } from "@/adventures/european-paintings";
+import { reveals } from "@/adventures/european-paintings/reveals";
 import { checkArtwork, isMatch, isStale, normalize } from "@/lib/server/met-collection";
 
 const monet = reveals.find((r) => r.id === 5)!; // View of Vétheuil, quest gallery 818
@@ -48,33 +49,33 @@ describe("artwork check", () => {
 
   it("is ok when on view in the expected gallery, and passes on the public domain image", async () => {
     const { f } = fakeApi([decoy, vetheuil], [437123]);
-    const s = await checkArtwork(f, monet);
+    const s = await checkArtwork(f, europeanPaintings, monet);
     expect(s).toMatchObject({ check: "ok", objectId: 437123, expectedGallery: "818", imageUrl: vetheuil.primaryImageSmall });
   });
 
   it("flags an artwork in another gallery", async () => {
     const { f } = fakeApi([{ ...vetheuil, GalleryNumber: "800" }], [437123]);
-    expect(await checkArtwork(f, monet)).toMatchObject({ check: "moved", galleryNumber: "800" });
+    expect(await checkArtwork(f, europeanPaintings, monet)).toMatchObject({ check: "moved", galleryNumber: "800" });
   });
 
   it("flags an artwork that is not on view", async () => {
     const { f } = fakeApi([vetheuil], []);
-    expect((await checkArtwork(f, monet)).check).toBe("off_view");
+    expect((await checkArtwork(f, europeanPaintings, monet)).check).toBe("off_view");
   });
 
   it("never passes on an image that isn't public domain", async () => {
     const { f } = fakeApi([{ ...vetheuil, isPublicDomain: false }], [437123]);
-    expect((await checkArtwork(f, monet)).imageUrl).toBeUndefined();
+    expect((await checkArtwork(f, europeanPaintings, monet)).imageUrl).toBeUndefined();
   });
 
   it("reports not_found and error without throwing", async () => {
-    expect((await checkArtwork(fakeApi([decoy], []).f, monet)).check).toBe("not_found");
-    expect((await checkArtwork(fakeApi([], [], { fail: true }).f, monet)).check).toBe("error");
+    expect((await checkArtwork(fakeApi([decoy], []).f, europeanPaintings, monet)).check).toBe("not_found");
+    expect((await checkArtwork(fakeApi([], [], { fail: true }).f, europeanPaintings, monet)).check).toBe("error");
   });
 
   it("uses a pinned object id without searching for it", async () => {
     const { f, calls } = fakeApi([vetheuil], [437123]);
-    await checkArtwork(f, { ...monet, metObjectId: 437123 });
+    await checkArtwork(f, europeanPaintings, { ...monet, metObjectId: 437123 });
     expect(calls[0]).toBe("/public/collection/v1/objects/437123");
   });
 

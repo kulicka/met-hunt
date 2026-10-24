@@ -1,14 +1,20 @@
 import { describe, expect, it } from "vitest";
 import type { ClosureOverride } from "@/data/closures";
-import { quests } from "@/data/hidden-treasures/quests";
+import { europeanPaintings } from "@/adventures/european-paintings";
+import { quests } from "@/adventures/european-paintings/quests";
 import {
   galleryConnections,
   galleryNodes,
   routeValidations,
   type GalleryConnection,
 } from "@/data/maps/met-floor2-european-paintings";
-import { nextUnsolved, openUnsolved, questOrder } from "@/lib/content";
-import { findRoute } from "@/lib/routing";
+import { contentFor } from "@/lib/content";
+import { findRoute as findOn } from "@/lib/routing";
+
+const { nextUnsolved, openUnsolved, questOrder } = contentFor(europeanPaintings);
+const map = europeanPaintings.map!;
+const findRoute = (from: string, to: string, closures: ClosureOverride[], connections: GalleryConnection[] = map.connections) =>
+  findOn(from, to, closures, { nodes: map.nodes, connections });
 
 const closed = (...ids: string[]): ClosureOverride[] => ids.map((galleryId) => ({ galleryId, status: "closed" }));
 const door = (from: string, to: string, verified = true): GalleryConnection => ({

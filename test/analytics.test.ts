@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { hiddenTreasuresPack } from "@/data/hidden-treasures/pack";
-import { quests } from "@/data/hidden-treasures/quests";
-import { questVersions } from "@/data/hidden-treasures/versions";
+import { europeanPaintings } from "@/adventures/european-paintings";
+import { quests } from "@/adventures/european-paintings/quests";
+import { questVersions } from "@/adventures/european-paintings/versions";
 import { begin, endEarly, freshAdventure, restart, solve } from "@/lib/adventure";
 import { activity, IDLE_MS, setVisible, startClock, tick } from "@/lib/analytics/clock";
 import { changes } from "@/lib/analytics/derive";
@@ -9,7 +9,7 @@ import { fingerprint } from "@/lib/analytics/fingerprint";
 import { acknowledge, enqueue, parseQueue, QUEUE_MAX_AGE_MS, QUEUE_MAX_EVENTS } from "@/lib/analytics/queue";
 import { ageBucket, AnalyticsEvent, latencyBucket } from "@/lib/analytics/schema";
 
-const ids = hiddenTreasuresPack.questIds;
+const ids = europeanPaintings.quests.map((q) => q.id);
 const NOW = Date.parse("2026-10-23T12:00:00Z");
 
 let n = 0;

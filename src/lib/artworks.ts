@@ -14,6 +14,8 @@ export type ArtworkCheck =
   | "error";
 
 export interface ArtworkStatus {
+  /** Missing in lists cached before adventures were pluggable: those are the first adventure. */
+  adventureId?: string;
   questId: number;
   check: ArtworkCheck;
   expectedGallery: string;

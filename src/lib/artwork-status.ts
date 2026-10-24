@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useSyncExternalStore } from "react";
-import type { QuestReveal } from "@/data/types";
+import { LEGACY_ADVENTURE_ID } from "@/adventures/registry";
+import type { QuestReveal } from "@/adventures/types";
 import type { ArtworkStatus, ArtworkStatusList } from "./artworks";
 
 // The server's latest artwork check: the last one seen on this phone, then a
@@ -77,4 +78,5 @@ export function withMetData(reveal: QuestReveal, status?: ArtworkStatus): QuestR
   };
 }
 
-export const statusFor = (list: ArtworkStatusList, questId: number) => list.artworks.find((a) => a.questId === questId);
+export const statusFor = (list: ArtworkStatusList, adventureId: string, questId: number) =>
+  list.artworks.find((a) => (a.adventureId ?? LEGACY_ADVENTURE_ID) === adventureId && a.questId === questId);

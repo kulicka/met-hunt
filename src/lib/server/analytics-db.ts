@@ -2,7 +2,7 @@ import "server-only";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { Pool } from "pg";
-import { CONTENT_PACK_VERSION, questVersions } from "@/data/hidden-treasures/versions";
+import { adventures, LEGACY_ADVENTURE_ID } from "@/adventures/registry";
 import type { AnalyticsEvent } from "@/lib/analytics/schema";
 
 // Postgres storage for analytics events. Off unless ANALYTICS_ENABLED=on and
@@ -58,16 +58,18 @@ export function ensureSchema(): Promise<void> {
       // Two machines starting together must not replace the same functions at once.
       await client.query("select pg_advisory_xact_lock($1)", [SCHEMA_LOCK]);
       await client.query(sql);
-      for (const q of questVersions) {
-        await client.query(
-          `insert into analytics_content_versions
-             (content_pack_version, quest_id, gallery_id, artwork_id, hidden_detail_id, riddle_version,
-              hint_set_version, artwork_assignment_version, riddle_fingerprint, hints_fingerprint)
-           values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-           on conflict (content_pack_version, quest_id) do nothing`,
-          [CONTENT_PACK_VERSION, q.key, q.galleryId, q.artworkId, q.hiddenDetailId, q.riddleVersion, q.hintSetVersion,
-            q.artworkAssignmentVersion, q.riddleFingerprint, q.hintsFingerprint],
-        );
+      for (const { id, versions } of adventures) {
+        for (const q of versions.quests) {
+          await client.query(
+            `insert into analytics_content_versions
+               (content_pack_version, quest_id, gallery_id, artwork_id, hidden_detail_id, riddle_version,
+                hint_set_version, artwork_assignment_version, riddle_fingerprint, hints_fingerprint, pack_id)
+             values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+             on conflict (content_pack_version, quest_id) do nothing`,
+            [versions.contentPackVersion, q.key, q.galleryId, q.artworkId, q.hiddenDetailId, q.riddleVersion, q.hintSetVersion,
+              q.artworkAssignmentVersion, q.riddleFingerprint, q.hintsFingerprint, id],
+          );
+        }
       }
       await client.query("commit");
     } catch (err) {
@@ -83,7 +85,7 @@ export function ensureSchema(): Promise<void> {
 
 const COLUMNS = [
   "event_id", "event_name", "schema_version", "occurred_at", "adventure_id", "session_id", "app_version",
-  "content_pack_version", "quest_id", "gallery_id", "artwork_id", "hidden_detail_id", "riddle_version",
+  "pack_id", "content_pack_version", "quest_id", "gallery_id", "artwork_id", "hidden_detail_id", "riddle_version",
   "hint_set_version", "artwork_assignment_version", "properties", "is_test",
 ] as const;
 
@@ -96,7 +98,7 @@ export async function insertEvents(events: AnalyticsEvent[], isTest: (e: Analyti
     const q = "quest_id" in e ? e : null;
     const row = [
       e.event_id, e.event_name, e.schema_version, e.occurred_at, e.adventure_id, e.session_id, e.app_version,
-      e.content_pack_version, q?.quest_id ?? null, q?.gallery_id ?? null, q?.artwork_id ?? null,
+      e.pack_id ?? LEGACY_ADVENTURE_ID, e.content_pack_version, q?.quest_id ?? null, q?.gallery_id ?? null, q?.artwork_id ?? null,
       q?.hidden_detail_id ?? null, q?.riddle_version ?? null, q?.hint_set_version ?? null,
       q?.artwork_assignment_version ?? null, JSON.stringify(e.properties), isTest(e),
     ];

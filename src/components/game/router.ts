@@ -18,7 +18,8 @@ export type Route =
   | { name: "explorer" }
   | { name: "entry"; id: number; fresh?: boolean }
   | { name: "certificate" }
-  | { name: "age" };
+  | { name: "age" }
+  | { name: "adventures" };
 
 export function parseRoute(hash: string): Route {
   const [path, query = ""] = hash.replace(/^#\/?/, "").split("?");
@@ -33,6 +34,7 @@ export function parseRoute(hash: string): Route {
     case "explorer":
     case "age":
     case "certificate":
+    case "adventures":
       return { name };
     case "entry":
       return num(arg) ? { name, id: num(arg)!, fresh: params.get("new") === "1" } : { name: "collection" };

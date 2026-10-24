@@ -5,11 +5,9 @@ import { ExternalLink } from "lucide-react";
 import { OFFICIAL_MAP_URL } from "@/lib/links";
 import { arrivalConfirmed, routeRequested, track, trackQuest } from "@/lib/analytics/client";
 import { closureVersion, useClosures } from "@/lib/closures";
-import { ROUTE_GRAPH_VERSION } from "@/data/maps/met-floor2-european-paintings";
-import { loadReveals, openUnsolved, pack, questById, questNumber } from "@/lib/content";
-import { findRoute } from "@/lib/routing";
+import { useAdventure } from "@/lib/content";
 import { playQuest, useProgress } from "@/lib/progress";
-import type { QuestReveal } from "@/data/types";
+import type { QuestReveal } from "@/adventures/types";
 import { navigate } from "./router";
 import { roomState, TreasureMap, type RoomState } from "./TreasureMap";
 import { Button, Card, Screen, Title } from "./ui";
@@ -21,20 +19,29 @@ interface Props {
 }
 
 export function MapScreen({ focus, from }: Props) {
+  const adv = useAdventure();
+  const { map, hasRoutes, questIds, questById, questNumber, openUnsolved, findRoute, loadReveals, chapterOf } = adv;
   const progress = useProgress();
   const closures = useClosures();
   const open = openUnsolved(progress.completedQuests, closures);
   const current = open.includes(progress.currentQuest) ? progress.currentQuest : open[0];
+  const fromQuest = from != null ? questById(from) : undefined;
   const route =
-    from != null && current != null ? findRoute(questById(from)!.gallery, questById(current)!.gallery, closures) : undefined;
-  const closedGalleries = closures.filter((c) => c.galleryId && c.status === "closed").map((c) => c.galleryId!);
+    hasRoutes && fromQuest && current != null ? findRoute(fromQuest.gallery, questById(current)!.gallery, closures) : undefined;
+  // Closures are museum-wide; show the ones on this adventure's map, or (without a map)
+  // in the same numbered section as its galleries (the Met numbers galleries by area: 1xx, 8xx …).
+  const sections = new Set(questIds.map((id) => questById(id)!.gallery[0]));
+  const nearby = (g: string) => (map ? map.nodes.some((n) => n.id === g) : sections.has(g[0]));
+  const closedGalleries = closures
+    .filter((c) => c.galleryId && c.status === "closed" && nearby(c.galleryId))
+    .map((c) => c.galleryId!);
   const [selected, setSelected] = useState<number | null>(null);
   const [reveals, setReveals] = useState<QuestReveal[] | null>(null);
 
   // Solved markers say what was found, so answers for solved quests are needed here.
   useEffect(() => {
     if (progress.completedQuests.length) loadReveals().then(setReveals, () => {});
-  }, [progress.completedQuests.length]);
+  }, [progress.completedQuests.length, loadReveals]);
 
   // Analytics: how the map was opened and, after SHOW ME THE WAY, whether a verified route existed.
   // Recorded once per visit to this screen, with the route as first shown.
@@ -42,7 +49,7 @@ export function MapScreen({ focus, from }: Props) {
   useEffect(() => {
     const { from, current, route, closures } = first.current;
     track("map_opened", { source: from != null ? "found" : focus != null ? "quest" : "menu" });
-    if (from == null || current == null || route === undefined) return;
+    if (from == null || current == null || route === undefined || !map) return;
     const a = questById(from)!.gallery;
     const b = questById(current)!.gallery;
     const unavailable = route ? null : findRoute(a, b, []) ? "closure_blocking" : "no_verified_route";
@@ -50,7 +57,7 @@ export function MapScreen({ focus, from }: Props) {
       {
         from_gallery: Number(a),
         to_gallery: Number(b),
-        route_graph_version: ROUTE_GRAPH_VERSION,
+        route_graph_version: map.routeGraphVersion,
         closure_version: closureVersion(),
         closures_active: closures.filter((c) => c.status === "closed").length,
       },
@@ -66,7 +73,7 @@ export function MapScreen({ focus, from }: Props) {
     navigate({ name: "quest", id });
   };
 
-  const states = pack.questIds.map((id) => ({ id, state: roomState(id, progress.completedQuests, closures, current) }));
+  const states = questIds.map((id) => ({ id, state: roomState(adv, id, progress.completedQuests, closures, current) }));
   const stateText: Record<RoomState, string> = {
     found: "✓ Found",
     current: "● Next mystery",
@@ -77,8 +84,8 @@ export function MapScreen({ focus, from }: Props) {
   return (
     <Screen>
       <header className="text-center">
-        <Title>Treasure Map</Title>
-        <p className="font-display text-xl text-ink-soft">{pack.questIds.length} mysteries hidden in The Met</p>
+        <Title>{hasRoutes ? "Treasure Map" : "Gallery List"}</Title>
+        <p className="font-display text-xl text-ink-soft">{questIds.length} mysteries hidden in The Met</p>
         {current && (
           <p className="mt-2 text-lg">
             Next mystery: <strong>Gallery {questById(current)!.gallery}</strong>
@@ -107,28 +114,65 @@ export function MapScreen({ focus, from }: Props) {
         </p>
       )}
 
-      <TreasureMap
-        completed={progress.completedQuests}
-        closures={closures}
-        current={current}
-        emphasis={route?.path}
-        focus={focus ?? current}
-        onSelect={setSelected}
-      />
-      <p className="-mt-2 text-center text-sm text-ink-soft">Pinch or double-tap to zoom. Drag to look around.</p>
+      {hasRoutes ? (
+        <>
+          <TreasureMap
+            completed={progress.completedQuests}
+            closures={closures}
+            current={current}
+            emphasis={route?.path}
+            focus={focus ?? current}
+            onSelect={setSelected}
+          />
+          <p className="-mt-2 text-center text-sm text-ink-soft">Pinch or double-tap to zoom. Drag to look around.</p>
 
-      <ul className="flex flex-wrap justify-center gap-x-4 gap-y-1 text-sm" aria-label="Map key">
-        <li>✓ Found</li>
-        <li>● Current destination</li>
-        <li>○ Still to discover</li>
-        <li>▨ Temporarily closed</li>
-        <li>? Doorway not yet confirmed</li>
-      </ul>
+          <ul className="flex flex-wrap justify-center gap-x-4 gap-y-1 text-sm" aria-label="Map key">
+            <li>✓ Found</li>
+            <li>● Current destination</li>
+            <li>○ Still to discover</li>
+            <li>▨ Temporarily closed</li>
+            <li>? Doorway not yet confirmed</li>
+          </ul>
+        </>
+      ) : (
+        <>
+          {/* No doorway in this adventure is verified yet, so we never draw or describe a walk. */}
+          <Card className="border-gold/40">
+            <p className="text-lg">
+              The walks between these galleries haven’t been checked yet, so there’s no drawn map. Look for the gallery
+              number on the wall, use The Met’s map, or ask a guard.
+            </p>
+          </Card>
+          <ol className="flex flex-col gap-2">
+            {states.map(({ id, state }, i) => {
+              const chapter = chapterOf(id);
+              const newChapter = chapter && (i === 0 || chapterOf(states[i - 1].id)?.id !== chapter.id);
+              return (
+                <li key={id} className="flex flex-col gap-2">
+                  {newChapter && (
+                    <p className="mt-2 font-mono text-[13px] font-medium uppercase tracking-[0.14em] text-ink-soft">{chapter.title}</p>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => setSelected(id)}
+                    className={`flex min-h-14 items-center justify-between rounded-2xl border bg-card px-4 text-left ${state === "current" ? "border-ink ring-2 ring-ink" : "border-line"}`}
+                  >
+                    <span className="font-semibold">
+                      Mystery {questNumber(id)} · Gallery {questById(id)!.gallery}
+                    </span>
+                    <span className="text-sm text-ink-soft">{stateText[state]}</span>
+                  </button>
+                </li>
+              );
+            })}
+          </ol>
+        </>
+      )}
 
       {selected != null && (
         <MarkerSheet
           id={selected}
-          state={roomState(selected, progress.completedQuests, closures, current)}
+          state={roomState(adv, selected, progress.completedQuests, closures, current)}
           reveal={reveals?.find((r) => r.id === selected)}
           onGo={() => goTo(selected)}
           onClose={() => setSelected(null)}
@@ -143,7 +187,7 @@ export function MapScreen({ focus, from }: Props) {
         <Button onClick={() => navigate({ name: "done" })}>SEE MY TREASURES</Button>
       )}
 
-      <details className="rounded-3xl border border-line bg-card px-5 py-4">
+      {hasRoutes && <details className="rounded-3xl border border-line bg-card px-5 py-4">
         <summary className="cursor-pointer font-semibold">Map as a list</summary>
         <ol className="mt-2 flex flex-col gap-1">
           {states.map(({ id, state }) => (
@@ -152,7 +196,7 @@ export function MapScreen({ focus, from }: Props) {
             </li>
           ))}
         </ol>
-      </details>
+      </details>}
 
       <div className="flex flex-col items-center gap-1">
         <Button variant="quiet" onClick={() => navigate({ name: "collection" })}>
@@ -184,6 +228,7 @@ function MarkerSheet({
   onGo: () => void;
   onClose: () => void;
 }) {
+  const { questById, questNumber } = useAdventure();
   const quest = questById(id)!;
   return (
     <Card className="relative" >

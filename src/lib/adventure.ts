@@ -11,7 +11,9 @@ export const AGE_CHOICES: AgeChoice[] = [5, 6, 7, 8, 9, 10, 11, "12+"];
 export interface PlayerProfile {
   age?: AgeChoice;
   avatarId?: string;
-  /** False while onboarding is interrupted part-way (age picked, no explorer yet). */
+  /** The adventure being played. Each adventure keeps its own progress. */
+  adventureId?: string;
+  /** False while onboarding is interrupted part-way (age picked, no explorer or adventure yet). */
   onboardingComplete: boolean;
 }
 
@@ -26,6 +28,21 @@ export interface AdventureState {
   /** Photo checks per quest that came back unsure or failed to connect. */
   attempts: Record<number, number>;
   verificationMethod: Record<number, VerificationMethod>;
+  /** Optional bonus mysteries found. They never count toward completion. Absent when none. */
+  bonusFound?: number[];
+  /**
+   * Finds in stops that are no longer in the adventure's lineup (switched off,
+   * or swapped for a reserve). Kept so they come back if the stop returns.
+   * Absent when none.
+   */
+  retiredFinds?: number[];
+}
+
+/** Quest ids an adventure state may hold besides its required lineup. */
+export interface ExtraQuestIds {
+  bonus?: number[];
+  /** Reserve or switched-off stops: finds there are kept, but not counted. */
+  other?: number[];
 }
 
 export const emptyProfile: PlayerProfile = { onboardingComplete: false };
@@ -59,20 +76,43 @@ const isCount = (x: unknown): x is number => typeof x === "number" && Number.isI
 const isHintCount = (x: unknown): x is number => x === 0 || x === 1 || x === 2;
 const isMethod = (x: unknown): x is VerificationMethod => METHODS.includes(x as VerificationMethod);
 
-export function parseProfile(raw: unknown, avatarIds: string[]): PlayerProfile {
+export interface KnownAdventures {
+  ids: string[];
+  /** Where a profile from before the adventure picker existed goes. */
+  legacy: string;
+}
+
+export function parseProfile(raw: unknown, avatarIds: string[], known: KnownAdventures): PlayerProfile {
   if (!isObject(raw)) return emptyProfile;
   const age = AGE_CHOICES.includes(raw.age as AgeChoice) ? (raw.age as AgeChoice) : undefined;
   const avatarId = typeof raw.avatarId === "string" && avatarIds.includes(raw.avatarId) ? raw.avatarId : undefined;
-  // A profile is only complete when both choices survived validation.
-  return { age, avatarId, onboardingComplete: raw.onboardingComplete === true && !!age && !!avatarId };
+  const adventureId =
+    typeof raw.adventureId === "string"
+      ? known.ids.includes(raw.adventureId)
+        ? raw.adventureId
+        : undefined // an adventure that was taken down: pick again
+      : // Finished onboarding before there was a choice: they were playing the first adventure.
+        raw.onboardingComplete === true
+        ? known.legacy
+        : undefined;
+  // A profile is only complete when every choice survived validation.
+  return { age, avatarId, adventureId, onboardingComplete: raw.onboardingComplete === true && !!age && !!avatarId && !!adventureId };
 }
 
-export function parseAdventure(raw: unknown, questIds: number[]): AdventureState {
+const ids = (v: unknown): number[] => (Array.isArray(v) ? v.filter((q): q is number => Number.isInteger(q)) : []);
+
+export function parseAdventure(raw: unknown, questIds: number[], extra: ExtraQuestIds = {}): AdventureState {
   const fresh = freshAdventure(questIds[0]);
   if (!isObject(raw)) return fresh;
-  const completedQuests = Array.isArray(raw.completedQuests)
-    ? [...new Set(raw.completedQuests.filter((q): q is number => questIds.includes(q as number)))]
-    : [];
+  const bonusIds = extra.bonus ?? [];
+  const otherIds = extra.other ?? [];
+  const everything = [...questIds, ...bonusIds, ...otherIds];
+  // A stop can move in or out of the lineup between visits, so finds are sorted
+  // by the lineup as it is now, never dropped.
+  const finds = [...new Set([...ids(raw.completedQuests), ...ids(raw.retiredFinds)])];
+  const completedQuests = finds.filter((q) => questIds.includes(q));
+  const retiredFinds = finds.filter((q) => otherIds.includes(q));
+  const bonusFound = [...new Set(ids(raw.bonusFound).filter((q) => bonusIds.includes(q)))];
   let status: AdventureStatus = STATUSES.includes(raw.status as AdventureStatus)
     ? (raw.status as AdventureStatus)
     : // progress:v1 had only a gameStarted flag
@@ -88,10 +128,18 @@ export function parseAdventure(raw: unknown, questIds: number[]): AdventureState
     completedAt: isTime(raw.completedAt) ? raw.completedAt : undefined,
     currentQuest: questIds.includes(raw.currentQuest as number) ? (raw.currentQuest as number) : fresh.currentQuest,
     completedQuests,
-    hintsUsed: record(raw.hintsUsed, questIds, isHintCount),
-    attempts: record(raw.attempts, questIds, isCount),
-    verificationMethod: record(raw.verificationMethod, questIds, isMethod),
+    hintsUsed: record(raw.hintsUsed, everything, isHintCount),
+    attempts: record(raw.attempts, everything, isCount),
+    verificationMethod: record(raw.verificationMethod, everything, isMethod),
+    ...(bonusFound.length ? { bonusFound } : {}),
+    ...(retiredFinds.length ? { retiredFinds } : {}),
   };
+}
+
+/** A bonus mystery was found. Never changes the current quest or completion. */
+export function solveBonus(a: AdventureState, id: number, method: VerificationMethod): AdventureState {
+  if (a.bonusFound?.includes(id)) return a;
+  return { ...begin(a), bonusFound: [...(a.bonusFound ?? []), id], verificationMethod: { ...a.verificationMethod, [id]: method } };
 }
 
 const now = () => new Date().toISOString();

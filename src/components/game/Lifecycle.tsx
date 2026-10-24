@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { BookOpen, Menu } from "lucide-react";
 import { restartConfirmed } from "@/lib/analytics/client";
-import { pack } from "@/lib/content";
+import { useAdventure } from "@/lib/content";
 import { useAvatar } from "@/lib/profile";
 import { endAdventure, restartAdventure, useProgress } from "@/lib/progress";
 import { AvatarArt } from "./AvatarArt";
@@ -15,12 +15,13 @@ import { Button } from "./ui";
 
 export function EndAdventureDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
   const progress = useProgress();
+  const { questIds } = useAdventure();
   const count = progress.completedQuests.length;
   return (
     <ConfirmDialog
       open={open}
       title="End your adventure?"
-      body={`You’ve found ${count} of ${pack.questIds.length} treasures. You can end the hunt here and keep everything you’ve discovered.`}
+      body={`You’ve found ${count} of ${questIds.length} treasures. You can end the hunt here and keep everything you’ve discovered.`}
       safeLabel="KEEP EXPLORING"
       actionLabel="END ADVENTURE"
       onCancel={onClose}
@@ -123,6 +124,7 @@ export function GameBar() {
           )}
           <button type="button" className={item} onClick={() => go({ name: "map" })}>Treasure Map</button>
           <button type="button" className={item} onClick={() => go({ name: "how" })}>How to Play</button>
+          <button type="button" className={item} onClick={() => go({ name: "adventures" })}>Switch Adventure</button>
           <button type="button" className={item} onClick={() => go({ name: "explorer" })}>Change Explorer</button>
           <button type="button" className={item} onClick={() => go({ name: "age" })}>Edit Age</button>
           <button type="button" className={item} onClick={() => go({ name: "parents" })}>For grown-ups</button>

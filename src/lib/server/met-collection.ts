@@ -1,10 +1,9 @@
 import "server-only";
-import { quests } from "@/data/hidden-treasures/quests";
-import { reveals } from "@/data/hidden-treasures/reveals";
-import type { QuestReveal } from "@/data/types";
+import { serverAdventures } from "@/adventures/registry.server";
+import type { Adventure, QuestReveal } from "@/adventures/types";
 import type { ArtworkCheck, ArtworkStatus, ArtworkStatusList } from "@/lib/artworks";
 
-// Looks up each quest artwork in The Met's open Collection API
+// Looks up each quest artwork, in every adventure, in The Met's open Collection API
 // (https://metmuseum.github.io/, no key, 80 req/s) to see whether it is on view
 // and in the gallery the quest expects. Runs when a server starts (see
 // src/instrumentation.ts) and again when the result is older than MAX_AGE_MS.
@@ -50,7 +49,7 @@ export function isMatch(reveal: QuestReveal, obj: MetObject) {
   const title = normalize(obj.title ?? "");
   const wanted = normalize(reveal.artwork);
   const titleOk = title === wanted || title.startsWith(`${wanted} `) || wanted.startsWith(`${title} `);
-  return titleOk && normalize(obj.artistDisplayName ?? "").includes(surname(reveal.artist));
+  return titleOk && (!reveal.artist || normalize(obj.artistDisplayName ?? "").includes(surname(reveal.artist)));
 }
 
 async function findObject(f: Fetch, reveal: QuestReveal): Promise<MetObject | null> {
@@ -62,9 +61,9 @@ async function findObject(f: Fetch, reveal: QuestReveal): Promise<MetObject | nu
   return null;
 }
 
-export async function checkArtwork(f: Fetch, reveal: QuestReveal): Promise<ArtworkStatus> {
-  const expectedGallery = quests.find((q) => q.id === reveal.id)?.gallery ?? "";
-  const base = { questId: reveal.id, expectedGallery };
+export async function checkArtwork(f: Fetch, adventure: Adventure, reveal: QuestReveal): Promise<ArtworkStatus> {
+  const expectedGallery = adventure.quests.find((q) => q.id === reveal.id)?.gallery ?? "";
+  const base = { adventureId: adventure.id, questId: reveal.id, expectedGallery };
   try {
     const obj = await findObject(f, reveal);
     if (!obj) return { ...base, check: "not_found" };
@@ -89,7 +88,9 @@ export async function checkArtwork(f: Fetch, reveal: QuestReveal): Promise<Artwo
 export async function checkAllArtworks(f: Fetch = fetch): Promise<ArtworkStatusList> {
   const artworks: ArtworkStatus[] = [];
   // One artwork at a time keeps us far below the API's rate limit.
-  for (const reveal of reveals) artworks.push(await checkArtwork(f, reveal));
+  for (const { adventure, reveals } of serverAdventures) {
+    for (const reveal of reveals) artworks.push(await checkArtwork(f, adventure, reveal));
+  }
   return { checkedAt: new Date().toISOString(), artworks };
 }
 
@@ -109,7 +110,7 @@ export function refreshArtworkStatus(f: Fetch = fetch): Promise<ArtworkStatusLis
       store.latest = list;
       for (const a of list.artworks) {
         if (a.check !== "ok") {
-          console.warn(`[artworks] quest ${a.questId}: ${a.check}${a.galleryNumber ? ` (Met lists gallery ${a.galleryNumber}, quest expects ${a.expectedGallery})` : ""}`);
+          console.warn(`[artworks] ${a.adventureId} quest ${a.questId}: ${a.check}${a.galleryNumber ? ` (Met lists gallery ${a.galleryNumber}, quest expects ${a.expectedGallery})` : ""}`);
         }
       }
       console.log(`[artworks] checked ${list.artworks.length}: ${list.artworks.filter((a) => a.check === "ok").length} ok`);

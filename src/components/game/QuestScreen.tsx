@@ -5,7 +5,7 @@ import { Camera, ImageUp, Map as MapIcon } from "lucide-react";
 import { photoAttempts, photoSubmitted, questViewed, trackQuest } from "@/lib/analytics/client";
 import { latencyBucket, type ERROR_KINDS } from "@/lib/analytics/schema";
 import { isGalleryClosed, useClosures } from "@/lib/closures";
-import { loadReveals, nextUnsolved, pack, questById, questNumber } from "@/lib/content";
+import { useAdventure } from "@/lib/content";
 import { preparePhoto } from "@/lib/photo";
 import { completeQuest, getProgress, playQuest, updateProgress, useProgress, type VerificationMethod } from "@/lib/progress";
 import { type VerificationResult, type VerificationStatus } from "@/lib/verification";
@@ -29,7 +29,9 @@ type Phase =
   | { kind: "grownup" };
 
 export function QuestScreen({ id }: { id: number }) {
+  const { adventure, questById, questNumber, questIds, nextUnsolved, loadReveals, isBonus, bonusAt, chapterOf, hasRoutes } = useAdventure();
   const quest = questById(id);
+  const bonus = isBonus(id);
   const progress = useProgress();
   const closures = useClosures();
   const [phase, setPhase] = useState<Phase>({ kind: "clue" });
@@ -40,19 +42,25 @@ export function QuestScreen({ id }: { id: number }) {
   useEffect(() => {
     // Warm the answers chunk so a grown-up check still works if signal drops later.
     loadReveals().catch(() => {});
-    warmStamps();
-    if (quest) {
-      playQuest(id);
+    warmStamps(adventure);
+    if (!quest) {
+      // Not in this adventure (an old link, or the lineup changed).
+      navigate({ name: "start" }, { replace: true });
+    } else {
+      // A bonus never becomes the current mystery: the hunt carries on where it was.
+      if (!bonus) playQuest(id);
       questViewed(id, getProgress());
     }
     return () => discardPhoto();
-  }, [id, quest]);
+  }, [id, quest, bonus, adventure, loadReveals]);
 
   if (!quest) return null;
   const n = questNumber(id);
   const hintsUsed = progress.hintsUsed[id] ?? 0;
   const attempts = progress.attempts[id] ?? 0;
-  const solved = progress.completedQuests.includes(id);
+  const solved = bonus ? !!progress.bonusFound?.includes(id) : progress.completedQuests.includes(id);
+  const chapter = chapterOf(id);
+  const extras = bonusAt(id).filter((b) => !progress.bonusFound?.includes(b.id));
   const closed = isGalleryClosed(quest.gallery, closures);
 
   function discardPhoto() {
@@ -108,7 +116,7 @@ export function QuestScreen({ id }: { id: number }) {
     const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
     let response: Response;
     try {
-      response = await fetch(`/api/verify?quest=${id}`, {
+      response = await fetch(`/api/verify?adventure=${encodeURIComponent(adventure.id)}&quest=${id}`, {
         method: "POST",
         headers: { "Content-Type": "image/jpeg" },
         body: photo.current.blob,
@@ -268,7 +276,7 @@ export function QuestScreen({ id }: { id: number }) {
       <header className="flex flex-col gap-2">
         <div className="flex items-baseline justify-between">
           <Eyebrow>
-            Quest {n} of {pack.questIds.length}
+            {bonus ? "Bonus mystery · doesn’t count toward the hunt" : `Quest ${n} of ${questIds.length}${chapter ? ` · ${chapter.title}` : ""}`}
           </Eyebrow>
           <button type="button" className="min-h-11 text-sm text-ink-soft underline decoration-ink/20 underline-offset-4 hover:text-ink" onClick={() => navigate({ name: "collection" })}>
             My notebook
@@ -277,17 +285,17 @@ export function QuestScreen({ id }: { id: number }) {
         <p className="font-display text-5xl font-semibold" aria-label={`Gallery ${quest.gallery}`}>
           <span aria-hidden>📍 </span>Gallery {quest.gallery}
         </p>
-        <ProgressDots completed={progress.completedQuests} current={id} />
+        {!bonus && <ProgressDots completed={progress.completedQuests} current={id} />}
         <button
           type="button"
           className="flex min-h-11 items-center gap-2 self-start rounded-full border border-line bg-card px-4 text-base font-semibold text-ink shadow-[0_1px_2px_rgb(13_13_16/0.05)] transition hover:border-ink/40"
           onClick={() => navigate({ name: "map", focus: id })}
         >
-          <MapIcon aria-hidden size={20} /> Show on Treasure Map
+          <MapIcon aria-hidden size={20} /> {hasRoutes ? "Show on Treasure Map" : "See all galleries"}
         </button>
       </header>
 
-      {closed && !solved && (
+      {closed && !solved && !bonus && (
         <Card className="border-burgundy/40">
           <p className="font-semibold">This gallery is temporarily closed.</p>
           <p className="mt-1 text-ink-soft">Please don’t go in. You can skip this mystery without losing anything and try it another visit.</p>
@@ -316,10 +324,16 @@ export function QuestScreen({ id }: { id: number }) {
       )}
 
       <Card className="relative text-center">
-        <p className="font-mono text-[13px] font-medium uppercase tracking-[0.14em] text-gold">Mystery #{n}</p>
+        <p className="font-mono text-[13px] font-medium uppercase tracking-[0.14em] text-gold">{bonus ? "Bonus mystery ★" : `Mystery #${n}`}</p>
+        {quest.title && <h2 className="mt-2 font-display text-2xl font-semibold text-burgundy">{quest.title}</h2>}
         <blockquote className="mt-3 font-display text-[1.75rem] font-semibold leading-snug">
-          <p>“{quest.riddle[0]}</p>
-          <p>{quest.riddle[1]}”</p>
+          {quest.riddle.map((line, i) => (
+            <p key={i}>
+              {i === 0 && "“"}
+              {line}
+              {i === quest.riddle.length - 1 && "”"}
+            </p>
+          ))}
         </blockquote>
       </Card>
 
@@ -328,6 +342,22 @@ export function QuestScreen({ id }: { id: number }) {
         used={hintsUsed}
         onReveal={() => updateProgress((p) => ({ ...p, hintsUsed: { ...p.hintsUsed, [id]: Math.min((p.hintsUsed[id] ?? 0) + 1, 2) } }))}
       />
+
+      {extras.map((b) => (
+        <Card key={b.id} className="border-gold/50">
+          <p className="font-semibold">★ A bonus mystery hides in this gallery too!</p>
+          <p className="mt-1 text-ink-soft">It’s extra: you don’t need it to finish the hunt.</p>
+          <Button variant="secondary" className="mt-3" onClick={() => navigate({ name: "quest", id: b.id })}>
+            TRY THE BONUS MYSTERY
+          </Button>
+        </Card>
+      ))}
+
+      {bonus && !solved && (
+        <Button variant="quiet" className="mx-auto" onClick={() => navigate({ name: "quest", id: progress.currentQuest })}>
+          Skip the bonus — back to my mystery
+        </Button>
+      )}
 
       {solved ? (
         <Button onClick={() => navigate({ name: "found", id })}>SEE MY TREASURE</Button>

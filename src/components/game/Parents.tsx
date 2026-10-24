@@ -6,15 +6,18 @@ import { photoAttempts, trackQuest } from "@/lib/analytics/client";
 import { statusFor, useArtworkStatus, withMetData } from "@/lib/artwork-status";
 import type { ArtworkStatus } from "@/lib/artworks";
 import { isGalleryClosed, useClosures } from "@/lib/closures";
-import type { QuestReveal } from "@/data/types";
+import type { QuestReveal } from "@/adventures/types";
 import { GALLERY_CLOSURES_URL, OFFICIAL_MAP_URL } from "@/lib/links";
-import { loadReveals, nextUnsolved, pack, questById, questNumber } from "@/lib/content";
+import { useAdventure } from "@/lib/content";
 import { completeQuest, useProgress } from "@/lib/progress";
 import { AnalyticsConsentCard } from "./AnalyticsConsent";
 import { HoldButton } from "./HoldButton";
 import { RestartButton } from "./Lifecycle";
 import { navigate } from "./router";
 import { Button, Card, Eyebrow, Screen, Title } from "./ui";
+
+/** Until an object is pinned (or the startup check finds it), a collection search is the best link we have. */
+const metSearchUrl = (title: string) => `https://www.metmuseum.org/art/collection/search?q=${encodeURIComponent(title)}`;
 
 const linkClass = "inline-flex min-h-11 items-center gap-1 underline underline-offset-4";
 
@@ -52,16 +55,18 @@ export function ParentsScreen() {
 }
 
 function ParentsPanel() {
+  const { adventure, allQuests, questIds, isBonus, isFound, nextUnsolved, questNumber, loadReveals } = useAdventure();
   const progress = useProgress();
   const closures = useClosures();
   const artworks = useArtworkStatus();
   const [reveals, setReveals] = useState<QuestReveal[] | null>(null);
   useEffect(() => {
     loadReveals().then(setReveals, () => {});
-  }, []);
+  }, [loadReveals]);
 
+  const label = (id: number) => (isBonus(id) ? "the bonus mystery" : `Mystery #${questNumber(id)}`);
   const markFound = (id: number) => {
-    if (window.confirm(`Mark Mystery #${questNumber(id)} as found?`)) {
+    if (window.confirm(`Mark ${label(id)} as found?`)) {
       trackQuest("quest_parent_override", id, { kind: "answer_key", photo_attempts: photoAttempts(id) });
       completeQuest(id, "manual", nextUnsolved(id, [...progress.completedQuests, id], closures));
     }
@@ -71,31 +76,55 @@ function ParentsPanel() {
     <Screen>
       <Eyebrow>For grown-ups</Eyebrow>
       <Title>Answer key</Title>
+      <p className="-mt-3 text-ink-soft">
+        {adventure.emoji} {adventure.title} · {adventure.where}
+      </p>
+
+      {adventure.launchStatus === "field_test_required" && (
+        <Card className="border-gold/50">
+          <h2 className="font-display text-2xl font-semibold">Not yet field-tested</h2>
+          <p className="mt-2">
+            This adventure hasn’t been checked on site yet. Artworks may have moved, small details may be hard to see or
+            photograph, and the walks between galleries haven’t been verified, so the app gives gallery numbers rather than
+            directions. Check today’s closures before you go, and confirm a find yourself whenever the photo check struggles.
+          </p>
+        </Card>
+      )}
 
       <ol className="flex flex-col gap-3">
-        {pack.questIds.map((id) => {
-          const quest = questById(id)!;
+        {allQuests.map((quest) => {
+          const id = quest.id;
           const found = reveals?.find((x) => x.id === id);
-          const r = found && withMetData(found, statusFor(artworks, id));
-          const note = artworkNote(statusFor(artworks, id));
-          const solved = progress.completedQuests.includes(id);
+          const status = statusFor(artworks, adventure.id, id);
+          const r = found && withMetData(found, status);
+          const note = artworkNote(status);
+          const playable = questIds.includes(id) || isBonus(id);
+          const solved = isFound(progress, id);
+          const fieldNote = adventure.fieldNotes?.[id];
           return (
             <li key={id}>
-              <Card className="flex flex-col gap-1">
+              <Card className={`flex flex-col gap-1 ${playable ? "" : "opacity-70"}`}>
                 <p className="font-mono text-[13px] font-medium uppercase tracking-[0.14em] text-ink-soft">
-                  #{questNumber(id)} · Gallery {quest.gallery}
+                  {isBonus(id) ? "Bonus" : playable ? `#${questNumber(id)}` : "Reserve (not in today’s hunt)"} · Gallery {quest.gallery}
                   {isGalleryClosed(quest.gallery, closures) && " · temporarily closed"}
                   {solved && " · found ✓"}
                 </p>
+                {quest.title && <p className="font-display text-xl font-semibold">{quest.title}</p>}
                 {r ? (
                   <>
                     <p className="text-lg font-semibold">{r.hiddenObject}</p>
                     <p>
-                      <em>{r.artwork}</em> — {r.artist}
+                      <em>{r.artwork}</em>
+                      {r.artist && ` — ${r.artist}`}
                     </p>
-                    {r.metObjectUrl && (
+                    {/* For grown-ups to check and preview the artwork before the visit. */}
+                    {r.metObjectUrl ? (
                       <a className={linkClass} href={r.metObjectUrl} target="_blank" rel="noopener noreferrer">
-                        The Met collection page <ExternalLink aria-hidden size={14} />
+                        See this artwork on The Met’s website <ExternalLink aria-hidden size={14} />
+                      </a>
+                    ) : (
+                      <a className={linkClass} href={metSearchUrl(r.artwork)} target="_blank" rel="noopener noreferrer">
+                        Search for it in The Met’s collection <ExternalLink aria-hidden size={14} />
                       </a>
                     )}
                   </>
@@ -103,7 +132,8 @@ function ParentsPanel() {
                   <p className="text-ink-soft">Loading…</p>
                 )}
                 {note && <p className="font-semibold text-burgundy">{note}</p>}
-                {!solved && (
+                {fieldNote && <p className="text-sm text-ink-soft">To check on site: {fieldNote}</p>}
+                {!solved && playable && (
                   <Button variant="quiet" className="-ml-2 self-start" onClick={() => markFound(id)}>
                     Mark as found
                   </Button>
