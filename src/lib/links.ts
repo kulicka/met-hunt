@@ -1,4 +1,4 @@
 // The Met's maintained interactive map (not a static PDF).
 export const OFFICIAL_MAP_URL = "https://maps.metmuseum.org/";
 
-export const GALLERY_CLOSURES_URL = "https://www.metmuseum.org/de/plan-your-visit/gallery-closures";
+export const GALLERY_CLOSURES_URL = "https://www.metmuseum.org/plan-your-visit/gallery-closures";

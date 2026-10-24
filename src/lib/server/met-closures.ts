@@ -5,13 +5,18 @@ import type { ClosureList, ClosureOverride } from "@/data/closures";
 // map greys out closed rooms without anyone editing data/closures.json. There is
 // no closures API, so this parses the page text: "Gallery 451", "Galleries 813–814",
 // "Galleries 708, 721, 773–774, and 774A". Runs when a server starts (see
-// src/instrumentation.ts) and again when the result is older than MAX_AGE_MS. If the
+// src/instrumentation.ts), again when the result is older than MAX_AGE_MS, and when a
+// hunt starts or restarts and the result is older than FRESH_MS. If the
 // page can't be read or no gallery numbers are found, the last good result (or
 // data/closures.json) is used instead. Set CLOSURES_SYNC=off to turn it off.
 
 export const CLOSURES_PAGE = process.env.MET_CLOSURES_URL || "https://www.metmuseum.org/plan-your-visit/gallery-closures";
 const MAX_AGE_MS = 3 * 60 * 60 * 1000;
 const RETRY_MS = 10 * 60 * 1000;
+/** A hunt starting or restarting asks for a recheck once the list is this old. */
+const FRESH_MS = 15 * 60 * 1000;
+/** ...but no more often than this, however many phones start at once. */
+const FRESH_RETRY_MS = 60 * 1000;
 const TIMEOUT_MS = 8000;
 /** A range wider than this is a misread, not a closure. */
 const MAX_RANGE = 40;
@@ -62,7 +67,7 @@ export function parseClosuresPage(html: string, checkedAt: string): ClosureList 
   const closures: ClosureOverride[] = [...galleries]
     .sort()
     .map((galleryId) => ({ galleryId, status: "closed", note, sourceUrl: CLOSURES_PAGE }));
-  return { checkedAt, sourceUrl: CLOSURES_PAGE, closures };
+  return { checkedAt, sourceUrl: CLOSURES_PAGE, source: "met-page", closures };
 }
 
 let live: ClosureList | null = null;
@@ -74,6 +79,9 @@ let running: Promise<void> | null = null;
 export const liveClosures = () => live;
 
 export const isStale = () => Date.now() - fetchedAt > MAX_AGE_MS && Date.now() - lastTry > RETRY_MS;
+
+/** Whether a hunt (re)starting should wait for a new read of the page before answering. */
+export const wantsRecheck = () => Date.now() - fetchedAt > FRESH_MS && Date.now() - lastTry > FRESH_RETRY_MS;
 
 export function refreshClosures(f: typeof fetch = fetch): Promise<void> {
   if (process.env.CLOSURES_SYNC === "off") return Promise.resolve();

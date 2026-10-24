@@ -4,7 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import { ExternalLink } from "lucide-react";
 import { OFFICIAL_MAP_URL } from "@/lib/links";
 import { arrivalConfirmed, routeRequested, track, trackQuest } from "@/lib/analytics/client";
-import { closureVersion, useClosures } from "@/lib/closures";
+import { closureVersion, useClosureList } from "@/lib/closures";
+import { ClosureCheckNote } from "./ClosureCheckNote";
 import { useAdventure } from "@/lib/content";
 import { playQuest, useProgress } from "@/lib/progress";
 import type { QuestReveal } from "@/adventures/types";
@@ -22,7 +23,8 @@ export function MapScreen({ focus, from }: Props) {
   const adv = useAdventure();
   const { map, hasRoutes, questIds, questById, questNumber, openUnsolved, findRoute, isHeld, loadReveals, chapterOf } = adv;
   const progress = useProgress();
-  const closures = useClosures();
+  const closureList = useClosureList();
+  const closures = closureList.closures;
   const open = openUnsolved(progress.completedQuests, closures);
   const current = open.includes(progress.currentQuest) ? progress.currentQuest : open[0];
   const fromQuest = from != null ? questById(from) : undefined;
@@ -121,9 +123,12 @@ export function MapScreen({ focus, from }: Props) {
       )}
 
       {closedGalleries.length > 0 && (
-        <p className="rounded-2xl bg-paper-deep px-4 py-2 text-center">
-          Temporarily closed: Gallery {closedGalleries.join(", ")}
-        </p>
+        <div className="rounded-2xl bg-paper-deep px-4 py-2 text-center">
+          <p>Temporarily closed: Gallery {closedGalleries.join(", ")}</p>
+          <p className="text-sm text-ink-soft">
+            <ClosureCheckNote list={closureList} short />
+          </p>
+        </div>
       )}
 
       {hasRoutes ? (

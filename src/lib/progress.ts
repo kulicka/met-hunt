@@ -14,6 +14,7 @@ import {
   type AdventureState,
   type VerificationMethod,
 } from "./adventure";
+import { recheckClosures } from "./closures";
 import { activeAdventure, contentFor } from "./content";
 import { subscribeProfile } from "./profile";
 
@@ -115,7 +116,10 @@ export function useProgress(): AdventureState {
 const firstQuest = () => activeAdventure().questIds[0];
 
 /** Start a new adventure or continue an ended one. */
-export const startAdventure = () => updateProgress(begin);
+export const startAdventure = () => {
+  recheckClosures();
+  updateProgress(begin);
+};
 
 /** The player is working on quest `id` (opened it, or picked it on the map). */
 export const playQuest = (id: number) =>
@@ -127,7 +131,10 @@ export const playQuest = (id: number) =>
 export const endAdventure = () => updateProgress(endEarly);
 
 /** Clears this adventure's hunt progress. Age, explorer, and other adventures are kept. */
-export const restartAdventure = () => updateProgress(() => restart(firstQuest()));
+export const restartAdventure = () => {
+  recheckClosures();
+  updateProgress(() => restart(firstQuest()));
+};
 
 export function completeQuest(id: number, method: VerificationMethod, nextQuest: number | null) {
   const adv = activeAdventure();
