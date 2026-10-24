@@ -79,12 +79,13 @@ export function AdventurePickerScreen({ start = false }: { start?: boolean }) {
     setAdventure(choice);
     const p = getProgress();
     // Switching to a hunt already under way shows its welcome-back screen. Anything
-    // else (they tapped START THE HUNT, or picked one not begun yet) goes straight
-    // to the first mystery (or where an older save left off): they have just chosen.
+    // else (they tapped START THE HUNT, restarted, or picked one not begun yet) opens
+    // the treasure map at the first mystery (or where an older save left off), so the
+    // hunt begins with the whole route in view; SHOW MY CLUE goes on from there.
     if (!firstTime && p.status !== "not_started") return navigate({ name: "start" }, { replace: true });
     if (p.status === "completed") return navigate({ name: "start" }, { replace: true });
     playQuest(p.currentQuest);
-    navigate({ name: "quest", id: p.currentQuest }, { replace: true });
+    navigate({ name: "map", focus: p.currentQuest }, { replace: true });
   };
 
   return (
