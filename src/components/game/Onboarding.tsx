@@ -3,15 +3,14 @@
 import { useState } from "react";
 import { avatarById, avatars } from "@/data/avatars";
 import { AGE_CHOICES, type AgeChoice } from "@/lib/adventure";
-import { useAdventure } from "@/lib/content";
-import { finishOnboarding, setAdventure, setAge, setAvatar, useProfile } from "@/lib/profile";
+import { finishOnboarding, setAge, setAvatar, useProfile } from "@/lib/profile";
 import { playQuest, useProgress } from "@/lib/progress";
-import { AdventureList } from "./AdventurePicker";
 import { AvatarArt } from "./AvatarArt";
 import { navigate } from "./router";
 import { Button, Eyebrow, Screen, Title } from "./ui";
 
-// First launch: age, then explorer, then adventure, then ready. No name, birthday, email, or
+// First launch: age, then explorer, then ready. The adventure is chosen right
+// after START THE HUNT (see AdventurePicker.tsx); none is assumed. No name, birthday, email, or
 // account is ever asked for. Choices are saved as they are made, so a closed
 // tab resumes where it stopped.
 
@@ -56,20 +55,19 @@ export function ExplorerPicker({ value, onPick }: { value?: string; onPick: (id:
   );
 }
 
-type Step = "age" | "explorer" | "adventure" | "ready";
+type Step = "age" | "explorer" | "ready";
 
-const firstStep = (p: { age?: unknown; avatarId?: string; adventureId?: string } | null): Step =>
-  !p?.age ? "age" : !p.avatarId ? "explorer" : !p.adventureId ? "adventure" : "ready";
+const firstStep = (p: { age?: unknown; avatarId?: string } | null): Step => (!p?.age ? "age" : !p.avatarId ? "explorer" : "ready");
 
 export function Onboarding() {
   const profile = useProfile();
   const progress = useProgress();
-  const { adventure } = useAdventure();
   const [step, setStep] = useState<Step>(firstStep(profile));
   if (!profile) return null;
   const avatar = avatarById(profile.avatarId);
-  // Players from before onboarding existed keep their hunt.
-  const resuming = progress.status !== "not_started";
+  // Only once an adventure is chosen is there a hunt to resume.
+  const chosen = !!profile.adventureId;
+  const resuming = chosen && progress.status !== "not_started";
 
   if (step === "age") {
     return (
@@ -94,7 +92,7 @@ export function Onboarding() {
         <Title className="text-center">CHOOSE YOUR EXPLORER</Title>
         <ExplorerPicker value={profile.avatarId} onPick={setAvatar} />
         <div className="sticky bottom-0 -mx-5 flex flex-col gap-2 border-t border-line bg-paper/85 px-5 pb-4 pt-3 backdrop-blur-md">
-          <Button disabled={!profile.avatarId} className="disabled:opacity-40" onClick={() => setStep("adventure")}>
+          <Button disabled={!profile.avatarId} className="disabled:opacity-40" onClick={() => setStep("ready")}>
             CONTINUE
           </Button>
           <Button variant="quiet" className="mx-auto" onClick={() => setStep("age")}>
@@ -105,26 +103,10 @@ export function Onboarding() {
     );
   }
 
-  if (step === "adventure") {
-    return (
-      <Screen>
-        <Title className="text-center">CHOOSE YOUR ADVENTURE</Title>
-        <p className="text-center text-ink-soft">Each adventure is a different part of the museum. You can switch later.</p>
-        <AdventureList value={profile.adventureId} onPick={setAdventure} />
-        <div className="sticky bottom-0 -mx-5 flex flex-col gap-2 border-t border-line bg-paper/85 px-5 pb-4 pt-3 backdrop-blur-md">
-          <Button disabled={!profile.adventureId} className="disabled:opacity-40" onClick={() => setStep("ready")}>
-            CONTINUE
-          </Button>
-          <Button variant="quiet" className="mx-auto" onClick={() => setStep("explorer")}>
-            Back to explorer
-          </Button>
-        </div>
-      </Screen>
-    );
-  }
-
   const start = () => {
     finishOnboarding();
+    // New players choose their adventure next.
+    if (!chosen) return navigate({ name: "adventures" }, { replace: true });
     if (progress.status === "completed") return navigate({ name: "start" }, { replace: true });
     playQuest(progress.currentQuest);
     navigate({ name: "quest", id: progress.currentQuest }, { replace: true });
@@ -134,14 +116,9 @@ export function Onboarding() {
     <Screen className="min-h-dvh justify-center text-center">
       <AvatarArt asset={avatar.imageAsset} size={160} className="mx-auto" />
       <Title>Great choice, {avatar.displayName}!</Title>
-      <p className="text-xl">
-        {resuming ? "Your mystery is waiting where you left it." : "Your first mystery is waiting."}{" "}
-        <span className="block text-base text-ink-soft">
-          {adventure.emoji} {adventure.title} · {adventure.where}
-        </span>
-      </p>
-      <Button onClick={start}>{resuming ? "CONTINUE ADVENTURE" : "START MY ADVENTURE"}</Button>
-      <Button variant="quiet" className="mx-auto" onClick={() => setStep("adventure")}>
+      <p className="text-xl">{resuming ? "Your mystery is waiting where you left it." : "Your first mystery is waiting."}</p>
+      <Button onClick={start}>{resuming ? "CONTINUE ADVENTURE" : chosen ? "START MY ADVENTURE" : "START THE HUNT"}</Button>
+      <Button variant="quiet" className="mx-auto" onClick={() => setStep("explorer")}>
         Back
       </Button>
     </Screen>

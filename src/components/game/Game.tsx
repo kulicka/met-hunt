@@ -61,6 +61,10 @@ export function Game() {
   const route = parseRoute(hash);
   // First launch (or interrupted onboarding): age and explorer come first. Grown-ups can still open their page.
   if (!profile.onboardingComplete && route.name !== "parents") return <Onboarding />;
+  // No adventure is ever assumed: anyone without one (new players, players from
+  // before the picker, or whose adventure was taken down) chooses before playing.
+  const choosing = !profile.adventureId && !["parents", "explorer", "age"].includes(route.name);
+  if (choosing) return <AdventurePickerScreen key="choose" />;
   return (
     <AnimatePresence mode="wait" initial={false}>
       <motion.div

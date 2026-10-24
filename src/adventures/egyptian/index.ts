@@ -1,3 +1,4 @@
+import { floor1Egyptian } from "@/data/maps/met-floor1-egyptian";
 import type { Adventure, Chapter, QuestPublic } from "../types";
 import { fieldNotes } from "./field-notes";
 import { bonusQuests, stops } from "./quests";
@@ -5,9 +6,9 @@ import { CONTENT_PACK_VERSION, questVersions } from "./versions";
 
 // Egyptian Adventure (docs/egyptian-adventure-spec.md, v1.0 draft).
 // launchStatus stays "field_test_required" until every stop and route passes the
-// spec's field-test checklist (section 8). There is deliberately no map: no
-// doorway between these galleries has been verified, so the game lists gallery
-// numbers and chapter changes instead of drawing routes.
+// spec's field-test checklist (section 8). The map is traced from The Met's
+// Egyptian Art galleries map (Alex, 2026-10-24); the 117 → 122 walk stays held
+// back until it is checked on site (spec section 5).
 
 // ---------- curator switches ----------
 // Change these (and deploy) to adjust the lineup. Saved progress survives: a find
@@ -38,8 +39,9 @@ const quests: QuestPublic[] = chapters.flatMap((c) => c.questIds.map((id) => sto
 const otherQuests = Object.values(stops).filter((s) => !quests.includes(s));
 
 /**
- * Walks between consecutive stops (spec section 5). None is verified yet, so none
- * is drawn or described step by step. Fill these in after walking them.
+ * Walks between consecutive stops (spec section 5). All but 117 → 122 are traced on
+ * The Met's map (data/maps/met-floor1-egyptian.ts) but none is walked on site yet.
+ * Fill in the rest after walking them.
  */
 export interface RouteLeg {
   from: string;
@@ -50,6 +52,14 @@ export interface RouteLeg {
 }
 
 export const routeLegs: RouteLeg[] = quests.slice(1).map((q, i) => ({ from: quests[i].gallery, to: q.gallery, routeVerified: false }));
+
+/**
+ * Spec section 5: no directions for 117 → 122 until walked on site. On The Met's map
+ * 122 opens only into 121, and with 118–120 closed (and the 119 ↔ 121 opening
+ * unreadable) the walk is a long loop through the west galleries:
+ * 117, 116, 115, 111, 110, 108, 107, 132, 128, 123, 121, 122.
+ */
+const heldRoutes = [{ from: "117", to: "122", reason: "Not yet walked on site (spec section 5)." }];
 
 export const egyptian: Adventure = {
   id: "met-egyptian-adventure",
@@ -63,6 +73,8 @@ export const egyptian: Adventure = {
   chapters,
   bonus: bonusQuests,
   otherQuests,
+  map: floor1Egyptian,
+  heldRoutes,
   loadReveals: () => import("./reveals").then((m) => m.reveals),
   loadStamps: () => import("./Stamps"),
   fieldNotes,

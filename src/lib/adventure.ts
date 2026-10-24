@@ -11,9 +11,9 @@ export const AGE_CHOICES: AgeChoice[] = [5, 6, 7, 8, 9, 10, 11, "12+"];
 export interface PlayerProfile {
   age?: AgeChoice;
   avatarId?: string;
-  /** The adventure being played. Each adventure keeps its own progress. */
+  /** The adventure being played; unset until the player chooses. Each adventure keeps its own progress. */
   adventureId?: string;
-  /** False while onboarding is interrupted part-way (age picked, no explorer or adventure yet). */
+  /** False while onboarding is interrupted part-way (age picked, no explorer yet). */
   onboardingComplete: boolean;
 }
 
@@ -76,27 +76,15 @@ const isCount = (x: unknown): x is number => typeof x === "number" && Number.isI
 const isHintCount = (x: unknown): x is number => x === 0 || x === 1 || x === 2;
 const isMethod = (x: unknown): x is VerificationMethod => METHODS.includes(x as VerificationMethod);
 
-export interface KnownAdventures {
-  ids: string[];
-  /** Where a profile from before the adventure picker existed goes. */
-  legacy: string;
-}
-
-export function parseProfile(raw: unknown, avatarIds: string[], known: KnownAdventures): PlayerProfile {
+export function parseProfile(raw: unknown, avatarIds: string[], adventureIds: string[]): PlayerProfile {
   if (!isObject(raw)) return emptyProfile;
   const age = AGE_CHOICES.includes(raw.age as AgeChoice) ? (raw.age as AgeChoice) : undefined;
   const avatarId = typeof raw.avatarId === "string" && avatarIds.includes(raw.avatarId) ? raw.avatarId : undefined;
-  const adventureId =
-    typeof raw.adventureId === "string"
-      ? known.ids.includes(raw.adventureId)
-        ? raw.adventureId
-        : undefined // an adventure that was taken down: pick again
-      : // Finished onboarding before there was a choice: they were playing the first adventure.
-        raw.onboardingComplete === true
-        ? known.legacy
-        : undefined;
-  // A profile is only complete when every choice survived validation.
-  return { age, avatarId, adventureId, onboardingComplete: raw.onboardingComplete === true && !!age && !!avatarId && !!adventureId };
+  // Never assumed: until the player picks one (or picks again after one was taken
+  // down), the game asks right after START THE HUNT.
+  const adventureId = typeof raw.adventureId === "string" && adventureIds.includes(raw.adventureId) ? raw.adventureId : undefined;
+  // Onboarding (age and explorer) is only complete when both choices survived validation.
+  return { age, avatarId, adventureId, onboardingComplete: raw.onboardingComplete === true && !!age && !!avatarId };
 }
 
 const ids = (v: unknown): number[] => (Array.isArray(v) ? v.filter((q): q is number => Number.isInteger(q)) : []);

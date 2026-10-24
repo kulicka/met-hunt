@@ -9,7 +9,11 @@ import type { Adventure } from "./types";
 
 export const adventures: Adventure[] = [europeanPaintings, egyptian];
 
-/** Where players from before the adventure picker existed are placed. Never change it. */
+/**
+ * The adventure that saves, analytics events and photo checks from before the
+ * picker existed belong to (it was the only one). Used to read old data, never
+ * as a default choice: players always pick their adventure. Never change it.
+ */
 export const LEGACY_ADVENTURE_ID = europeanPaintings.id;
 
 /** Show a "more adventures on the way" card on the picker. */

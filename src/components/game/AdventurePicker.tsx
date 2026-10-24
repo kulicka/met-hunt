@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { adventures, MORE_COMING_SOON } from "@/adventures/registry";
 import { setAdventure, useProfile } from "@/lib/profile";
-import { getProgressFor, useProgress } from "@/lib/progress";
+import { getProgress, getProgressFor, playQuest, useProgress } from "@/lib/progress";
 import { navigate } from "./router";
 import { Button, Screen, Title } from "./ui";
 
@@ -64,26 +64,38 @@ export function AdventureList({ value, onPick }: { value?: string; onPick: (id: 
   );
 }
 
-/** From the menu or start screen: switch adventures mid-visit. */
+/**
+ * Right after START THE HUNT for a new player (nothing is preselected), and from
+ * the menu or start screen to switch adventures mid-visit.
+ */
 export function AdventurePickerScreen() {
   const profile = useProfile();
   const [choice, setChoice] = useState(profile?.adventureId);
   if (!profile) return null;
+  const firstTime = !profile.adventureId;
+
+  const go = () => {
+    if (!choice) return;
+    setAdventure(choice);
+    if (!firstTime) return navigate({ name: "start" }, { replace: true });
+    // They already tapped START THE HUNT, so go straight to the first mystery
+    // (or where an older save left off).
+    const p = getProgress();
+    if (p.status === "completed") return navigate({ name: "start" }, { replace: true });
+    playQuest(p.currentQuest);
+    navigate({ name: "quest", id: p.currentQuest }, { replace: true });
+  };
+
   return (
     <Screen>
       <Title className="text-center">CHOOSE YOUR ADVENTURE</Title>
-      <p className="text-center text-ink-soft">Your treasures in every adventure stay saved.</p>
+      <p className="text-center text-ink-soft">
+        {firstTime ? "Which part of the museum will you explore today?" : "Your treasures in every adventure stay saved."}
+      </p>
       <AdventureList value={choice} onPick={setChoice} />
       <div className="sticky bottom-0 -mx-5 flex flex-col gap-2 border-t border-line bg-paper/85 px-5 pb-4 pt-3 backdrop-blur-md">
-        <Button
-          disabled={!choice}
-          className="disabled:opacity-40"
-          onClick={() => {
-            if (choice) setAdventure(choice);
-            navigate({ name: "start" }, { replace: true });
-          }}
-        >
-          {choice === profile.adventureId ? "BACK TO MY ADVENTURE" : "PLAY THIS ADVENTURE"}
+        <Button disabled={!choice} className="disabled:opacity-40" onClick={go}>
+          {firstTime ? (choice ? "START THE HUNT" : "PICK AN ADVENTURE") : choice === profile.adventureId ? "BACK TO MY ADVENTURE" : "PLAY THIS ADVENTURE"}
         </Button>
       </div>
     </Screen>

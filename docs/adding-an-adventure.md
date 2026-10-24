@@ -8,9 +8,11 @@ artwork or quest.
 Two adventures exist today, and they cover both cases:
 
 - `european-paintings/`: a map with verified doorways, so the game draws routes.
-- `egyptian/`: no verified doorways yet, so it has no map. The game lists the
-  gallery numbers and shows chapter changes, and it points to The Met's own map.
-  It also has a bonus mystery, a reserve stop, and curator switches.
+- `egyptian/`: a map traced from The Met's Egyptian Art map, with one walk
+  (117 → 122) held back in `heldRoutes` until it is checked on site. It also has
+  chapters, a bonus mystery, a reserve stop, and curator switches.
+- An adventure with no `map` at all still works: the game lists the gallery
+  numbers and shows chapter changes, and it points to The Met's own map.
 
 ## 1. Make the folder
 
@@ -40,9 +42,15 @@ Follow these rules:
 - **`launchStatus: "field_test_required"`** stays on until someone has checked
   every stop and route on site. While it is on, the picker, the start screen and
   the grown-ups area say the adventure is still being tested.
-- **`map`** should be left out until the doorways are verified. To add one later,
-  put a `FloorMap` in `src/data/maps/` (see `src/data/maps/types.ts`). Maps belong
-  to a floor, so two adventures can share one.
+- **`map`** should be left out until the doorways are read from The Met's current
+  floor map. Put a `FloorMap` in `src/data/maps/` (see `src/data/maps/types.ts`
+  and `met-floor1-egyptian.ts`): one outline per room in the map's own
+  orientation, and one doorway per opening you can see in a shared wall. Mark an
+  opening you can't read as `verified: false`. Maps belong to a floor, so two
+  adventures can share one.
+- **`heldRoutes`** lists quest-to-quest walks that should get no directions yet.
+  The map still shows both rooms, and the player is told to use The Met's map or
+  ask a guard.
 - **`legacyProgressKeys`** belongs only to European Paintings. Leave it out.
 
 ### Optional features
@@ -94,12 +102,17 @@ the stop. Each change needs a deploy.
 ## How players' data is kept
 
 - The profile (`met-hidden-treasures:profile:v1`) holds age, explorer and the
-  chosen `adventureId`.
+  chosen `adventureId`. No adventure is ever assumed: a new player picks one
+  right after tapping START THE HUNT, and so does anyone whose saved adventure is
+  missing or was taken down. The picker shows each adventure's saved progress.
+- The grown-ups answer key lists every adventure in the registry, so a new one
+  shows up there automatically.
 - Progress is stored once per adventure, at
   `met-hidden-treasures:adventure:v3:<adventure id>`.
 - Progress saved before adventures existed (`adventure:v2` / `progress:v1`) is
   copied into European Paintings the first time it's read. The old record is
-  left in place.
+  left in place. Those players still choose, and see their hunt on the European
+  Paintings card.
 - Analytics timers and play-through ids are also kept per adventure, and every
   event carries `pack_id`.
 

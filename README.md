@@ -49,8 +49,19 @@ artworks that are not on view, or that The Met lists in a different gallery. The
 results are in `GET /api/artworks` and in the grown-ups screen, and appear in the
 server logs as `[artworks] ...` lines. The check also fills in the Met link and,
 for public-domain works only, the image on reveal screens. The API has no gallery
-closures, so those stay in `data/closures.json`. Set `ARTWORK_CHECK=off` to turn
+closures; see below. Set `ARTWORK_CHECK=off` to turn
 the check off, or `MET_API_BASE` to point it at a mock.
+
+### Gallery closures
+
+The server reads The Met's [gallery closures page](https://www.metmuseum.org/plan-your-visit/gallery-closures)
+when it starts and every 3 hours after that (`src/lib/server/met-closures.ts`),
+and phones get the list from `GET /api/closures`. Closed rooms are hatched on the
+treasure map, and routes go around them. There is no closures API, so this
+parses the page text. If the page can't be read, or no gallery numbers are found
+on it, the server keeps the last good list, then falls back to `data/closures.json`.
+`CLOSURES_JSON` overrides all of these, and `CLOSURES_SYNC=off` turns the
+page reading off. Server logs show `[closures] ...` lines.
 
 ## Privacy
 

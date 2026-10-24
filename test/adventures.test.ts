@@ -82,12 +82,13 @@ describe("adventure registry", () => {
 describe("Egyptian Adventure (spec v1.0 draft)", () => {
   const c = contentFor(egyptian);
 
-  it("stays field-test-only, with no drawn routes", () => {
+  it("stays field-test-only, with a map but no directions for 117 → 122", () => {
     expect(egyptian.id).toBe("met-egyptian-adventure");
     expect(egyptian.launchStatus).toBe("field_test_required");
-    expect(egyptian.map).toBeUndefined();
-    expect(c.hasRoutes).toBe(false);
+    expect(egyptian.map?.id).toBe("met-floor1-egyptian");
+    expect(c.hasRoutes).toBe(true);
     expect(c.findRoute("117", "122", [])).toBeNull();
+    expect(c.findRoute("111", "112", [])?.path).toEqual(["111", "112"]);
     expect(routeLegs.every((l) => !l.routeVerified)).toBe(true);
     expect(routeLegs.find((l) => l.from === "117" && l.to === "122")).toMatchObject({ routeVerified: false });
   });
@@ -226,12 +227,15 @@ describe("progress store", () => {
     return { progress: await import("@/lib/progress"), profile: await import("@/lib/profile") };
   };
 
-  it("moves a hunt saved before adventures existed into European Paintings, losing nothing", async () => {
+  it("keeps a hunt saved before adventures existed in European Paintings, losing nothing", async () => {
     const old = { status: "in_progress", currentQuest: 3, completedQuests: [1, 2], hintsUsed: { 3: 1 }, attempts: {}, verificationMethod: { 1: "ai-photo", 2: "manual" } };
     store.set("met-hidden-treasures:adventure:v2", JSON.stringify(old));
     store.set("met-hidden-treasures:profile:v1", JSON.stringify({ age: 8, avatarId: "fig", onboardingComplete: true }));
     const { progress, profile } = await fresh();
-    expect(profile.getProfile()).toMatchObject({ adventureId: "european-paintings", onboardingComplete: true });
+    // They still choose; their old hunt shows up on the European Paintings card.
+    expect(profile.getProfile()).toMatchObject({ adventureId: undefined, onboardingComplete: true });
+    expect(progress.getProgressFor("european-paintings")).toMatchObject({ status: "in_progress", currentQuest: 3, completedQuests: [1, 2], hintsUsed: { 3: 1 } });
+    profile.setAdventure("european-paintings");
     expect(progress.getProgress()).toMatchObject({ status: "in_progress", currentQuest: 3, completedQuests: [1, 2], hintsUsed: { 3: 1 } });
     expect(JSON.parse(store.get(progress.progressKey("european-paintings"))!)).toMatchObject({ completedQuests: [1, 2] });
     expect(store.has("met-hidden-treasures:adventure:v2")).toBe(true); // the old record is left alone
@@ -252,10 +256,10 @@ describe("progress store", () => {
     expect(progress.getProgressFor("met-egyptian-adventure")).toMatchObject({ completedQuests: [111] });
   });
 
-  it("sends a new player through the picker, and a removed adventure back to it", async () => {
+  it("sends a player whose adventure was removed back to the picker, keeping their explorer", async () => {
     store.set("met-hidden-treasures:profile:v1", JSON.stringify({ age: 8, avatarId: "fig", adventureId: "gone", onboardingComplete: true }));
     const { profile } = await fresh();
-    expect(profile.getProfile()).toMatchObject({ adventureId: undefined, onboardingComplete: false });
+    expect(profile.getProfile()).toMatchObject({ avatarId: "fig", adventureId: undefined, onboardingComplete: true });
   });
 });
 

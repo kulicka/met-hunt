@@ -7,6 +7,9 @@ export async function register() {
     const { refreshArtworkStatus } = await import("@/lib/server/met-collection");
     refreshArtworkStatus().catch(() => {});
   }
+  // Reads The Met's gallery closures page. No-op when CLOSURES_SYNC=off.
+  const { refreshClosures } = await import("@/lib/server/met-closures");
+  refreshClosures().catch(() => {});
   // Applies the analytics schema and deletes expired events, then repeats daily. No-op unless enabled.
   const { startRetentionJob } = await import("@/lib/server/analytics-db");
   startRetentionJob();

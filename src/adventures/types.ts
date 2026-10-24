@@ -120,6 +120,12 @@ export interface Adventure {
    * numbers and points to The Met's own map instead of drawing routes.
    */
   map?: FloorMap;
+  /**
+   * Quest-to-quest walks (gallery numbers) the game must not give directions for
+   * yet, e.g. until walked on site. The map still shows both galleries; the player
+   * gets the "use The Met's map or ask a guard" card instead of a drawn route.
+   */
+  heldRoutes?: { from: string; to: string; reason: string }[];
   /** Answers, in their own chunk: loaded only after a find or in grown-up mode. */
   loadReveals: () => Promise<QuestReveal[]>;
   /** Notebook stamps, one per quest and bonus. Also its own chunk, since each one pictures an answer. */

@@ -136,3 +136,51 @@ describe.runIf(process.env.LAUNCH_CHECK)("launch readiness", () => {
     }
   });
 });
+
+describe("Egyptian Art map (Floor 1)", async () => {
+  const { egyptian } = await import("@/adventures/egyptian");
+  const floor1 = await import("@/data/maps/met-floor1-egyptian");
+  const egypt = contentFor(egyptian);
+  const byId = new Map(floor1.galleryNodes.map((n) => [n.id, n]));
+  const route = (a: string, b: string, closures: ClosureOverride[] = []) => findOn(a, b, closures, floor1.floor1Egyptian)?.path;
+
+  it("has every stop, bonus and reserve gallery, and only doorways between rooms that touch", () => {
+    for (const q of egypt.allQuests) expect(byId.has(q.gallery), q.gallery).toBe(true);
+    const on = (n: (typeof floor1.galleryNodes)[number], x: number, y: number) =>
+      x >= n.x - 0.6 && x <= n.x + n.w + 0.6 && y >= n.y - 0.6 && y <= n.y + n.h + 0.6;
+    for (const c of floor1.galleryConnections) {
+      expect(byId.has(c.from) && byId.has(c.to), c.id).toBe(true);
+      expect(on(byId.get(c.from)!, c.at!.x, c.at!.y) && on(byId.get(c.to)!, c.at!.x, c.at!.y), c.id).toBe(true);
+      if (c.verified) expect(c.source && c.verifiedAt, c.id).toBeTruthy();
+    }
+    expect(new Set(floor1.galleryConnections.map((c) => c.id)).size).toBe(floor1.galleryConnections.length);
+  });
+
+  it("routes every other quest leg along the path traced on the official map", () => {
+    for (const v of floor1.routeValidations) {
+      expect(egypt.findRoute(v.fromQuestGallery, v.toQuestGallery, [])?.path, `${v.fromQuestGallery} → ${v.toQuestGallery}`).toEqual(v.path);
+    }
+    expect(floor1.routeValidations).toHaveLength(egypt.questOrder.length - 2);
+  });
+
+  it("never gives directions for 117 → 122 until it is walked on site", () => {
+    expect(egypt.findRoute("117", "122", [])).toBeNull();
+    expect(egypt.findRoute("122", "117", [])).toBeNull();
+    // On the map itself there is a walk, but a long one: 122 opens only into 121, and the
+    // 119 ↔ 121 opening is unreadable (and 118–120 are closed), so it loops through the west galleries.
+    const loop = ["117", "116", "115", "111", "110", "108", "107", "132", "128", "123", "121", "122"];
+    expect(route("117", "122")).toEqual(loop);
+    expect(route("117", "122", closed("118", "119", "120"))).toEqual(loop);
+  });
+
+  it("only reaches 122 through 121, and 126 through 125", () => {
+    const touching = (g: string) => floor1.galleryConnections.filter((c) => c.from === g || c.to === g).map((c) => (c.from === g ? c.to : c.from));
+    expect(touching("122")).toEqual(["121"]);
+    expect(touching("126")).toEqual(["125"]);
+    expect(touching("117")).toEqual(["116"]);
+  });
+
+  it("walks around closed galleries", () => {
+    expect(route("116", "121", closed("118"))).not.toContain("118");
+  });
+});
