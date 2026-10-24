@@ -68,6 +68,7 @@ toward `adventure_completed`. The server adds
 | `quest_parent_override` | `kind` (after_attempts, without_photo, answer_key), `photo_attempts` | Grown-up confirms a find |
 | `quest_completed` | `method` (ai_verified, text_verified, parent_confirmed), `hints_used`, `photo_attempts`, `active_ms`, `elapsed_ms`, `timing_complete` | Quest solved |
 | `quest_skipped` | `reason` (closed, user_switched) | Closed-gallery skip, or picking a different mystery on the map |
+| `quest_rated` | `question` (fun, difficulty), `answer` (1, 2, 3), `after` (found, skipped) | The child taps a picture on the Detective's report card. One event per tap; only the last answer per question counts. |
 | `route_requested` | `from_gallery`, `to_gallery`, `route_graph_version`, `closure_version`, `closures_active` | SHOW ME THE WAY |
 | `route_unavailable` | same + `reason` (no_verified_route, closure_blocking) | No verified open route |
 | `map_opened` | `source` (quest, found, menu) | Map screen |
@@ -113,7 +114,8 @@ select * from analytics_age_groups(now() - interval '90 days', now(), null, 10);
 
 `analytics_overview`, `analytics_funnel`, `analytics_quest_performance`,
 `analytics_verification`, `analytics_routes`, `analytics_early_exits`,
-`analytics_age_groups`, and the per-adventure `analytics_adventures`. Definitions
+`analytics_age_groups`, `analytics_quest_ratings`, `analytics_puzzle_health`, and
+the per-adventure `analytics_adventures`. Definitions
 follow spec section 8; notes:
 
 - Funnel and overview are cohorts of adventures that sent `adventure_started` in
@@ -125,6 +127,40 @@ follow spec section 8; notes:
 - Solve times are solved quests only; read them with exposures and skips.
 - The dashboard shows rates only when the denominator is at least 10, and hides
   age groups with fewer than `ANALYTICS_MIN_COHORT` adventures.
+
+## Puzzle ratings
+
+After a mystery is found (treasure screen) or skipped ("Gallery … will wait for
+you"), a **Detective's report** card asks two optional questions, answered by
+tapping a picture:
+
+- *How fun was this mystery?* 1 meh, 2 fun, 3 super fun (faces)
+- *How hard was it to find?* 1 easy, 2 just right, 3 super hard (1–3 magnifying glasses)
+
+There is no typing and no comment box. The card only appears when analytics is on
+(server enabled and a grown-up said yes), since that's the only place answers go;
+the grown-up notice lists ratings, and adding them bumped `NOTICE_VERSION` to 2, so
+phones that said yes before are asked again. Closed-gallery skips get no card (the
+puzzle wasn't the problem).
+
+`analytics_quest_ratings` counts each child's last answer per quest and question.
+`analytics_puzzle_health` puts those next to skips, second hints and solve time and
+flags puzzles to look at. Each flag needs `p_min_sample` (default 10) answers or
+exposures, and every threshold is a parameter:
+
+```sql
+-- defaults: low fun avg <= 1.8, 40% super hard, 80% easy, 30% skipped, 50% second hint, 2x median solve time
+select quest_id, flags, fun_avg, difficulty_super_hard, difficulty_answers, skips_user, exposures
+from analytics_puzzle_health(now() - interval '30 days', now(), null);
+
+-- stricter: flag "too hard" from 30% and "not fun" below 2.0, with at least 20 answers
+select * from analytics_puzzle_health(now() - interval '30 days', now(), null,
+                                      p_min_sample => 20, p_low_fun => 2.0, p_hard_share => 0.3);
+```
+
+The dashboard shows this as **Puzzle health**, most-flagged first. Kids who
+choose to rate aren't a random sample, so read ratings alongside the behaviour
+columns.
 
 ## Dashboard
 

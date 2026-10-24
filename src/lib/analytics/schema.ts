@@ -20,6 +20,7 @@ export const AGE_BUCKETS = ["5-7", "8-10", "11+", "unknown"] as const;
 export const LATENCY_BUCKETS = ["lt2s", "2-5s", "5-10s", "10-20s", "gte20s"] as const;
 export const VERIFICATION_RESULTS = ["verified", "likely", "not_found", "uncertain", "invalid_image", "error"] as const;
 export const ERROR_KINDS = ["none", "offline", "timeout", "unavailable", "rate_limited", "rejected"] as const;
+export const RATING_QUESTIONS = ["fun", "difficulty"] as const;
 export const ERROR_CODES = ["Error", "TypeError", "RangeError", "SyntaxError", "ReferenceError", "ChunkLoadError", "QuotaExceededError", "unhandled_rejection"] as const;
 
 const envelope = {
@@ -103,6 +104,13 @@ const Events = z.discriminatedUnion("event_name", [
     timing_complete: z.boolean(),
   }),
   quest("quest_skipped", { reason: z.enum(["closed", "user_switched"]) }),
+  // The child's own rating, by tapping a picture: how fun the mystery was and how hard
+  // the treasure was to find, 1 to 3. One event per tap; a later tap replaces an earlier one.
+  quest("quest_rated", {
+    question: z.enum(RATING_QUESTIONS),
+    answer: z.union([z.literal(1), z.literal(2), z.literal(3)]),
+    after: z.enum(["found", "skipped"]),
+  }),
   plain("route_requested", routeProps),
   plain("route_unavailable", { ...routeProps, reason: z.enum(["no_verified_route", "closure_blocking"]) }),
   plain("map_opened", { source: z.enum(["quest", "found", "menu"]) }),

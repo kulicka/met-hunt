@@ -282,6 +282,133 @@ language sql stable as $$
   from g order by age_bucket
 $$;
 
+-- Kids' ratings of each mystery (event quest_rated), by quest and content version.
+-- Two questions, each answered 1-3 by tapping a picture:
+--   fun:        1 = meh, 2 = fun, 3 = super fun
+--   difficulty: 1 = easy, 2 = just right, 3 = super hard (to find)
+-- A child can change their mind, so only the latest answer per play-through
+-- (adventure_id), quest and question counts.
+create or replace function analytics_quest_ratings(p_from timestamptz, p_to timestamptz, p_content text default null)
+returns table (
+  quest_id text, gallery_id smallint, riddle_version text, hint_set_version text, artwork_assignment_version text,
+  raters bigint, rated_after_found bigint, rated_after_skip bigint,
+  fun_answers bigint, fun_meh bigint, fun_fun bigint, fun_super bigint, fun_avg numeric,
+  difficulty_answers bigint, difficulty_easy bigint, difficulty_just_right bigint, difficulty_super_hard bigint, difficulty_avg numeric
+) language sql stable as $$
+  with latest as (
+    select distinct on (adventure_id, quest_id, riddle_version, hint_set_version, artwork_assignment_version, properties->>'question')
+           adventure_id, quest_id, gallery_id, riddle_version, hint_set_version, artwork_assignment_version,
+           properties->>'question'      as question,
+           (properties->>'answer')::int as answer,
+           properties->>'after'         as after
+    from analytics_window(p_from, p_to, p_content)
+    where event_name = 'quest_rated'
+    order by adventure_id, quest_id, riddle_version, hint_set_version, artwork_assignment_version, properties->>'question', occurred_at desc
+  )
+  select quest_id, min(gallery_id), riddle_version, hint_set_version, artwork_assignment_version,
+    count(distinct adventure_id),
+    count(distinct adventure_id) filter (where after = 'found'),
+    count(distinct adventure_id) filter (where after = 'skipped'),
+    count(*) filter (where question = 'fun'),
+    count(*) filter (where question = 'fun' and answer = 1),
+    count(*) filter (where question = 'fun' and answer = 2),
+    count(*) filter (where question = 'fun' and answer = 3),
+    round(avg(answer) filter (where question = 'fun'), 2),
+    count(*) filter (where question = 'difficulty'),
+    count(*) filter (where question = 'difficulty' and answer = 1),
+    count(*) filter (where question = 'difficulty' and answer = 2),
+    count(*) filter (where question = 'difficulty' and answer = 3),
+    round(avg(answer) filter (where question = 'difficulty'), 2)
+  from latest
+  group by quest_id, riddle_version, hint_set_version, artwork_assignment_version
+  order by quest_id, riddle_version, hint_set_version, artwork_assignment_version
+$$;
+
+-- Puzzle health: kids' ratings next to what they did (hints, skips, solve time),
+-- one row per quest and content version, with flags for puzzles worth a look.
+-- A flag needs at least p_min_sample answers or exposures behind it, so one
+-- grumpy rating can't flag a puzzle. Thresholds are parameters: tune them here.
+--
+--   not_fun        average fun rating at or below p_low_fun (1 = meh, 3 = super fun)
+--   too_hard       at least p_hard_share of difficulty ratings were "super hard"
+--   too_easy       at least p_easy_share of difficulty ratings were "easy"
+--   often_skipped  at least p_skip_share of children who saw it skipped it
+--   needs_hints    at least p_hint2_share of children who saw it opened the second hint
+--   slow           median active solve time at least p_slow_factor x the median quest's
+--
+-- Rows are ordered most-flagged first. A flag says where to look, not why: check
+-- for closures, crowds, the artwork moving or a new verification model first.
+create or replace function analytics_puzzle_health(
+  p_from timestamptz, p_to timestamptz, p_content text default null,
+  p_min_sample int default 10,
+  p_low_fun numeric default 1.8,
+  p_hard_share numeric default 0.4,
+  p_easy_share numeric default 0.8,
+  p_skip_share numeric default 0.3,
+  p_hint2_share numeric default 0.5,
+  p_slow_factor numeric default 2
+)
+returns table (
+  quest_id text, gallery_id smallint, riddle_version text, hint_set_version text, artwork_assignment_version text,
+  exposures bigint, completions bigint, skips_user bigint, hint_adventures bigint, hint2_adventures bigint,
+  timed_solves bigint, active_median_ms numeric,
+  raters bigint, rated_after_skip bigint,
+  fun_answers bigint, fun_meh bigint, fun_fun bigint, fun_super bigint, fun_avg numeric,
+  difficulty_answers bigint, difficulty_easy bigint, difficulty_just_right bigint, difficulty_super_hard bigint, difficulty_avg numeric,
+  flags text[]
+) language sql stable as $$
+  with perf as (
+    select * from analytics_quest_performance(p_from, p_to, p_content)
+  ),
+  ratings as (
+    select * from analytics_quest_ratings(p_from, p_to, p_content)
+  ),
+  joined as (
+    select coalesce(p.quest_id, r.quest_id) as quest_id,
+           coalesce(p.gallery_id, r.gallery_id) as gallery_id,
+           coalesce(p.riddle_version, r.riddle_version) as riddle_version,
+           coalesce(p.hint_set_version, r.hint_set_version) as hint_set_version,
+           coalesce(p.artwork_assignment_version, r.artwork_assignment_version) as artwork_assignment_version,
+           coalesce(p.exposures, 0) as exposures, coalesce(p.completions, 0) as completions,
+           coalesce(p.skips_user, 0) as skips_user,
+           coalesce(p.hint_adventures, 0) as hint_adventures, coalesce(p.hint2_adventures, 0) as hint2_adventures,
+           coalesce(p.timed_solves, 0) as timed_solves, p.active_median_ms,
+           coalesce(r.raters, 0) as raters, coalesce(r.rated_after_skip, 0) as rated_after_skip,
+           coalesce(r.fun_answers, 0) as fun_answers, coalesce(r.fun_meh, 0) as fun_meh,
+           coalesce(r.fun_fun, 0) as fun_fun, coalesce(r.fun_super, 0) as fun_super, r.fun_avg,
+           coalesce(r.difficulty_answers, 0) as difficulty_answers, coalesce(r.difficulty_easy, 0) as difficulty_easy,
+           coalesce(r.difficulty_just_right, 0) as difficulty_just_right, coalesce(r.difficulty_super_hard, 0) as difficulty_super_hard,
+           r.difficulty_avg
+    from perf p
+    full join ratings r using (quest_id, riddle_version, hint_set_version, artwork_assignment_version)
+  ),
+  typical as (
+    -- The median quest's solve time, over quests with enough timed solves to trust.
+    select percentile_cont(0.5) within group (order by active_median_ms) as median_ms
+    from joined where timed_solves >= p_min_sample and active_median_ms is not null
+  ),
+  flagged as (
+    select j.*,
+      array_remove(array[
+        case when j.fun_answers >= p_min_sample and j.fun_avg <= p_low_fun then 'not_fun' end,
+        case when j.difficulty_answers >= p_min_sample and j.difficulty_super_hard >= p_hard_share * j.difficulty_answers then 'too_hard' end,
+        case when j.difficulty_answers >= p_min_sample and j.difficulty_easy >= p_easy_share * j.difficulty_answers then 'too_easy' end,
+        case when j.exposures >= p_min_sample and j.skips_user >= p_skip_share * j.exposures then 'often_skipped' end,
+        case when j.exposures >= p_min_sample and j.hint2_adventures >= p_hint2_share * j.exposures then 'needs_hints' end,
+        case when j.timed_solves >= p_min_sample and t.median_ms > 0 and j.active_median_ms >= p_slow_factor * t.median_ms then 'slow' end
+      ], null) as flags
+    from joined j cross join typical t
+  )
+  select quest_id, gallery_id, riddle_version, hint_set_version, artwork_assignment_version,
+         exposures, completions, skips_user, hint_adventures, hint2_adventures, timed_solves, active_median_ms,
+         raters, rated_after_skip,
+         fun_answers, fun_meh, fun_fun, fun_super, fun_avg,
+         difficulty_answers, difficulty_easy, difficulty_just_right, difficulty_super_hard, difficulty_avg,
+         flags
+  from flagged
+  order by cardinality(flags) desc, fun_avg asc nulls last, quest_id, riddle_version, hint_set_version, artwork_assignment_version
+$$;
+
 -- Retention: delete events older than p_days (by server receive time), and old audit rows.
 create or replace function analytics_purge(p_days int, p_audit_days int default 400)
 returns bigint language plpgsql as $$

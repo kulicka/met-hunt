@@ -41,9 +41,10 @@ export async function loadDashboard(f: Filters) {
   await ensureSchema();
   const w = range(f);
   const { minCohort } = analyticsSettings();
-  const [overview, funnel, quests, verification, routes, exits, ages, versions, tests] = await Promise.all([
+  const [overview, funnel, health, quests, verification, routes, exits, ages, versions, tests] = await Promise.all([
     q("select * from analytics_overview($1, $2, $3)", w),
     q("select * from analytics_funnel($1, $2, $3)", w),
+    q("select * from analytics_puzzle_health($1, $2, $3, $4)", [...w, MIN_SAMPLE]),
     q("select * from analytics_quest_performance($1, $2, $3)", w),
     q("select * from analytics_verification($1, $2, $3)", w),
     q("select * from analytics_routes($1, $2, $3)", w),
@@ -52,7 +53,7 @@ export async function loadDashboard(f: Filters) {
     q("select content_pack_version, min(pack_id) as pack_id, min(occurred_at) as first_seen from analytics_events where not is_test group by 1 order by 2", []),
     q("select count(*)::int as n from analytics_events where is_test and occurred_at >= $1 and occurred_at < $2", w.slice(0, 2)),
   ]);
-  return { overview, funnel, quests, verification, routes, exits, ages, versions, testEvents: Number(tests[0]?.n ?? 0), minCohort };
+  return { overview, funnel, health, quests, verification, routes, exits, ages, versions, testEvents: Number(tests[0]?.n ?? 0), minCohort };
 }
 
 export async function questCsv(f: Filters): Promise<string> {
@@ -83,6 +84,25 @@ export function rate(n: unknown, d: unknown): string {
   return `${Math.round((a / b) * 100)}% <span class="small">(${a}/${b})</span>`;
 }
 
+/** Plain words for each puzzle-health flag (see analytics_puzzle_health in db/analytics.sql). */
+const FLAG_LABELS: Record<string, string> = {
+  not_fun: "Not fun",
+  too_hard: "Too hard to find",
+  too_easy: "Too easy",
+  often_skipped: "Often skipped",
+  needs_hints: "Needs both hints",
+  slow: "Slow to solve",
+};
+
+const flagList = (v: unknown) => {
+  const flags = Array.isArray(v) ? (v as string[]) : [];
+  return flags.length ? flags.map((f) => `<span class="flag">${esc(FLAG_LABELS[f] ?? f)}</span>`).join(" ") : `<span class="small">—</span>`;
+};
+
+/** "3 / 5 / 9 · avg 2.4": counts for answers 1, 2, 3, then the average once there are enough. */
+const spread = (a: unknown, b: unknown, c: unknown, total: unknown, avg: unknown) =>
+  num(total) === 0 ? "—" : `${esc(a)} / ${esc(b)} / ${esc(c)}${num(total) >= MIN_SAMPLE ? ` <span class="small">· avg ${esc(avg)}</span>` : ` <span class="small">(small sample)</span>`}`;
+
 const duration = (v: unknown) => {
   if (v == null) return "—";
   const s = Math.round(Number(v) / 1000);
@@ -106,6 +126,19 @@ export function renderDashboard(f: Filters, d: Awaited<ReturnType<typeof loadDas
     `<section><h2>Funnel</h2><p class="note">Adventures started in the window, by quests completed so far (later events of those adventures included). "Still open" may finish later.</p>${table(
       ["Step", "Adventures", "of starts", "…then completed", "…ended early", "…restarted", "…still open"],
       d.funnel.map((r) => [esc(r.step), esc(r.adventures), rate(r.adventures, d.funnel[0]?.adventures), esc(r.completed), esc(r.ended_early), esc(r.restarted), esc(r.still_open)]),
+    )}</section>`,
+    `<section><h2>Puzzle health</h2><p class="note">Kids’ own ratings, tapped after a mystery was found or skipped (optional, so not every child rates), next to what they did. Answers are 1 / 2 / 3: fun is meh / fun / super fun, hard to find is easy / just right / super hard; only each child’s last answer counts. Flags need ${MIN_SAMPLE}+ answers or exposures; thresholds are parameters of <code>analytics_puzzle_health</code>. Most-flagged first.</p>${table(
+      ["Quest", "Gallery", "Riddle / hints / artwork", "Flags", "Rated by", "…after skipping", "Fun (meh / fun / super)", "Hard to find (easy / right / super hard)", "Skipped (user)", "Used hint 2", "Median active solve"],
+      d.health.map((r) => [
+        esc(r.quest_id), esc(r.gallery_id),
+        `${esc(r.riddle_version)} / ${esc(r.hint_set_version)} / ${esc(r.artwork_assignment_version)}`,
+        flagList(r.flags),
+        esc(r.raters), esc(r.rated_after_skip),
+        spread(r.fun_meh, r.fun_fun, r.fun_super, r.fun_answers, r.fun_avg),
+        spread(r.difficulty_easy, r.difficulty_just_right, r.difficulty_super_hard, r.difficulty_answers, r.difficulty_avg),
+        rate(r.skips_user, r.exposures), rate(r.hint2_adventures, r.exposures),
+        num(r.timed_solves) >= MIN_SAMPLE ? duration(r.active_median_ms) : "—",
+      ]),
     )}</section>`,
     `<section><h2>Quest performance</h2><p class="note">One row per quest and content version. Solve times are active time (background and idle beyond 90 s excluded), solved quests only, so read them with the skip and exposure counts. Rates under ${MIN_SAMPLE} are shown as counts only.</p>${table(
       ["Quest", "Gallery", "Artwork", "Riddle / hints / artwork", "Exposures", "Completed", "Parent confirmed", "Used a hint", "Used hint 2", "First photo verified", "Retried photo", "Uncertain / likely", "Not found", "Transport errors", "Skipped (user)", "Skipped (closed)", "Median active solve", "IQR", "Timed solves"],
@@ -161,7 +194,7 @@ table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums}th,t
 th{font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--soft)}
 form{display:flex;flex-wrap:wrap;gap:8px;align-items:end}label{display:flex;flex-direction:column;font-size:12px;color:var(--soft)}
 input,select,button,a.btn{font:inherit;padding:6px 10px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink)}
-button{background:var(--accent);color:#fff;border-color:var(--accent)}a.btn{text-decoration:none}.empty{color:var(--soft)}
+button{background:var(--accent);color:#fff;border-color:var(--accent)}.flag{display:inline-block;margin:0 2px 2px 0;padding:1px 8px;border-radius:999px;border:1px solid var(--accent);color:var(--accent);font-size:12px;font-weight:600}a.btn{text-decoration:none}.empty{color:var(--soft)}
 </style></head><body><main>
 <h1>Hidden Treasures analytics</h1>
 <p class="meta">Aggregates only, from consenting phones. Window ${esc(f.from)} to ${esc(f.to)} (UTC)${f.content ? `, content ${esc(f.content)}` : ", all content versions"}. ${d.testEvents} test events excluded. Signed in as ${esc(user)}; this view is logged.</p>

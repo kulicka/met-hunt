@@ -13,6 +13,7 @@ import {
   ageBucket,
   ERROR_CODES,
   MAX_BATCH,
+  type RATING_QUESTIONS,
   SCHEMA_VERSION,
   type AnalyticsEvent,
   type AnalyticsEventName,
@@ -37,8 +38,8 @@ const LEGACY_STATE_KEY = "met-hidden-treasures:analytics:v1";
 const stateKey = (packId: string) => `met-hidden-treasures:analytics:v2:${packId}`;
 const QUEUE_KEY = "met-hidden-treasures:analytics-queue:v1";
 const SESSION_KEY = "met-hidden-treasures:analytics-session:v1";
-/** Bump when the grown-up notice changes in a way that needs asking again. */
-export const NOTICE_VERSION = 1;
+/** Bump when the grown-up notice changes in a way that needs asking again. 2: puzzle ratings. */
+export const NOTICE_VERSION = 2;
 
 const APP_VERSION = process.env.NEXT_PUBLIC_APP_VERSION ?? "dev";
 const FLUSH_DELAY_MS = 4000;
@@ -58,10 +59,16 @@ interface QuestMark {
   complete: boolean;
 }
 
+export type RatingQuestion = (typeof RATING_QUESTIONS)[number];
+export type RatingAnswer = 1 | 2 | 3;
+export type QuestRating = Partial<Record<RatingQuestion, RatingAnswer>>;
+
 interface State {
   adventureId: string;
   activeMs: number;
   quests: Record<number, QuestMark>;
+  /** The child's own ratings this play-through, so the card shows what they picked. */
+  ratings?: Record<number, QuestRating>;
 }
 
 // ---------- storage helpers ----------
@@ -139,6 +146,13 @@ function subscribe(l: () => void) {
 /** The grown-up's choice on this phone; null until they make one (analytics stays off). */
 export function useAnalyticsConsent() {
   return useSyncExternalStore(subscribe, getConsent, () => null);
+}
+
+/** Analytics is on for this phone: the server collects it and a grown-up said yes. */
+export function useAnalyticsOn() {
+  const server = useAnalyticsServer();
+  const choice = useAnalyticsConsent();
+  return server.enabled && choice?.status === "granted";
 }
 
 /** Whether this server collects analytics at all, and for how long it keeps events. Remembered for offline. */
@@ -343,6 +357,21 @@ export function arrivalConfirmed(questId: number, via: "map" | "next_screen") {
   const navigation = navigationStartedAt == null ? null : Math.min(Date.now() - navigationStartedAt, 7 * 24 * 3600_000);
   navigationStartedAt = null;
   trackQuest("quest_arrival_confirmed", questId, { via, navigation_ms: navigation });
+}
+
+/** What the child already picked for `questId` this play-through. */
+export function questRating(questId: number): QuestRating {
+  return granted() ? { ...loadState(activeAdventure().adventure.id).ratings?.[questId] } : {};
+}
+
+/** The child tapped a rating. Each tap is sent; the metrics keep the last one per question. */
+export function rateQuest(questId: number, question: RatingQuestion, answer: RatingAnswer, after: "found" | "skipped") {
+  if (!granted()) return;
+  const packId = activeAdventure().adventure.id;
+  const s = loadState(packId);
+  s.ratings = { ...s.ratings, [questId]: { ...s.ratings?.[questId], [question]: answer } };
+  saveState(packId);
+  trackQuest("quest_rated", questId, { question, answer, after });
 }
 
 export const photoAttempts = (questId: number) =>

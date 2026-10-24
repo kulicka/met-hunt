@@ -24,6 +24,7 @@ export function AnalyticsConsentCard() {
       <p className="mt-3 font-semibold">What’s sent</p>
       <ul className="mt-1 flex list-disc flex-col gap-1 pl-5">
         <li>Which mysteries were opened, found, or skipped, and how many hints were used</li>
+        <li>How fun and how hard to find your child rated each mystery, if they tap a rating (pictures only, no typing)</li>
         <li>Whether each photo check said yes, not yet, or couldn’t connect (never the photo)</li>
         <li>Time spent on each mystery, the age group picked (like “8–10”), and app and content versions</li>
         <li>A random code for this adventure that changes when a new adventure starts</li>

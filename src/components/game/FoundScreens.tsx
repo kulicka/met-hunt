@@ -10,6 +10,7 @@ import { useAdventure } from "@/lib/content";
 import { endAdventure, useProgress } from "@/lib/progress";
 import { arrivalConfirmed } from "@/lib/analytics/client";
 import { OFFICIAL_MAP_URL } from "@/lib/links";
+import { RatePuzzle } from "./RatePuzzle";
 import { navigate } from "./router";
 import { Button, Card, Eyebrow, ProgressDots, Screen } from "./ui";
 
@@ -107,6 +108,8 @@ export function FoundScreen({ id }: { id: number }) {
         <p className="text-ink-soft">Unwrapping your treasure…</p>
       )}
 
+      <RatePuzzle questId={id} after="found" />
+
       <Button onClick={() => navigate({ name: "entry", id, fresh: true }, { replace: true })}>ADD TO MY NOTEBOOK</Button>
       {bonus ? (
         <Button variant="secondary" onClick={() => navigate({ name: "quest", id: progress.currentQuest }, { replace: true })}>
@@ -196,7 +199,10 @@ export function NextScreen({ from }: { from: number }) {
       )}
       {!progress.completedQuests.includes(from) && questById(from) && (
         // Arrived here by skipping a mystery: it waits, and comes round again after the others.
-        <p className="text-lg">Gallery {questById(from)!.gallery} will wait for you. Come back to it any time.</p>
+        <>
+          <p className="text-lg">Gallery {questById(from)!.gallery} will wait for you. Come back to it any time.</p>
+          <RatePuzzle questId={from} after="skipped" />
+        </>
       )}
       <h1 className="font-display text-4xl font-semibold">Your next mystery</h1>
       <p className="whitespace-nowrap font-display text-5xl font-semibold min-[360px]:text-6xl">Gallery {questById(next)!.gallery}</p>

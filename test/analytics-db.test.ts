@@ -168,6 +168,46 @@ describe.skipIf(!url)("analytics storage (Postgres)", () => {
     expect(csv).not.toMatch(/aaaaaaaa-/);
   });
 
+  it("rates puzzles from each child's last answer and flags low-rated, too-hard and skipped ones", async () => {
+    const events = [];
+    const rate = (a: string, quest: number, question: string, answer: number, after = "found", at = NOW - 60_000) =>
+      ev(a, "quest_rated", { question, answer, after }, quest, at);
+    // Quest 1: 12 children, all bored and all found it super hard; most skipped it.
+    for (let i = 1; i <= 12; i++) {
+      const a = adv(i);
+      events.push(ev(a, "quest_viewed", { already_solved: false }, 1));
+      if (i <= 8) events.push(ev(a, "quest_skipped", { reason: "user_switched" }, 1));
+      events.push(rate(a, 1, "fun", 1, i <= 8 ? "skipped" : "found"), rate(a, 1, "difficulty", 3, i <= 8 ? "skipped" : "found"));
+    }
+    // Quest 2: 12 children loved it. Child 1 first tapped "meh" and then changed to "super fun".
+    for (let i = 1; i <= 12; i++) {
+      const a = adv(i);
+      events.push(ev(a, "quest_viewed", { already_solved: false }, 2));
+      events.push(rate(a, 2, "fun", 3), rate(a, 2, "difficulty", 2));
+    }
+    events.push(rate(adv(1), 2, "fun", 1, "found", NOW - 120_000));
+    // Quest 3: only 2 ratings, too few to flag.
+    events.push(rate(adv(1), 3, "fun", 1), rate(adv(2), 3, "fun", 1));
+    for (let i = 0; i < events.length; i += 50) await route.POST(post({ events: events.slice(i, i + 50) }));
+
+    const w = ["now() - interval '1 day'", "now() + interval '1 day'"].join(", ");
+    const ratings = (await db.pool().query(`select * from analytics_quest_ratings(${w}) order by quest_id`)).rows;
+    expect(ratings[0]).toMatchObject({ quest_id: "q01", raters: "12", rated_after_skip: "8", fun_meh: "12", difficulty_super_hard: "12", fun_avg: "1.00" });
+    expect(ratings[1]).toMatchObject({ quest_id: "q02", fun_answers: "12", fun_meh: "0", fun_super: "12", fun_avg: "3.00", difficulty_just_right: "12" });
+
+    const health = (await db.pool().query(`select * from analytics_puzzle_health(${w})`)).rows;
+    expect(health[0].quest_id).toBe("q01");
+    expect(health[0].flags).toEqual(["not_fun", "too_hard", "often_skipped"]);
+    expect(health.find((r) => r.quest_id === "q02").flags).toEqual([]);
+    expect(health.find((r) => r.quest_id === "q03")).toMatchObject({ fun_answers: "2", flags: [] });
+
+    const filters = dash.parseFilters(new URL("http://x/admin"));
+    const html = dash.renderDashboard(filters, await dash.loadDashboard(filters), "admin");
+    expect(html).toContain("Puzzle health");
+    expect(html).toContain("Too hard to find");
+    expect(html).not.toMatch(/aaaaaaaa-/);
+  });
+
   it("deletes events past the retention window", async () => {
     await route.POST(post({ events: [ev(adv(1), "app_opened", { has_returning_adventure: false }), ev(adv(2), "app_opened", { has_returning_adventure: true })] }));
     await db.pool().query("update analytics_events set received_at = now() - interval '200 days' where adventure_id = $1", [adv(1)]);
