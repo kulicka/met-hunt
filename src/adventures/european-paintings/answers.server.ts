@@ -25,15 +25,14 @@ export const answers: QuestArtworkAnswer[] = [
   },
   {
     questId: 3,
-    // Two Degas pastels titled "Dancer with a Fan" are listed in Gallery 816
-    // (29.100.188, ca. 1880, object 436135; 29.100.557, ca. 1890–95, object 436136).
-    // Which one is the mystery isn't recorded, so typed answers aren't checked yet.
-    metCollectionId: "",
-    accessionNumbers: [],
+    // Alex (2026-10-24): 29.100.557 (object 436136) is the target, and Degas's other
+    // "Dancer with a Fan" in Gallery 816 (29.100.188, object 436135) counts too.
+    // With both counting, the shared title is unambiguous.
+    metCollectionId: "436136",
+    accessionNumbers: ["29.100.557", "29.100.188"],
     canonicalTitle: "Dancer with a Fan",
     acceptedTitles: [],
-    titleUnique: false,
-    curatorReview: "Two “Dancer with a Fan” pastels hang in Gallery 816 (29.100.188 and 29.100.557). Pick the target; until then typed answers can't be checked here.",
+    titleUnique: true,
   },
   {
     questId: 4,

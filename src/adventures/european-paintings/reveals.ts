@@ -3,8 +3,9 @@ import type { QuestReveal } from "../types";
 // Load with a dynamic import() so answers ship in their own chunk and are only
 // fetched once a treasure is found or grown-up mode opens.
 // Object ids are from The Met's Open Access data (MetObjects.csv, read 2026-10-24),
-// matched by artist, title and gallery. Quest 3 stays unpinned: two Degas pastels
-// titled "Dancer with a Fan" hang in Gallery 816 (objects 436135 and 436136).
+// matched by artist, title and gallery. Quest 3: two Degas pastels titled "Dancer
+// with a Fan" hang in Gallery 816; Alex chose 29.100.557 (436136) as the target and
+// the other (29.100.188, 436135) also counts (2026-10-24).
 // TODO: imageUrl, with openAccess only after confirming isPublicDomain.
 export const reveals: QuestReveal[] = [
   {
@@ -31,7 +32,10 @@ export const reveals: QuestReveal[] = [
     id: 3,
     artist: "Edgar Degas",
     artwork: "Dancer with a Fan",
-    hiddenObject: "Folding fan",
+    year: "ca. 1890–95",
+    hiddenObject: "Open folding fan",
+    metObjectId: 436136,
+    metObjectUrl: "https://www.metmuseum.org/art/collection/search/436136",
     fact: "Degas pictured ballet dancers so often that they appear in more than half of all his works.",
   },
   {

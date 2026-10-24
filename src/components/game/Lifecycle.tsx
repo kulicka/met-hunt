@@ -83,6 +83,9 @@ export function GameBar({ setup = false }: { setup?: boolean }) {
   const progress = useProgress();
   const { hasRoutes } = useAdventure();
   const route = parseRoute(useHash() ?? "");
+  // The map belongs to the adventure being played. Until one is picked and begun
+  // (a new hunt, or after a restart, the picker comes first), there is no map to show.
+  const mapReady = !setup && progress.status !== "not_started" && !(route.name === "adventures" && route.start);
   const [sheet, setSheet] = useState<Sheet>(null);
   const close = () => setSheet(null);
   const go = (route: Parameters<typeof navigate>[0]) => {
@@ -115,7 +118,7 @@ export function GameBar({ setup = false }: { setup?: boolean }) {
           <span className="ml-1 text-sm font-semibold">{progress.completedQuests.length}</span>
         </button>}
         {/* Always one tap away. The map only reads progress, so the mystery in play stays the same. */}
-        {!setup && <button
+        {mapReady && <button
           type="button"
           className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-full text-ink-soft hover:bg-paper hover:text-ink aria-[current=page]:bg-paper aria-[current=page]:text-ink"
           aria-label={hasRoutes ? "Treasure Map" : "Gallery list"}
@@ -164,7 +167,9 @@ export function GameBar({ setup = false }: { setup?: boolean }) {
               {progress.status !== "not_started" && (
                 <button type="button" className={item} onClick={() => go({ name: "certificate" })}>My Certificate</button>
               )}
-              <button type="button" className={item} onClick={() => go({ name: "map" })}>Treasure Map</button>
+              {mapReady && (
+                <button type="button" className={item} onClick={() => go({ name: "map" })}>Treasure Map</button>
+              )}
               <button type="button" className={item} onClick={() => go({ name: "how" })}>How to Play</button>
               <button type="button" className={item} onClick={() => go({ name: "adventures" })}>Switch Adventure</button>
               <button type="button" className={item} onClick={() => go({ name: "explorer" })}>Change Explorer</button>
