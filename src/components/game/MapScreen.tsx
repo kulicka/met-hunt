@@ -20,7 +20,7 @@ interface Props {
 
 export function MapScreen({ focus, from }: Props) {
   const adv = useAdventure();
-  const { map, hasRoutes, questIds, questById, questNumber, openUnsolved, findRoute, loadReveals, chapterOf } = adv;
+  const { map, hasRoutes, questIds, questById, questNumber, openUnsolved, findRoute, isHeld, loadReveals, chapterOf } = adv;
   const progress = useProgress();
   const closures = useClosures();
   const open = openUnsolved(progress.completedQuests, closures);
@@ -96,7 +96,11 @@ export function MapScreen({ focus, from }: Props) {
       {route === null && current && (
         <Card className="border-gold/40">
           <p className="font-mono text-[13px] font-medium uppercase tracking-[0.14em]">Next mystery: Gallery {questById(current)!.gallery}</p>
-          <p className="mt-1 text-lg">Gallery routes can change. Use The Met’s current map or ask a guard for the best way.</p>
+          <p className="mt-1 text-lg">
+            {fromQuest && isHeld(fromQuest.gallery, questById(current)!.gallery)
+              ? `We haven’t walked from Gallery ${fromQuest.gallery} to Gallery ${questById(current)!.gallery} yet, so there are no directions for it. Use The Met’s map or ask a guard for the best way.`
+              : "Gallery routes can change. Use The Met’s current map or ask a guard for the best way."}
+          </p>
           <a
             className="mt-3 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-full border border-line bg-card px-4 font-semibold shadow-[0_1px_2px_rgb(13_13_16/0.05)] hover:border-ink/40"
             href={OFFICIAL_MAP_URL}

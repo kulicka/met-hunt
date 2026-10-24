@@ -96,9 +96,12 @@ function AdventureKey({ adventure, current }: { adventure: Adventure; current: b
           <Card className="border-gold/50">
             <h3 className="font-display text-xl font-semibold">Not yet field-tested</h3>
             <p className="mt-2">
-              This adventure hasn’t been checked on site yet. Artworks may have moved, small details may be hard to see or
-              photograph, and the walks between galleries haven’t been verified, so the app gives gallery numbers rather than
-              directions. Check today’s closures before you go, and confirm a find yourself whenever the photo check struggles.
+              This adventure hasn’t been checked on site yet. Artworks may have moved, and small details may be hard to see or
+              photograph.{" "}
+              {adventure.map
+                ? "The map and directions are traced from The Met’s floor plan but haven’t been walked yet, and some walks show no directions until they are."
+                : "The walks between galleries haven’t been verified, so the app gives gallery numbers rather than directions."}{" "}
+              Check today’s closures before you go, and confirm a find yourself whenever the photo check struggles.
             </p>
           </Card>
         )}

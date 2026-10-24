@@ -16,6 +16,9 @@ function build(adventure: Adventure) {
   /** A required or bonus quest. Reserve and switched-off stops can't be played. */
   const questById = (id: number) => playable.find((q) => q.id === id);
 
+  const isHeld = (from: string, to: string) =>
+    !!adventure.heldRoutes?.some((h) => (h.from === from && h.to === to) || (h.from === to && h.to === from));
+
   const isQuestClosed = (id: number, closures: ClosureOverride[]) => {
     const q = questById(id);
     return q ? closures.some((c) => c.galleryId === q.gallery && c.status === "closed") : false;
@@ -69,9 +72,10 @@ function build(adventure: Adventure) {
       }
       return null;
     },
-    /** Verified walking route on this adventure's map (see routing.ts). */
+    /** Verified walking route on this adventure's map (see routing.ts). Held routes never get one. */
     findRoute: (from: string, to: string, closures: ClosureOverride[]) =>
-      adventure.map ? findRoute(from, to, closures, adventure.map) : null,
+      adventure.map && !isHeld(from, to) ? findRoute(from, to, closures, adventure.map) : null,
+    isHeld,
     loadReveals,
     versionOf: (questId: number) => adventure.versions.quests.find((v) => v.questId === questId),
   };

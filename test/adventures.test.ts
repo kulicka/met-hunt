@@ -82,12 +82,13 @@ describe("adventure registry", () => {
 describe("Egyptian Adventure (spec v1.0 draft)", () => {
   const c = contentFor(egyptian);
 
-  it("stays field-test-only, with no drawn routes", () => {
+  it("stays field-test-only, with a map but no directions for 117 → 122", () => {
     expect(egyptian.id).toBe("met-egyptian-adventure");
     expect(egyptian.launchStatus).toBe("field_test_required");
-    expect(egyptian.map).toBeUndefined();
-    expect(c.hasRoutes).toBe(false);
+    expect(egyptian.map?.id).toBe("met-floor1-egyptian");
+    expect(c.hasRoutes).toBe(true);
     expect(c.findRoute("117", "122", [])).toBeNull();
+    expect(c.findRoute("111", "112", [])?.path).toEqual(["111", "112"]);
     expect(routeLegs.every((l) => !l.routeVerified)).toBe(true);
     expect(routeLegs.find((l) => l.from === "117" && l.to === "122")).toMatchObject({ routeVerified: false });
   });

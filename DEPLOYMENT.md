@@ -26,9 +26,12 @@ deploys every push to `main` once the repo has a `FLY_API_TOKEN` secret
 (`fly tokens create deploy -a met-hunt`, then GitHub → Settings → Secrets →
 Actions). Until then the deploy steps are skipped.
 
-**Closures on Fly:** the image is fixed, so update closures without a rebuild with
-`fly secrets set CLOSURES_JSON="$(cat data/closures.json)"` (this restarts the
-machines), or edit `data/closures.json` and redeploy.
+**Closures on Fly:** the server reads The Met's closures page itself (see the
+README). `CLOSURES_JSON` is now only a manual override that beats the page, so
+remove it once the page reading works (`fly secrets unset CLOSURES_JSON`).
+To force a list by hand, `fly secrets set CLOSURES_JSON="$(cat data/closures.json)"`
+(this restarts the machines). `data/closures.json` is the fallback when the page
+can't be read.
 
 **Analytics (optional):** needs a Postgres database and three secrets
 (`DATABASE_URL`, `ADMIN_PASSWORD`, `ANALYTICS_ENABLED=on`). Steps, privacy notes
@@ -139,6 +142,9 @@ pm2 restart met-hunt
 
 ## Before a museum visit
 
-Check The Met’s [gallery closures page](https://www.metmuseum.org/de/plan-your-visit/gallery-closures)
-and update `data/closures.json` on the server. It is read on every request, so
-no rebuild or restart is needed. Phones pick it up the next time they have signal.
+Open the grown-ups screen and check its closed-gallery list against The Met’s
+[gallery closures page](https://www.metmuseum.org/plan-your-visit/gallery-closures).
+The server reads that page every 3 hours. If the server log says
+`[closures] keeping the previous list`, the page couldn't be read, so update
+`data/closures.json` (read on every request) or set `CLOSURES_JSON`. Phones pick
+up changes the next time they have signal.
