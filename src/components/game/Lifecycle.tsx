@@ -98,7 +98,21 @@ export function GameBar({ setup = false }: { setup?: boolean }) {
     <>
       <div className="mx-auto w-full max-w-md px-4 pt-3 print:hidden">
       <div className="flex items-center justify-between rounded-full border border-line bg-card/80 py-1 pl-1.5 pr-1 shadow-[0_1px_2px_rgb(13_13_16/0.04)] backdrop-blur-md">
-        {profile?.avatarId ? (
+        {profile?.avatarId && profile.onboardingComplete ? (
+          // Tapping the explorer opens the explorer picker; DONE there comes back here, progress untouched.
+          <button
+            type="button"
+            className="flex min-h-11 min-w-0 items-center gap-2 rounded-full pr-3 text-left text-ink hover:bg-paper aria-[current=page]:bg-paper"
+            aria-label={`Explorer: ${avatar.displayName}. Change explorer`}
+            aria-current={route.name === "explorer" ? "page" : undefined}
+            onClick={() => {
+              if (route.name !== "explorer") navigate({ name: "explorer" });
+            }}
+          >
+            <AvatarArt asset={avatar.imageAsset} size={34} />
+            <span className="truncate text-sm font-semibold">{avatar.displayName}</span>
+          </button>
+        ) : profile?.avatarId ? (
           <div className="flex min-w-0 items-center gap-2 text-ink">
             <AvatarArt asset={avatar.imageAsset} size={34} />
             <span className="truncate text-sm font-semibold">{avatar.displayName}</span>
